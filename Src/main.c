@@ -65,8 +65,8 @@ int main(void)
 	MX_TIM14_Init();
 	//  MX_I2C1_Init();
 
-	//	HAL_TIM_Base_Start(&htim14);
-	//	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
+	HAL_TIM_Base_Start(&htim14);
+	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
 
 	start_pwm();
 	TIMER_UPDATE_DUTY(0,0,0);
@@ -109,42 +109,55 @@ int main(void)
 	float x1 = 0;
 	float x2 = 0;
 
-//	while(1)
-//	{
-//		print_int32(theta_rel_deg()*7.0);
-//		HAL_Delay(1);
-//	}
+	//	while(1)
+	//	{
+	//		print_int32(theta_rel_deg()*7.0);
+	//		HAL_Delay(1);
+	//	}
+	float iqref = 0;
+	float idref = 0;
+	float theta_ref = M_PI/2;
+	float perr = 0;
+	float tprev = 0;
 	while(1)
 	{
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
-//		float Va_m, Vb_m, Vc_m;
-//		convert_phase_voltage(&Va_m,&Vb_m, &Vc_m);
-//		float theta_observer = observer_update(Va_m, Vb_m, i_a, i_b, &x1, &x2);
 
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
 		float theta_m = theta_rel_rad()*11.0;		//test this! MS motor has 22 pole pairs, which means multiply by 11
-//		float theta_m = theta_rel_rad();							//work with only steven motor
+		//		float theta_m = theta_rel_rad();							//work with only steven motor
 
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, theta_m, &i_q, &i_d);
 
-		controller_PI(10.5, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-		controller_PI(0.0, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
+//		iqref = 15.5*sin(time_seconds()*2);
+//		iqref = 10.5;
+//		idref = -10;
 
-//		uq=0.03;					//this also works with no manual spin
-//		ud= 0.0;					//low current, and feedback, but technically not foc
+
+		float  err = theta_ref - theta_abs_rad();
+		float derr = err-perr;
+		perr = err;
+		float dt = time_seconds()-tprev;
+		tprev = time_seconds();
+		iqref = 18*err + derr/dt*0;
+
+
+		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
+
+		//		uq=0.03;					//this also works with no manual spin
+		//		ud= 0.0;					//low current, and feedback, but technically not foc
 
 		uint32_t tA,tB,tC;
 		inverse_park_transform(uq, ud, theta_m, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-//		int32_t v1 = (int32_t)(i_q*10000.0);
-//		print_int32(v1);
-
+//		print_int32((int32_t)(i_q*1000.0));
 
 		if(HAL_GetTick()>=led_ts)
 		{

@@ -8,7 +8,7 @@
 #ifndef MAG_ENCODER_H_
 #define MAG_ENCODER_H_
 #include "adc.h"
-#define ADC_SIN_CHAN 	5
+#define ADC_SIN_CHAN 	4
 #define ADC_COS_CHAN 	3
 
 const float rad_to_deg;
