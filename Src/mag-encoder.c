@@ -16,7 +16,7 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t sin_mid = 1250;		//steven encoder
 //const int16_t cos_mid = 1243.5;
 
-float align_offset = 0;				//offset angle IN RADIANS
+float align_offset = 1.40370858;				//offset angle IN RADIANS
 
 float theta_abs_rad()
 {

@@ -92,22 +92,22 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
-	float t = 0;
+//	float t = 0;
 
 	gl_angle = 0;
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-	obtain_encoder_offset();
-	float tstart = time_seconds();
+//	obtain_encoder_offset();
+//	float tstart = time_seconds();
 
 
 	float x_iq_PI = 0;	//torque pi state
 	float x_id_PI = 0;	//flux pi state
 	float uq = 0;
 	float ud = 0;
-	float x1 = 0;
-	float x2 = 0;
+//	float x1 = 0;
+//	float x2 = 0;
 
 	//	while(1)
 	//	{
@@ -116,11 +116,13 @@ int main(void)
 	//	}
 	float iqref = 0;
 	float idref = 0;
-	float theta_ref = M_PI/2;
-	float perr = 0;
+	float theta_ref = 2*M_PI/4;
+	float p_theta = 0;
 	float tprev = 0;
+
 	while(1)
 	{
+
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
 
@@ -137,14 +139,17 @@ int main(void)
 //		iqref = 10.5;
 //		idref = -10;
 
+		theta_ref = 2*sin(time_seconds())+M_PI;
 
-		float  err = theta_ref - theta_abs_rad();
-		float derr = err-perr;
-		perr = err;
+		float theta_abs = theta_abs_rad();
+		if(theta_abs < 0)
+			theta_abs += 2*M_PI;
+		float  err = theta_ref - theta_abs;
+		float dtheta = theta_abs - p_theta;
+		p_theta = theta_abs;
 		float dt = time_seconds()-tprev;
 		tprev = time_seconds();
-		iqref = 18*err + derr/dt*0;
-
+		iqref = 30*err + dtheta/dt*0.1;
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
