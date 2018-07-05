@@ -131,16 +131,17 @@ int main(void)
 
 		float theta_m = theta_rel_rad()*11.0;		//test this! MS motor has 22 pole pairs, which means multiply by 11
 		//		float theta_m = theta_rel_rad();							//work with only steven motor
-
+		float sin_theta = sin(theta_m);
+		float cos_theta = cos(theta_m);
 		float i_q, i_d;
-		park_transform(i_alpha, i_beta, theta_m, &i_q, &i_d);
+		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
 //		iqref = 15.5*sin(time_seconds()*2);
 //		iqref = 10.5;
 //		idref = -10;
 
-		theta_ref = 2*sin(time_seconds())+M_PI;
-
+//		theta_ref = 2*sin(time_seconds())+M_PI;
+		theta_ref = M_PI/2;
 		float theta_abs = theta_abs_rad();
 		if(theta_abs < 0)
 			theta_abs += 2*M_PI;
@@ -149,7 +150,7 @@ int main(void)
 		p_theta = theta_abs;
 		float dt = time_seconds()-tprev;
 		tprev = time_seconds();
-		iqref = 30*err + dtheta/dt*0.1;
+		iqref = 20*err + dtheta/dt*0.1;
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
@@ -158,7 +159,7 @@ int main(void)
 		//		ud= 0.0;					//low current, and feedback, but technically not foc
 
 		uint32_t tA,tB,tC;
-		inverse_park_transform(uq, ud, theta_m, &i_alpha, &i_beta);	//maybe call theta rel again?
+		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 

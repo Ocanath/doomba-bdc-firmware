@@ -157,12 +157,10 @@ void clarke_transform(float i_a, float i_b, float i_c, float * i_alpha, float * 
 	(*i_alpha) = i_a;
 	*i_beta = ONE_BY_SQRT_3*i_a + TWO_BY_SQRT_3*i_b;
 }
-void park_transform(float i_alpha, float i_beta, float theta, float * i_q, float * i_d)
+void park_transform(float i_alpha, float i_beta, float sin_theta, float cos_theta, float * i_q, float * i_d)
 {
-	float c,s;
-	c = cos(theta);		s = sin(theta);
-	*i_d = i_alpha*c+i_beta*s;
-	*i_q = -i_alpha*s+i_beta*c;
+	*i_d = i_alpha*cos_theta+i_beta*sin_theta;
+	*i_q = -i_alpha*sin_theta+i_beta*cos_theta;
 }
 
 void inverse_clarke_transform(float i_alpha, float i_beta, float * i_a, float * i_b, float * i_c)
@@ -172,18 +170,16 @@ void inverse_clarke_transform(float i_alpha, float i_beta, float * i_a, float * 
 	*i_c = -.5*i_alpha - SQRT_3_BY_2*i_beta;
 }
 
-void inverse_park_transform(float i_q, float i_d, float theta, float * i_alpha, float * i_beta)
+void inverse_park_transform(float i_q, float i_d, float sin_theta, float cos_theta, float * i_alpha, float * i_beta)
 {
-	float c,s;
-	c = cos(theta);		s = sin(theta);
-	*i_alpha = i_d*c - i_q*s;
-	*i_beta = i_d*s + i_q*c;
+	*i_alpha = i_d*cos_theta - i_q*sin_theta;
+	*i_beta = i_d*sin_theta + i_q*cos_theta;
 }
 
 void obtain_encoder_offset()
 {
 	float i_alpha,i_beta;
-	inverse_park_transform(0, 0.15, 0, &i_alpha, &i_beta);	//maybe call theta rel again?
+	inverse_park_transform(0, 0.15, 0,1, &i_alpha, &i_beta);	//maybe call theta rel again?
 	uint32_t tA,tB,tC;
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
