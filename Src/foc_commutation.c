@@ -179,14 +179,21 @@ void inverse_park_transform(float i_q, float i_d, float sin_theta, float cos_the
 void obtain_encoder_offset()
 {
 	float i_alpha,i_beta;
-	inverse_park_transform(0, 0.15, 0,1, &i_alpha, &i_beta);	//maybe call theta rel again?
+	inverse_park_transform(0, 0.2, 0, 1, &i_alpha, &i_beta);	//maybe call theta rel again?
 	uint32_t tA,tB,tC;
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
-	HAL_Delay(500);
-	align_offset = theta_abs_rad();
-	TIMER_UPDATE_DUTY(0,0,0);
+	TIMER_UPDATE_DUTY(tA,tB,tC);		//TODO: since this produces (.2, -.1, -.1) -> (600, 450, 450), test (600, 400+50*sin(t), 400+50*sin(t)) and see if there
+										// is any preturbation in the angle
 	HAL_Delay(100);
+	float avg_offset = 0;
+	int i;
+	int num_samples = 400;
+	for(i=0;i<num_samples;i++)
+	{
+		avg_offset += theta_abs_rad();
+		HAL_Delay(1);
+	}
+	align_offset = avg_offset/(float)num_samples;
 }
 
 void get_current_cal_offsets()
