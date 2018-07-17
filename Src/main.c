@@ -6,6 +6,7 @@
 #include "comm.h"
 #include "foc_commutation.h"
 #include "mag-encoder.h"
+
 #define BRAKE 0
 #define STOP 1
 #define FORWARD_OPEN 2
@@ -118,7 +119,7 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		float theta_m = theta_rel_rad()*11.0;		//test this! MS motor has 22 pole pairs, which means multiply by 11
+		float theta_m = theta_rel_rad()*NUM_POLE_PAIRS;		//test this! MS motor has 22 pole pairs, which means multiply by 11
 		//		float theta_m = theta_rel_rad();							//work with only steven motor
 		float sin_theta = sin(theta_m);
 		float cos_theta = cos(theta_m);
