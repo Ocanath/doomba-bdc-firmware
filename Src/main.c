@@ -92,28 +92,17 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
-//	float t = 0;
-
 	gl_angle = 0;
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-//	obtain_encoder_offset();
-//	float tstart = time_seconds();
-
+	obtain_encoder_offset();
 
 	float x_iq_PI = 0;	//torque pi state
 	float x_id_PI = 0;	//flux pi state
 	float uq = 0;
 	float ud = 0;
-//	float x1 = 0;
-//	float x2 = 0;
 
-	//	while(1)
-	//	{
-	//		print_int32(theta_rel_deg()*7.0);
-	//		HAL_Delay(1);
-	//	}
 	float iqref = 0;
 	float idref = 0;
 	float theta_ref = 2*M_PI/4;
