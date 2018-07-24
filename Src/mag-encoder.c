@@ -16,8 +16,8 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t sin_mid = 1250;		//steven encoder
 //const int16_t cos_mid = 1243.5;
 
-float align_offset = 1.40370858;				//offset angle IN RADIANS
-
+//float align_offset = 1.40370858;				//offset angle IN RADIANS for motor 1
+float align_offset = 0.798513353;				//motor 2 angle
 
 float atan2_approx(float sinVal, float cosVal)
 {
@@ -46,18 +46,68 @@ float atan2_approx(float sinVal, float cosVal)
 	return r;
 }
 
+/*
+ * Fast taylor series based approximation of sin(theta).
+ * TODO: implement lookup table implementation
+ * NOTE:
+ * designed to play with fast atan2, meaning it's only valid for positive quadrants I, II and negative quadrants III, IV.
+ */
+float sin_fast(float theta)
+{
+	uint8_t is_neg = 0;
+	if(theta > HALF_PI && theta <= PI)	// if positive and in quadrant II, put in quadrant I (same)
+	{
+		theta = PI - theta;
+	}
+	else if (theta >= PI && theta < THREE_BY_TWO_PI)  // if positive and in quadrant III (possible for cosine)
+	{
+		is_neg = 1;
+		theta = theta - PI;
+	}
+
+	else if (theta > THREE_BY_TWO_PI && theta < TWO_PI)  // if positive and in quadrant IV (edge case of cosine, rare but possible)
+	{
+		theta = theta - TWO_PI;
+	}
+	else if (theta < -HALF_PI && theta >= -PI ) // if negative and in quadrant III,
+	{
+		is_neg = 1;
+		theta = PI + theta;
+	}
+
+	float theta_2 = theta*theta;
+	float theta_3 = theta_2*theta;
+	float theta_5 = theta_3*theta_2;
+	float res = theta-theta_3*ONE_BY_THREE_FACTORIAL + theta_5 * ONE_BY_FIVE_FACTORIAL;
+	if(is_neg == 1)
+		return -res;
+	else
+		return res;
+}
+/*
+ * returns cos approx using sin approx
+ */
+float cos_fast(float theta)
+{
+	return sin_fast(theta + HALF_PI);
+}
+
+
 float theta_abs_rad()
 {
 	int16_t sinVal = dma_adc_raw[ADC_SIN_CHAN]-sin_mid;
 	int16_t cosVal = dma_adc_raw[ADC_COS_CHAN]-cos_mid;
-	return atan2((float)sinVal,(float)cosVal);
+//	return atan2((float)sinVal,(float)cosVal);
+	return atan2_approx((float)sinVal,(float)cosVal);
 }
 
 float theta_rel_rad()
 {
 	int16_t sinVal = dma_adc_raw[ADC_SIN_CHAN]-sin_mid;
 	int16_t cosVal = dma_adc_raw[ADC_COS_CHAN]-cos_mid;
-	return atan2((float)sinVal,(float)cosVal) - align_offset;
+//	return atan2((float)sinVal,(float)cosVal) - align_offset;
+	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
+
 }
 const float rad_to_deg = 180.0/M_PI;
 float theta_abs_deg()
