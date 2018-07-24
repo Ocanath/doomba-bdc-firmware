@@ -95,9 +95,9 @@ int main(void)
 
 	gl_angle = 0;
 
+	TIMER_UPDATE_DUTY(0,0,0);
 
 //	obtain_encoder_offset();
-	TIMER_UPDATE_DUTY(0,0,0);
 
 	float x_iq_PI = 0;	//torque pi state
 	float x_id_PI = 0;	//flux pi state
@@ -120,16 +120,18 @@ int main(void)
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
 		float theta_m = theta_rel_rad()*NUM_POLE_PAIRS;		//test this! MS motor has 22 pole pairs, which means multiply by 11
-
-//		float sin_theta = sin(theta_m);
-//		float cos_theta = cos(theta_m);
-		float sin_theta = sin_fast(theta_m);
-		float cos_theta = cos_fast(theta_m);
+		//		float theta_m = theta_rel_rad();							//work with only steven motor
+		float sin_theta = sin(theta_m);
+		float cos_theta = cos(theta_m);
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
+//		iqref = 15.5*sin(time_seconds()*2);
+//		iqref = 10.5;
+//		idref = -10;
+
 //		theta_ref = 2*sin(time_seconds())+M_PI;
-//		theta_ref = M_PI/2;
+		theta_ref = M_PI/2;
 		float theta_abs = theta_abs_rad();
 		if(theta_abs < 0)
 			theta_abs += 2*M_PI;
@@ -139,8 +141,6 @@ int main(void)
 		float dt = time_seconds()-tprev;
 		tprev = time_seconds();
 		iqref = 20*err + dtheta/dt*0.1;
-
-		//		iqref = 10.0;
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current

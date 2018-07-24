@@ -8,11 +8,10 @@
 #ifndef FOC_COMMUTATION_H_
 #define FOC_COMMUTATION_H_
 #include "init.h"
-#include "mag-encoder.h"
 
 #define NUM_POLE_PAIRS 11.0
 
-
+#define TWO_PI 6.283185307179586
 #define CONST_E 0.367879441171442321595523770161460867445811131031767834507
 float gl_I;
 float gl_T;
