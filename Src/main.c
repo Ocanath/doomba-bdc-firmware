@@ -128,7 +128,9 @@ int main(void)
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
-//		theta_ref = 2*sin(time_seconds())+M_PI;
+
+		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
+
 //		theta_ref = M_PI/2;
 		float theta_abs = theta_abs_rad();
 		if(theta_abs < 0)
@@ -138,7 +140,7 @@ int main(void)
 		p_theta = theta_abs;
 		float dt = time_seconds()-tprev;
 		tprev = time_seconds();
-		iqref = 20*err + dtheta/dt*0.1;
+		iqref = 30*err - dtheta/dt*0.5;
 
 		//		iqref = 10.0;
 
