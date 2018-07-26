@@ -95,7 +95,6 @@ int main(void)
 
 	gl_angle = 0;
 
-
 //	obtain_encoder_offset();
 	TIMER_UPDATE_DUTY(0,0,0);
 
@@ -123,11 +122,11 @@ int main(void)
 
 		float sin_theta = sin(theta_m);
 		float cos_theta = cos(theta_m);
-//		float sin_theta = sin_fast(theta_m);	//TODO: update to handle wraparound
-//		float cos_theta = cos_fast(theta_m);	//as pole pair multiple causes errors!
+//		theta_m = fmod(theta_m, TWO_PI);		//TODO:
+//		float sin_theta = sin_fast(theta_m);	//test
+//		float cos_theta = cos_fast(theta_m);	//this
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
-
 
 		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
 
