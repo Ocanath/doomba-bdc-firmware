@@ -95,7 +95,10 @@ int main(void)
 
 	gl_angle = 0;
 
-//	obtain_encoder_offset();
+#ifdef GET_INIT_OFFSET
+	obtain_encoder_offset();
+#endif
+
 	TIMER_UPDATE_DUTY(0,0,0);
 
 	float x_iq_PI = 0;	//torque pi state
@@ -109,6 +112,13 @@ int main(void)
 	float p_theta = 0;
 	float tprev = 0;
 
+//	const theta_m_offset = 0;	//init DH angle offset, obtained manually
+//	while(1)
+//	{
+//		float theta_m = unwrap(theta_abs_rad()-theta_m_offset);
+//		print_int16(theta_m*1000);
+//	}
+
 	while(1)
 	{
 
@@ -118,35 +128,32 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		float theta_m = theta_rel_rad()*NUM_POLE_PAIRS;		//test this! MS motor has 22 pole pairs, which means multiply by 11
+		float theta_elec = theta_rel_rad()*NUM_POLE_PAIRS;		//test this! MS motor has 22 pole pairs, which means multiply by 11
+		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+//		float sin_theta = sin(theta_elec);
+//		float cos_theta = cos(theta_elec);
 
-		float sin_theta = sin(theta_m);
-		float cos_theta = cos(theta_m);
-//		theta_m = fmod(theta_m, TWO_PI);		//TODO:
-//		float sin_theta = sin_fast(theta_m);	//test
-//		float cos_theta = cos_fast(theta_m);	//this
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
-		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
+//		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
+//		theta_ref = M_PI*.5 + sin(time_seconds()*6);
+//		float theta_abs = theta_abs_rad();
+//		float  err = theta_ref - theta_abs;
+//		float dtheta = theta_abs - p_theta;
+//		p_theta = theta_abs;
+//		float dt = time_seconds()-tprev;
+//		tprev = time_seconds();
+//		iqref = 30*err - dtheta/dt*0.1;
 
-//		theta_ref = M_PI/2;
-		float theta_abs = theta_abs_rad();
-		if(theta_abs < 0)
-			theta_abs += 2*M_PI;
-		float  err = theta_ref - theta_abs;
-		float dtheta = theta_abs - p_theta;
-		p_theta = theta_abs;
-		float dt = time_seconds()-tprev;
-		tprev = time_seconds();
-		iqref = 30*err - dtheta/dt*0.5;
-
-		//		iqref = 10.0;
+		iqref = 15.0;
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
 
-		//		uq=0.03;					//this also works with no manual spin
+//		uq=0.1;					//this also works with no manual spin
 		//		ud= 0.0;					//low current, and feedback, but technically not foc
 
 		uint32_t tA,tB,tC;
@@ -155,6 +162,7 @@ int main(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 //		print_int32((int32_t)(i_q*1000.0));
+
 
 		if(HAL_GetTick()>=led_ts)
 		{

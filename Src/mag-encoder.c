@@ -16,8 +16,9 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t sin_mid = 1250;		//steven encoder
 //const int16_t cos_mid = 1243.5;
 
-float align_offset = 1.40370858;				//offset angle IN RADIANS for motor 1
+//float align_offset = 1.40370858;				//offset angle IN RADIANS for motor 1
 //float align_offset = 0.798513353;				//motor 2 angle
+float align_offset = 2.83137536;
 
 float atan2_approx(float sinVal, float cosVal)
 {
@@ -119,4 +120,36 @@ float theta_rel_deg()
 {
 	return theta_rel_rad()*rad_to_deg;
 }
+
+/*
+ * Helper Function to quickly perform floating point mod of two pi
+ */
+#define ONE_BY_TWO_PI 0.1591549
+float fmod_2pi(float in)
+{
+	uint8_t aneg = 0;
+	float in_eval = in;
+	if(in < 0)
+	{
+		aneg = 1;
+		in_eval = -in;
+	}
+	float fv = (float)((int)(in_eval*ONE_BY_TWO_PI));
+	if(aneg == 1)
+		fv = (-fv)-1;
+	return in-TWO_PI*fv;
+}
+
+float prev_theta = 0;
+float unwrap(float theta)
+{
+	float dif = fmod_2pi(fmod_2pi(prev_theta) - theta + PI);
+	if(dif < 0)
+		dif = dif + TWO_PI;
+	dif = dif - PI;
+	float theta_ret = prev_theta - dif;
+	prev_theta = theta_ret;
+	return theta_ret;
+}
+
 
