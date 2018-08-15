@@ -14,6 +14,18 @@
 #define BACKWARD_OPEN 4
 #define BACKWARD_CLOSED 5
 
+/*
+ * Since I don't have a .README yet... i'll just put the revision notes up here
+ * i implemented+ tested fast sin, cos, fast 2pi fmod, and angle unwrap.
+ *
+ * with torque limiting, this allows the user to request any number of rotations; i.e. th_target = 400*2*pi will make the rotor
+ * rotate exactly 400 times from zero before stopping and holding position. This has obvious utility in the hand, and for
+ * direct drive cars. it also removes crossover oscillation from a more constrained robot (i.e. dynacat)
+ *
+ * next is i2c protocol for decentralization of the position control!
+ */
+
+
 char msg_buf[32];
 void print_string(char * c)
 {
@@ -112,13 +124,6 @@ int main(void)
 	float p_theta = 0;
 	float tprev = 0;
 
-//	const theta_m_offset = 0;	//init DH angle offset, obtained manually
-//	while(1)
-//	{
-//		float theta_m = unwrap(theta_abs_rad()-theta_m_offset);
-//		print_int16(theta_m*1000);
-//	}
-
 	while(1)
 	{
 
@@ -138,22 +143,29 @@ int main(void)
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
+		float theta_m = unwrap(theta_abs_rad());
+//		print_int32(theta_m*1000);
+
 //		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
 //		theta_ref = M_PI*.5 + sin(time_seconds()*6);
-//		float theta_abs = theta_abs_rad();
-//		float  err = theta_ref - theta_abs;
-//		float dtheta = theta_abs - p_theta;
-//		p_theta = theta_abs;
-//		float dt = time_seconds()-tprev;
-//		tprev = time_seconds();
-//		iqref = 30*err - dtheta/dt*0.1;
+		theta_ref = 0;
+		float  err = theta_ref - theta_m;
+		float dtheta = theta_m - p_theta;
+		p_theta = theta_m;
+		float dt = time_seconds()-tprev;
+		tprev = time_seconds();
+		iqref = 30*err - dtheta/dt*0.1;
+		if(iqref > 30.0)
+			iqref = 30.0;
+		if(iqref < - 30.0)
+			iqref = -30.0;
 
-		iqref = 15.0;
+//		iqref = 15.0;
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
 
-//		uq=0.1;					//this also works with no manual spin
+//		uq=0.30;					//this also works with no manual spin
 		//		ud= 0.0;					//low current, and feedback, but technically not foc
 
 		uint32_t tA,tB,tC;
