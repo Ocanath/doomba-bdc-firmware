@@ -11,9 +11,8 @@
 //#define HP_FOC_BOARD
 //#define LP_FOC_BOARD
 
-//#define MS_4822
-
-#define VSPEC
+#define MS_4822
+//#define VSPEC
 //#define GET_INIT_OFFSET
 
 

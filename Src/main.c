@@ -6,6 +6,7 @@
 #include "comm.h"
 #include "foc_commutation.h"
 #include "mag-encoder.h"
+#include "i2c.h"
 
 #define BRAKE 0
 #define STOP 1
@@ -26,6 +27,7 @@
  */
 
 
+/*
 char msg_buf[32];
 void print_string(char * c)
 {
@@ -47,6 +49,7 @@ void print_int32(int32_t val)
 	msg_buf[3] = (val & 0xFF000000)>>24;
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
 }
+*/
 
 int led_state =0;
 
@@ -73,10 +76,10 @@ int main(void)
 	MX_DMA_Init();
 	MX_ADC_Init();
 //	MX_SPI1_Init();
-	MX_USART1_UART_Init();
+//	MX_USART1_UART_Init();
 	MX_TIM1_Init();
 	MX_TIM14_Init();
-	//  MX_I2C1_Init();
+	MX_I2C1_Init();
 
 	HAL_TIM_Base_Start(&htim14);
 	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
@@ -86,7 +89,7 @@ int main(void)
 	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc, (uint32_t *)dma_adc_raw, NUM_ADC);
-	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
+//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
 
 	HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
 
@@ -123,9 +126,13 @@ int main(void)
 	float theta_ref = 2*M_PI/4;
 	float p_theta = 0;
 	float tprev = 0;
+	float tstart = time_seconds();
 
 	while(1)
 	{
+		handle_i2c();
+		uint8_t cmd_byte = i2c_rx_data[0];
+
 
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
@@ -144,23 +151,27 @@ int main(void)
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
 		float theta_m = unwrap(theta_abs_rad());
-//		print_int32(theta_m*1000);
 
 //		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
 //		theta_ref = M_PI*.5 + sin(time_seconds()*6);
-		theta_ref = 0;
-		float  err = theta_ref - theta_m;
-		float dtheta = theta_m - p_theta;
-		p_theta = theta_m;
-		float dt = time_seconds()-tprev;
-		tprev = time_seconds();
-		iqref = 30*err - dtheta/dt*0.1;
-		if(iqref > 30.0)
-			iqref = 30.0;
-		if(iqref < - 30.0)
-			iqref = -30.0;
+//		theta_ref = 5*TWO_PI*sin(time_seconds()*3);
 
-//		iqref = 15.0;
+//		theta_ref = .5*HALF_PI*sin((time_seconds()-tstart)*TWO_PI*2+1.57);
+//		theta_ref = .6*sin(time_seconds()*12);
+//		theta_ref = 0;
+//		float  err = theta_ref - theta_m;
+//		float dtheta = theta_m - p_theta;
+//		p_theta = theta_m;
+//		float dt = time_seconds()-tprev;
+//		tprev = time_seconds();
+//		iqref = 30*err - dtheta/dt*0.2;
+//		if(iqref > 40.0)
+//			iqref = 40.0;
+//		if(iqref < -40.0)
+//			iqref = -40.0;
+
+//		iqref = 5.0;
+
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current

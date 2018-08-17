@@ -14,6 +14,7 @@
 #ifdef MS_4822
 #define NUM_POLE_PAIRS 11.0
 #endif
+
 #ifdef VSPEC
 #define NUM_POLE_PAIRS 6.0
 #endif

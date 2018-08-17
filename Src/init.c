@@ -153,39 +153,41 @@ void MX_ADC_Init(void)
 
 }
 
+
 /* I2C1 init function */
 void MX_I2C1_Init(void)
 {
 
-	hi2c1.Instance = I2C1;
-	hi2c1.Init.Timing = 0x00506682;
-	hi2c1.Init.OwnAddress1 = 0;
-	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-	hi2c1.Init.OwnAddress2 = 0;
-	hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-	{
-		_Error_Handler(__FILE__, __LINE__);
-	}
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x20303E5D;
+  hi2c1.Init.OwnAddress1 = I2C_ADDRESS<<1;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
-	/**Configure Analogue filter
-	 */
-	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-	{
-		_Error_Handler(__FILE__, __LINE__);
-	}
+    /**Configure Analogue filter
+    */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
-	/**Configure Digital filter
-	 */
-	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
-	{
-		_Error_Handler(__FILE__, __LINE__);
-	}
+    /**Configure Digital filter
+    */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
 }
+
 /* SPI1 init function */
 void MX_SPI1_Init(void)
 {
@@ -329,26 +331,26 @@ void MX_TIM14_Init(void)
 
 }
 
-/* USART1 init function */
-void MX_USART1_UART_Init(void)
-{
-
-	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 921600;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
-	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
-	huart1.Init.Mode = UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_UART_Init(&huart1) != HAL_OK)
-	{
-		_Error_Handler(__FILE__, __LINE__);
-	}
-
-}
+///* USART1 init function */
+//void MX_USART1_UART_Init(void)
+//{
+//
+//	huart1.Instance = USART1;
+//	huart1.Init.BaudRate = 921600;
+//	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+//	huart1.Init.StopBits = UART_STOPBITS_1;
+//	huart1.Init.Parity = UART_PARITY_NONE;
+//	huart1.Init.Mode = UART_MODE_TX_RX;
+//	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+//	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+//	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+//	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+//	if (HAL_UART_Init(&huart1) != HAL_OK)
+//	{
+//		_Error_Handler(__FILE__, __LINE__);
+//	}
+//
+//}
 
 /**
  * Enable DMA controller clock

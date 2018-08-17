@@ -16,9 +16,10 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t sin_mid = 1250;		//steven encoder
 //const int16_t cos_mid = 1243.5;
 
-//float align_offset = 1.40370858;				//offset angle IN RADIANS for motor 1
-//float align_offset = 0.798513353;				//motor 2 angle
-float align_offset = 2.83137536;
+//float align_offset = -0.635278881;				//offset angle IN RADIANS for motor 1
+//float align_offset = 0.869645774;				//motor 2 angle
+float align_offset = -0.888439536;
+
 
 float atan2_approx(float sinVal, float cosVal)
 {

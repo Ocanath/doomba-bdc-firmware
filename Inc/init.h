@@ -21,6 +21,10 @@
 #define ENABLE_PORT GPIOA
 #define ENABLE_PIN GPIO_PIN_11
 
+#define I2C_BASE 0x20
+#define I2C_OFFSET 0
+#define I2C_ADDRESS (I2C_BASE+I2C_OFFSET)
+
 
 ADC_HandleTypeDef hadc;
 DMA_HandleTypeDef hdma_adc;
@@ -34,7 +38,7 @@ DMA_HandleTypeDef hdma_spi1_tx;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim14;
 
-UART_HandleTypeDef huart1;
+//UART_HandleTypeDef huart1;
 
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);

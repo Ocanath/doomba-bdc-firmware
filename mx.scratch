@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>C:\Users\Ocanath\Google Drive\workspace\foc_f030_v4\\foc_f030_v4</ProjectName>
+<ProjectName>C:\Users\Ocanath\Google Drive\workspace\foc-code\\foc_f030_v4</ProjectName>
 <ProjectNature>C</ProjectNature> 
 <CMSIS>..\Drivers\CMSIS</CMSIS>
 <HAL_Driver>C:\Users\Ocanath\STM32Cube\Repository\STM32Cube_FW_F0_V1.9.0\Drivers\CMSIS</HAL_Driver>
@@ -9,6 +9,8 @@
 
 <filestoremove>
     <file>
+    <name>..\Drivers\STM32F0xx_HAL_Driver\Src\stm32f0xx_hal_uart.c</name>
+    <name>..\Drivers\STM32F0xx_HAL_Driver\Src\stm32f0xx_hal_uart_ex.c</name>
     </file>
 </filestoremove>
 
