@@ -30,6 +30,9 @@
  *TODO: i2c fast mode
  *		alternative to memcpy/benchmark memcpy
  *		implement on multiple legs!
+ *
+ *NOTE: if bandwidth becomes an issue in the future, the only acceptable solution is likely SPI or CAN
+ *		since foc boards are spi capable, this is an easy to do but horribly inconvenient switch
  */
 
 
