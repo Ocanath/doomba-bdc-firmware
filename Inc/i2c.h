@@ -19,13 +19,16 @@
 #define I2C_DIRECTION_MASTER_RECIEVE 1
 uint8_t gl_i2c_mode;
 
-#define TX_SIZE 5
+#define TX_SIZE 4
 #define RX_SIZE 4
 uint8_t i2c_tx_data[TX_SIZE];
 uint8_t i2c_rx_data[RX_SIZE];
 
+uint32_t recieved_data_ts;
+
 void handle_i2c();
 void get_i2c_rx(uint8_t * rx_data);
 void get_i2c_tx(uint8_t * tx_data);
+
 
 #endif /* I2C_H_ */

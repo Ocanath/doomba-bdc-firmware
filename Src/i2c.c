@@ -22,9 +22,10 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, ui
 	}
 }
 
+uint32_t recieved_data_ts = 0;
+
 uint8_t i2c_tx_data[TX_SIZE] = {0};
 uint8_t i2c_rx_data[RX_SIZE] = {0};
-
 /*
  * called in main loop, performs state machine which will manage transmission and reception while properly managing the address interrupt.
  */
@@ -40,6 +41,7 @@ void handle_i2c()
 	{
 		HAL_I2C_Slave_Sequential_Receive_IT(&hi2c1, i2c_rx_data, RX_SIZE, I2C_FIRST_AND_LAST_FRAME);
 		gl_i2c_mode = I2C_MODE_WAIT;
+		recieved_data_ts = HAL_GetTick();
 	}
 }
 

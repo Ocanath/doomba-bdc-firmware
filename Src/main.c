@@ -7,6 +7,8 @@
 #include "foc_commutation.h"
 #include "mag-encoder.h"
 #include "i2c.h"
+#include <string.h>
+
 
 #define BRAKE 0
 #define STOP 1
@@ -15,15 +17,19 @@
 #define BACKWARD_OPEN 4
 #define BACKWARD_CLOSED 5
 
+
+#define MAX_CUR 60.0
+
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
- * i implemented+ tested fast sin, cos, fast 2pi fmod, and angle unwrap.
  *
- * with torque limiting, this allows the user to request any number of rotations; i.e. th_target = 400*2*pi will make the rotor
- * rotate exactly 400 times from zero before stopping and holding position. This has obvious utility in the hand, and for
- * direct drive cars. it also removes crossover oscillation from a more constrained robot (i.e. dynacat)
+ * Tested i2c position control!!! current implementation uses memcpy and works directly with floats
+ * I think memcpy is faster than division, but i have not benchmarked
+ * 	- note: Fastest version may be to use pointers?: i.e. float->uint32_t is point a uint32_t * to a float??
  *
- * next is i2c protocol for decentralization of the position control!
+ *TODO: i2c fast mode
+ *		alternative to memcpy/benchmark memcpy
+ *		implement on multiple legs!
  */
 
 
@@ -49,7 +55,7 @@ void print_int32(int32_t val)
 	msg_buf[3] = (val & 0xFF000000)>>24;
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
 }
-*/
+ */
 
 int led_state =0;
 
@@ -75,11 +81,11 @@ int main(void)
 	MX_GPIO_Init();
 	MX_DMA_Init();
 	MX_ADC_Init();
-//	MX_SPI1_Init();
-//	MX_USART1_UART_Init();
+	MX_I2C1_Init();
+	//	MX_SPI1_Init();
+	//	MX_USART1_UART_Init();
 	MX_TIM1_Init();
 	MX_TIM14_Init();
-	MX_I2C1_Init();
 
 	HAL_TIM_Base_Start(&htim14);
 	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
@@ -89,7 +95,7 @@ int main(void)
 	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc, (uint32_t *)dma_adc_raw, NUM_ADC);
-//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
+	//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
 
 	HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
 
@@ -128,11 +134,19 @@ int main(void)
 	float tprev = 0;
 	float tstart = time_seconds();
 
+
+
 	while(1)
 	{
 		handle_i2c();
-		uint8_t cmd_byte = i2c_rx_data[0];
-
+		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+		memcpy(&iqref,&data_in,4);
+		if(iqref > MAX_CUR)
+			iqref = MAX_CUR;
+		else if (iqref < -MAX_CUR)
+			iqref = -MAX_CUR;
+		if(HAL_GetTick() > recieved_data_ts + 100)
+			iqref = 0;
 
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
@@ -144,52 +158,30 @@ int main(void)
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
-//		float sin_theta = sin(theta_elec);
-//		float cos_theta = cos(theta_elec);
 
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
 		float theta_m = unwrap(theta_abs_rad());
-
-//		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
-//		theta_ref = M_PI*.5 + sin(time_seconds()*6);
-//		theta_ref = 5*TWO_PI*sin(time_seconds()*3);
-
-//		theta_ref = .5*HALF_PI*sin((time_seconds()-tstart)*TWO_PI*2+1.57);
-//		theta_ref = .6*sin(time_seconds()*12);
-//		theta_ref = 0;
-//		float  err = theta_ref - theta_m;
-//		float dtheta = theta_m - p_theta;
-//		p_theta = theta_m;
-//		float dt = time_seconds()-tprev;
-//		tprev = time_seconds();
-//		iqref = 30*err - dtheta/dt*0.2;
-//		if(iqref > 40.0)
-//			iqref = 40.0;
-//		if(iqref < -40.0)
-//			iqref = -40.0;
-
-//		iqref = 5.0;
+		uint32_t tx_data; //= (uint32_t)theta_m;
+		memcpy(&tx_data,&theta_m,4);
+		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
+		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
+		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
+		i2c_tx_data[3] = (tx_data & 0x000000FF);
 
 
 		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
 
-//		uq=0.30;					//this also works with no manual spin
-		//		ud= 0.0;					//low current, and feedback, but technically not foc
 
 		uint32_t tA,tB,tC;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-//		print_int32((int32_t)(i_q*1000.0));
-
-
 		if(HAL_GetTick()>=led_ts)
 		{
-			//			dir = !dir&1;
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,led_state);
 			led_state = !led_state & 1;
 			led_ts = HAL_GetTick() + 200;
@@ -197,3 +189,28 @@ int main(void)
 	}
 
 }
+
+
+/*
+ * 		old 'discrete' position controller (on driver)
+ * 		//		theta_ref = .4*sin(time_seconds()*6+1.45)+HALF_PI;
+		//		theta_ref = M_PI*.5 + sin(time_seconds()*6);
+		//		theta_ref = 5*TWO_PI*sin(time_seconds()*3);
+
+		//		theta_ref = .5*HALF_PI*sin((time_seconds()-tstart)*TWO_PI*2+1.57);
+		//		theta_ref = .6*sin(time_seconds()*12);
+		//		theta_ref = 0;
+		//		float  err = theta_ref - theta_m;
+		//		float dtheta = theta_m - p_theta;
+		//		p_theta = theta_m;
+		//		float dt = time_seconds()-tprev;
+		//		tprev = time_seconds();
+		//		iqref = 30*err - dtheta/dt*0.2;
+		//		if(iqref > 40.0)
+		//			iqref = 40.0;
+		//		if(iqref < -40.0)
+		//			iqref = -40.0;
+
+		//		iqref = 5.0;
+ *
+ */
