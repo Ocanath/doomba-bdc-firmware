@@ -23,16 +23,22 @@
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
  *
- * Tested i2c position control!!! current implementation uses memcpy and works directly with floats
- * I think memcpy is faster than division, but i have not benchmarked
- * 	- note: Fastest version may be to use pointers?: i.e. float->uint32_t is point a uint32_t * to a float??
+ * CHanges:
+ * added some preprocessor directives that make it easier to switch between motor drivers
+ * changed to i2c fast mode
+ * used pointer logic instead of memcpy
  *
- *TODO: i2c fast mode
- *		alternative to memcpy/benchmark memcpy
- *		implement on multiple legs!
+ * NOTES:
+ * there is a serious i2c bug which occurs when more than 1 device is on the bus at once.
+ * THIS HAS BEEN VERY CHALLENGING TO DEBUG.
+ * if there is only 1 device, no problems. as soon as 2 are juggled at once (on the nrf middleman) it has this 'popping' effect where the motors... pop and jitter
  *
- *NOTE: if bandwidth becomes an issue in the future, the only acceptable solution is likely SPI or CAN
- *		since foc boards are spi capable, this is an easy to do but horribly inconvenient switch
+ *
+ * THINGS TO TRY:
+ * try on F3, since blocking doesn't work on the f0 middleman and it did work on the f3
+ * try using floating point divide instead of copying and reformatting a whole float.
+ * if all else fails, try SPI
+ *
  */
 
 
@@ -143,7 +149,10 @@ int main(void)
 	{
 		handle_i2c();
 		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
-		memcpy(&iqref,&data_in,4);
+
+		float * f_addr = (float *)(&data_in);
+		iqref = *f_addr;
+
 		if(iqref > MAX_CUR)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
@@ -166,8 +175,10 @@ int main(void)
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
 		float theta_m = unwrap(theta_abs_rad());
-		uint32_t tx_data; //= (uint32_t)theta_m;
-		memcpy(&tx_data,&theta_m,4);
+//		uint32_t tx_data; //= (uint32_t)theta_m;
+//		memcpy(&tx_data,&theta_m,4);
+		uint32_t * d_addr = (uint32_t *)(&theta_m);
+		uint32_t tx_data = *d_addr;
 		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
 		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
 		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
@@ -217,3 +228,5 @@ int main(void)
 		//		iqref = 5.0;
  *
  */
+
+

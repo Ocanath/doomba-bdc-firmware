@@ -17,7 +17,7 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t cos_mid = 1243.5;
 
 #if I2C_OFFSET==0
-float align_offset = -0.0954415798;				//offset angle IN RADIANS for motor 1
+float align_offset = -2.69547725;				//offset angle IN RADIANS for motor 1
 #endif
 #if I2C_OFFSET==1
 float align_offset = -0.296428591;				//motor 2 angle
