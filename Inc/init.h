@@ -22,7 +22,7 @@
 #define ENABLE_PIN GPIO_PIN_11
 
 #define I2C_BASE 0x20
-#define I2C_OFFSET 0
+#define I2C_OFFSET 1
 #define I2C_ADDRESS (I2C_BASE+I2C_OFFSET)
 
 
