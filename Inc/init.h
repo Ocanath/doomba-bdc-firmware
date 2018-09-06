@@ -9,6 +9,7 @@
 #define INIT_H_
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include "settings.h"
 
 #define COMM_PWM_PERIOD 1000
 
@@ -20,10 +21,6 @@
 
 #define ENABLE_PORT GPIOA
 #define ENABLE_PIN GPIO_PIN_11
-
-#define I2C_BASE 0x20
-#define I2C_OFFSET 0
-#define I2C_ADDRESS (I2C_BASE+I2C_OFFSET)
 
 
 ADC_HandleTypeDef hadc;

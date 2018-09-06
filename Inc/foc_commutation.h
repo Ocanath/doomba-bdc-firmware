@@ -11,13 +11,6 @@
 #include "mag-encoder.h"
 #include "settings.h"
 
-#ifdef MS_4822
-#define NUM_POLE_PAIRS 11.0
-#endif
-
-#ifdef VSPEC
-#define NUM_POLE_PAIRS 6.0
-#endif
 
 #define CONST_E 0.367879441171442321595523770161460867445811131031767834507
 float gl_I;
