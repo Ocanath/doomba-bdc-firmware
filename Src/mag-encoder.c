@@ -17,13 +17,16 @@ const int16_t sin_mid = 2006;		//my encoder
 //const int16_t cos_mid = 1243.5;
 
 #if MODULE_NUMBER==0
-float align_offset = -2.69547725;				//offset angle IN RADIANS for motor 1
+float align_offset = -2.69547725;				//original leg hip motor
 #endif
 #if MODULE_NUMBER==1
-float align_offset = -0.296428591;				//motor 2 angle
+float align_offset = -0.296428591;				//original leg knee motor
 #endif
-#if MODULE_NUMBER == 2
+#if MODULE_NUMBER == 2							//A2217
 float align_offset = 2.50830102;
+#endif
+#if MODULE_NUMBER == 3							//loose ms4822 3mm magnet
+float align_offset = -0.881572366;
 #endif
 
 //float align_offset = -0.888439536;
