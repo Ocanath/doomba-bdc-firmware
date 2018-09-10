@@ -8,7 +8,7 @@
 #include "mag-encoder.h"
 #include "i2c.h"
 #include <string.h>
-
+#include "settings.h"
 
 #define BRAKE 0
 #define STOP 1
@@ -19,6 +19,7 @@
 
 
 #define MAX_CUR 60.0
+
 
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
@@ -138,12 +139,6 @@ int main(void)
 
 	float iqref = 0;
 	float idref = 0;
-	float theta_ref = 2*M_PI/4;
-	float p_theta = 0;
-	float tprev = 0;
-	float tstart = time_seconds();
-
-
 
 	while(1)
 	{
@@ -166,7 +161,7 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		float theta_elec = theta_rel_rad()*NUM_POLE_PAIRS;		//test this! MS motor has 22 pole pairs, which means multiply by 11
+		float theta_elec = theta_rel_rad()*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -185,8 +180,8 @@ int main(void)
 		i2c_tx_data[3] = (tx_data & 0x000000FF);
 
 
-		controller_PI(iqref, i_q, 0.01, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-		controller_PI(idref, i_d, 0.01, 0.0000000001, &x_id_PI, &ud);		//high current
+		controller_PI(iqref, i_q, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+		controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
 
 
 		uint32_t tA,tB,tC;

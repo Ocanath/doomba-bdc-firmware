@@ -21,7 +21,6 @@
 
 const float rad_to_deg;
 
-float align_offset;				//offset angle IN RADIANS
 float theta_abs_rad();
 float theta_rel_rad();
 float theta_abs_deg();
