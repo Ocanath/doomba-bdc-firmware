@@ -9,7 +9,7 @@
 #define SETTINGS_H_
 #include "stm32f0xx_hal.h"
 
-//#define GET_INIT_OFFSET
+#define GET_INIT_OFFSET
 
 uint32_t i2c_address;
 const float iq_gain;

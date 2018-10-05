@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 4	//module num for preset encoder offset
+#define MODULE_NUMBER 3	//module num for preset encoder offset
 
 
 #if MODULE_NUMBER==0
@@ -32,7 +32,7 @@ uint32_t i2c_address = I2C_BASE+0;
 const float num_pole_pairs = 7.0;	//A2217
 #endif
 #if MODULE_NUMBER == 3							//loose ms4822 3mm magnet
-float align_offset = -0.881572366;
+float align_offset = 0.343918025;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;

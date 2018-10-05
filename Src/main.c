@@ -75,6 +75,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	execute_master_cmd();
 }
 
+void open_loop_test();
+
 int idx = 0;
 volatile int total_delay = 0;
 
@@ -140,6 +142,8 @@ int main(void)
 	float iqref = 0;
 	float idref = 0;
 
+//	open_loop_test();
+
 	while(1)
 	{
 		handle_i2c();
@@ -154,6 +158,8 @@ int main(void)
 			iqref = -MAX_CUR;
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
+
+		iqref = 10;
 
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
@@ -187,6 +193,10 @@ int main(void)
 		uint32_t tA,tB,tC;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+//		float vA,vB,vC;
+//		inverse_clarke_transform(i_alpha, i_beta, &vA, &vB, &vC);
+//		tA = (uint32_t)((vA+.5)*1000);	tB = (uint32_t)((vB+.5)*1000);	tC = (uint32_t)((vC+.5)*1000);
+
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 		if(HAL_GetTick()>=led_ts)
@@ -225,3 +235,26 @@ int main(void)
  */
 
 
+void open_loop_test()
+{
+	while(1)
+	{
+		float t = (float)HAL_GetTick()*.001;
+		t = t*50*TWO_PI;
+		float theta = fmod_2pi(t + PI) - PI;
+		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		float cos_theta = cos_fast(theta);
+		float i_alpha,i_beta;
+		inverse_park_transform(.07, 0, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+
+		uint32_t tA,tB,tC;
+
+//		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+
+		float vA,vB,vC;
+		inverse_clarke_transform(i_alpha, i_beta, &vA, &vB, &vC);
+		tA = (uint32_t)((vA+.5)*1000);	tB = (uint32_t)((vB+.5)*1000);	tC = (uint32_t)((vC+.5)*1000);
+
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+	}
+}
