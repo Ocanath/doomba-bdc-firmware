@@ -159,7 +159,7 @@ int main(void)
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
 
-		iqref = 10;
+//		iqref = 10;
 
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
