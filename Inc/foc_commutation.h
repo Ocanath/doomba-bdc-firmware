@@ -49,5 +49,6 @@ float observer_update(float v_a, float v_b, float i_a, float i_b, float * x1, fl
 void sector_check(float alpha, float beta, float * theta, uint32_t * sector);
 float est_R();
 void obtain_encoder_offset();
+void obtain_encoder_midpoints();
 
 #endif /* FOC_COMMUTATION_H_ */

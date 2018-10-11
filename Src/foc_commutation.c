@@ -216,6 +216,44 @@ void get_current_cal_offsets()
 	gl_current_input_offset_C /= numSamples;
 }
 
+
+void obtain_encoder_midpoints()
+{
+	float t_start = time_seconds();
+	uint16_t s_max = 0;
+	uint16_t s_min = 0xFFFF;
+	uint16_t c_max = 0;
+	uint16_t c_min = 0xFFFF;
+	while(time_seconds() - t_start < 15)
+	{
+		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)
+			s_max = dma_adc_raw[ADC_SIN_CHAN];
+		if(dma_adc_raw[ADC_SIN_CHAN] < s_min)
+			s_min = dma_adc_raw[ADC_SIN_CHAN];
+
+		if(dma_adc_raw[ADC_COS_CHAN] > c_max)
+			c_max = dma_adc_raw[ADC_COS_CHAN];
+		if(dma_adc_raw[ADC_COS_CHAN] < c_min)
+			c_min = dma_adc_raw[ADC_COS_CHAN];
+
+
+		float theta = 371*sin_fast( (fmod_2pi(.5*time_seconds() + PI) - PI) );
+		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		float cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		float i_alpha,i_beta;
+		uint32_t tA,tB,tC;
+		inverse_park_transform(.09, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+	}
+	TIMER_UPDATE_DUTY(0,0,0);
+	cos_mid = (s_max + s_min)/2;
+	sin_mid = (c_max + c_min)/2;
+}
+
+
+
 /*
  *	convert each phase adc voltage to actual current value
  */

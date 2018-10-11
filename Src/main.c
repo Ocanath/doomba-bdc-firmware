@@ -126,6 +126,9 @@ int main(void)
 
 	gl_angle = 0;
 
+#ifdef GET_ENCODER_MIDPOINT
+	obtain_encoder_midpoints();
+#endif
 #ifdef GET_INIT_OFFSET
 	obtain_encoder_offset();
 #endif
