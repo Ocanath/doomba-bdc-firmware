@@ -167,7 +167,7 @@ int main(void)
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
 
-		iqref = 10;
+//		iqref = 10;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
