@@ -29,7 +29,9 @@ const float adc_conv_C = 0.005754743303571;
 int gl_sector=1;	//for SVM
 
 
-
+float theta_enc_prev = 0;
+float x_iq_PI = 0;
+float x_id_PI = 0;
 
 
 /*
@@ -279,81 +281,6 @@ void convert_phase_voltage(float * va, float * vb, float * vc)
 }
 
 /*
- * Seems to work...?
- * TODO: fix+test this
- */
-float est_R()
-{
-	TIMER_UPDATE_DUTY(0,0,0);
-	TIMER_UPDATE_DUTY(1000,1000,0);
-	HAL_Delay(10);
-	mR = 0;
-	int i;
-	for(i=0;i<10;i++)
-	{
-		float Va = (float)dma_adc_raw[ADC_CHAN_BEMF_A] * 0.000805664062 * 3.24725565716;
-		float Vb = (float)dma_adc_raw[ADC_CHAN_BEMF_B] * 0.000805664062 * 3.24725565716;
-		float i_a,i_b,i_c;
-		conv_raw_current(&i_a,&i_b, &i_c);
-		mR += (((Va+Vb)*.5)/i_c)/1.5;
-	}
-	mR = mR/(float)i;
-	TIMER_UPDATE_DUTY(0,0,0);
-	R = mR;
-	return R;
-}
-
-
-/*
- * TODO: FIX THIS!!! general bones of getting L from time constant, but it does not work for the vishan. Tested with the
- * hobby, and didn't work either. should try shunt+ scope and measure the T that way.
- */
-float gl_I;
-float gl_T;
-float gl_V = 7.4;
-
-float est_L()
-{
-	float coil_r = R;
-
-	TIMER_UPDATE_DUTY(0,0,0);
-	HAL_Delay(100);
-	TIMER_UPDATE_DUTY(1000,1000,1000);
-	HAL_Delay(1);
-	float Va_m = (float)dma_adc_raw[ADC_CHAN_BEMF_A] * 0.000805664062 * 3.24725565716;
-	float Vb_m = (float)dma_adc_raw[ADC_CHAN_BEMF_B] * 0.000805664062 * 3.24725565716;
-	float Vc_m = (float)dma_adc_raw[ADC_CHAN_BEMF_C] * 0.000805664062 * 3.24725565716;
-	gl_V = (Va_m+Vb_m+Vc_m)/3.0;
-	float thresh = (gl_V/(2*coil_r))*.37;
-
-	while(1)
-	{
-		TIMER_UPDATE_DUTY(1000,1000,0);
-		uint32_t t_init = TIM14_ms()*1000+TIM14->CNT;
-		TIM14->CNT = 0;
-		while(1)	//might be the case that uS is not enough reso. for this kind of test
-		{
-			float i_a,i_b,i_c;
-			conv_raw_current(&i_a,&i_b, &i_c);
-			if(i_c > thresh)
-			{
-				gl_I = i_c;
-				gl_T = (float)((TIM14_ms()*1000+TIM14->CNT)-t_init);
-				break;
-			}
-			if(TIM14->CNT > 600)
-				break;
-		}
-		TIMER_UPDATE_DUTY(0,0,0);
-		printf("T found");
-		while(1);
-		//		float max_cur = coil_r
-	}
-	return 0;
-}
-
-
-/*
  * TODO: write this properly. init l,r,vphz
  */
 void init_observer()
@@ -403,4 +330,5 @@ float observer_update(float v_a, float v_b, float i_a, float i_b, float * x1, fl
 	return atan2((*x2-L_i_b),(*x1-L_i_a));
 
 }
+
 

@@ -67,18 +67,6 @@ void print_int32(int32_t val)
 }
  */
 
-int led_state =0;
-
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	parse_master_cmd();
-	execute_master_cmd();
-}
-
-int idx = 0;
-volatile int total_delay = 0;
-
-float gl_angle = 89;
 
 typedef enum {ADVANCE_TO_ZERO = 0, REST_AT_ZERO = 1, ADVANCE_TO_ANGLE = 2, REST_AT_ANGLE = 3} bang_test_state;
 
@@ -100,7 +88,14 @@ int main(void)
 	HAL_TIM_Base_Start(&htim14);
 	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
 
-	start_pwm();
+//	start_pwm();
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+
 	TIMER_UPDATE_DUTY(0,0,0);
 	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
@@ -124,7 +119,6 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
-	gl_angle = 0;
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -146,16 +140,21 @@ int main(void)
 	float theta_m_prev = 0;
 	float theta_enc_prev = theta_abs_rad();
 
-//	while(1)
-//	{
-////		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*.5;
-////		theta_enc = fmod_2pi(theta_enc + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
-//		float theta_enc = theta_abs_rad();
-//		if(theta_enc < 0 && theta_enc > -PI)
-//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-//		else
-//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-//	}
+	/*
+	 * NOTE:
+	 * The new encoder needs to be unwrapped, divided by two, and re-wrapped
+	 * in order to have correct FOC commutation.
+	 *
+	 * Because the encoder returns TWICE the mechanical angle, not the actual mechanical
+	 * angle, HALF of the mechanical angle has the potential to be incorrect. I.e.
+	 * if mechanically the motor is advanced by PI, the ENCODER returns the SAME value.
+	 *
+	 * This is accounted for by unwrapping when the motor is on, but when the motor is OFF
+	 * this goes away. THEREFORE either the motor needs to be mechanically restricted so that
+	 * it cannot be easily initialized in the wrong region (direct drive only), OR a test
+	 * procedure needs to be developed so that the angle is corrected for if it is intialized
+	 * in the wrong region.
+	 */
 
 	while(1)
 	{
@@ -174,6 +173,7 @@ int main(void)
 
 //		iqref = 10;
 
+		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
 
@@ -182,24 +182,12 @@ int main(void)
 
 		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
 		float theta_elec = theta_enc*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
-
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
 
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
-
-		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
-//		uint32_t tx_data; //= (uint32_t)theta_m;
-//		memcpy(&tx_data,&theta_m,4);
-		uint32_t * d_addr = (uint32_t *)(&theta_m);
-		uint32_t tx_data = *d_addr;
-		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
-		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
-		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
-		i2c_tx_data[3] = (tx_data & 0x000000FF);
-
 
 		controller_PI(iqref, i_q, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
@@ -209,6 +197,18 @@ int main(void)
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
+		/**********************************************END**********************************************/
+
+
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		uint32_t * d_addr = (uint32_t *)(&theta_m);
+		uint32_t tx_data = *d_addr;
+		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
+		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
+		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
+		i2c_tx_data[3] = (tx_data & 0x000000FF);
+
+
 
 		if(HAL_GetTick()>=led_ts)
 		{
@@ -219,6 +219,42 @@ int main(void)
 	}
 
 }
+
+/*
+ * use the light to dowse for an angle.
+ */
+void find_raw_encoder_angle(float angle, uint32_t timeout)
+{
+	uint32_t manual_calib_ts = HAL_GetTick();
+	while(1)
+	{
+		if(HAL_GetTick() > manual_calib_ts + timeout)
+			return;
+		float theta_enc = theta_abs_rad();
+		if(theta_enc < angle + .025 && theta_enc > angle-.025)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	}
+}
+
+
+/*
+ * check and correct the encoder region for KMZ60 encoder. Necessary because encoder returns
+ * twice the actual angle
+ */
+void check_encoder_region()
+{
+
+}
+
+
+
+
+
+
+
+
 
 
 /*
