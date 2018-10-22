@@ -22,65 +22,8 @@ int gl_adc_capture_flag = 0;
 float iA_filt = 0;
 uint8_t shunt_state;
 
-/*
- * TODO: implement single section IIR filter at a decimated adc frequency.
- * Most likely, 2kHz will be a sufficient cutoff frequency at a 5khz sampling frequency.
- * Experiment with filtering the raw adc values (requiring 3 filters) and
- * filtering the converted adc values (requiring only 2 filters but conversion in the
- * handler).
- *
- * Also, try decimation through changing the ADC timer base from the 14Mhz internal clock to a prescaled SYSCLK.
- * if the appropriate prescaler can be used, it will save some time in the handler.
- */
-uint16_t adc_I[3] = {0,0,0};
-uint16_t adc_V[3] = {0,0,0};
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-{
-//	shunt_state = ((HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_10) << 2) | (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_9) << 1) | HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8));
-//	if(shunt_state == 0b001)
-//	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-//	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-//	if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_10))
-//	{
-//		adc_V[0] = dma_adc_raw[ADC_CHAN_BEMF_A];
-//		adc_V[1] = dma_adc_raw[ADC_CHAN_BEMF_B];
-//		adc_V[2] = dma_adc_raw[ADC_CHAN_BEMF_C];
-//	}
-//	else
-//	{
-//		adc_I[0] = dma_adc_raw[ADC_CHAN_CURRENT_A];
-//		adc_I[1] = dma_adc_raw[ADC_CHAN_CURRENT_B];
-//		adc_I[2] = dma_adc_raw[ADC_CHAN_CURRENT_C];
-//	}
-}
 
 float adc_to_V(int adc)
 {
 	return ((float)adc) *( 3.3 / ((float)0xFFF) ) ;
-}
-
-void init_23kHz_filt_coef()
-{
-	filt[0].b0 = 1;
-	filt[0].b1 = 2;
-	filt[0].b2 = 1;
-	filt[0].a1 = -0.250697967679985;
-	filt[0].a2 = 0.182705104359658;
-	filt[0].gain = 0.233001784169918;
-
-
-	//
-	//	filt[1].a1 = 0.234667672575741;
-	//	filt[1].a2 = 0.144597823632472;
-	//	filt[1].b0 = 1;
-	//	filt[1].b1 = 1.73114829153189;
-	//	filt[1].b2 = 1;
-	//	filt[1].gain = 0.369662470756940;
-	//
-	//	filt[2].a1 = 0.132122696010434;
-	//	filt[2].a2 = 0;
-	//	filt[2].b0 = 1;
-	//	filt[0].b1 = 1;
-	//	filt[2].b2 = 0;
-	//	filt[2].gain = 0.566061348005217;
 }

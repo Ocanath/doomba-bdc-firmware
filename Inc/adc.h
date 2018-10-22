@@ -8,10 +8,8 @@
 #ifndef ADC_H_
 #define ADC_H_
 #include "init.h"
-#include "circ.h"
-#include "iirSOS.h"
 
-iirSOS filt[3];
+//iirSOS filt[3];
 uint8_t shunt_state;
 
 uint16_t adc_V[3];
@@ -39,9 +37,9 @@ int gl_zero_cross_point;
 int rotor_pos;
 
 float adc_to_V(int adc);
-int zeroCrossDetect(circularBuffer buf, int zcp, int polarity);
+//int zeroCrossDetect(circularBuffer buf, int zcp, int polarity);
 float iA_filt;
 float iB_filt;
-void init_23kHz_filt_coef();
+//void init_23kHz_filt_coef();
 
 #endif /* ADC_H_ */

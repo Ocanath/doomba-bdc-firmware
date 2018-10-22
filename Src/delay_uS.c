@@ -6,7 +6,6 @@
  */
 #include "init.h"
 #include "delay_uS.h"
-#include "comm.h"
 
 const float seconds_per_tick = 8.0/48000000.0;
 const float milliseconds_per_tick = 8.0/48000.0;

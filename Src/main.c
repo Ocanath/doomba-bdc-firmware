@@ -2,8 +2,6 @@
 #include "stm32f0xx_hal.h"
 #include "adc.h"
 #include "delay_uS.h"
-#include "commutation.h"
-#include "comm.h"
 #include "foc_commutation.h"
 #include "mag-encoder.h"
 #include "i2c.h"
@@ -114,8 +112,6 @@ int main(void)
 	get_current_cal_offsets();
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
-	init_observer();
-
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
@@ -171,7 +167,7 @@ int main(void)
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
 
-//		iqref = 10;
+		iqref = 10;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -207,7 +203,6 @@ int main(void)
 		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
 		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
 		i2c_tx_data[3] = (tx_data & 0x000000FF);
-
 
 
 		if(HAL_GetTick()>=led_ts)

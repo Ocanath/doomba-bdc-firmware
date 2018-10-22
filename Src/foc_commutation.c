@@ -6,8 +6,7 @@
  */
 #include "foc_commutation.h"
 #include "adc.h"
-#include "commutation.h"
-#include <math.h>
+//#include <math.h>
 #include "delay_uS.h"
 #include "mag-encoder.h"
 float mL = 0;
@@ -280,55 +279,5 @@ void convert_phase_voltage(float * va, float * vb, float * vc)
 	*vc = (float)t3/1000.0;	//period
 }
 
-/*
- * TODO: write this properly. init l,r,vphz
- */
-void init_observer()
-{
-	//for vishan:
-	//Resistance of a single coil to CT = 0.86
-	//Inductance (measured from scope) of a SINGLE COIL to CT = 1.462
-	//VpHz = .01502703????????? (unknown) (was not able to measure via vesc)
-	//	est_R();
-	R = .86;			//R (single coil)
-	L = 0.000001462;	//L (single coil)
-	V_psi = .0012655;
-}
-
-/*
- * based on http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5200471
- */
-float gl_t_prev = 0;
-float gl_t = 0;
-float observer_update(float v_a, float v_b, float i_a, float i_b, float * x1, float * x2)
-{
-	gl_t_prev = gl_t;
-	gl_t = (float)((TIM14_ms()*CONST_MS_TO_TICK+TIM14->CNT))*seconds_per_tick;
-	float dt = gl_t-gl_t_prev;	//TODO: estimate dt
-
-	float y1,y2;
-	y1 = -R*i_a+v_a;
-	y2 = -R*i_b+v_b;
-
-	float gamma = 1;	//find later
-	float L_i_a = L*i_a;
-	float L_i_b = L*i_b;
-	float n1,n2;
-	n1 = *x1-L_i_a;
-	n2 = *x2-L_i_b;
-	float e = V_psi*V_psi - (n1*n1+n2*n2);
-	float xdot1,xdot2;
-	xdot1 = y1 + gamma*.5 + n1*e;
-	xdot2 = y2 + gamma*.5 + n2*e;
-	*x1 += xdot1*dt;
-	*x2 += xdot2*dt;
-
-	/*
-	 * TODO: try putting the observer in a loop, as in vesc.
-	 */
-
-	return atan2((*x2-L_i_b),(*x1-L_i_a));
-
-}
 
 
