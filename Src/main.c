@@ -143,6 +143,20 @@ int main(void)
 	float iqref = 0;
 	float idref = 0;
 
+	float theta_m_prev = 0;
+	float theta_enc_prev = theta_abs_rad();
+
+//	while(1)
+//	{
+////		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*.5;
+////		theta_enc = fmod_2pi(theta_enc + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+//		float theta_enc = theta_abs_rad();
+//		if(theta_enc < 0 && theta_enc > -PI)
+//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+//		else
+//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+//	}
+
 	while(1)
 	{
 		handle_i2c();
@@ -158,13 +172,17 @@ int main(void)
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
 
+//		iqref = 10;
+
 		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
 
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		float theta_elec = theta_rel_rad()*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11
+		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+		float theta_elec = theta_enc*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -172,7 +190,7 @@ int main(void)
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
-		float theta_m = unwrap(theta_abs_rad());
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 //		uint32_t tx_data; //= (uint32_t)theta_m;
 //		memcpy(&tx_data,&theta_m,4);
 		uint32_t * d_addr = (uint32_t *)(&theta_m);

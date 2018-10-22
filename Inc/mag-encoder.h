@@ -36,7 +36,7 @@ float atan2_approx(float sinVal, float cosVal);
 float sin_fast(float theta);
 float cos_fast(float theta);
 float fmod_2pi(float in);
-float unwrap(float theta);
+float unwrap(float theta, float * prev_theta);
 
 
 #endif /* MAG_ENCODER_H_ */

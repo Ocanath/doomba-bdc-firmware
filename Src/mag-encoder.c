@@ -126,15 +126,14 @@ float fmod_2pi(float in)
 	return in-TWO_PI*fv;
 }
 
-float prev_theta = 0;
-float unwrap(float theta)
+float unwrap(float theta, float * prev_theta)
 {
-	float dif = fmod_2pi(fmod_2pi(prev_theta) - theta + PI);
+	float dif = fmod_2pi(fmod_2pi(*prev_theta) - theta + PI);
 	if(dif < 0)
 		dif = dif + TWO_PI;
 	dif = dif - PI;
-	float theta_ret = prev_theta - dif;
-	prev_theta = theta_ret;
+	float theta_ret = *prev_theta - dif;
+	*prev_theta = theta_ret;
 	return theta_ret;
 }
 
