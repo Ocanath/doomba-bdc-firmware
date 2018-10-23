@@ -64,7 +64,7 @@ void print_int32(int32_t val)
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
 }
  */
-
+void check_encoder_region();
 
 typedef enum {ADVANCE_TO_ZERO = 0, REST_AT_ZERO = 1, ADVANCE_TO_ANGLE = 2, REST_AT_ANGLE = 3} bang_test_state;
 
@@ -134,7 +134,7 @@ int main(void)
 	float idref = 0;
 
 	float theta_m_prev = 0;
-	float theta_enc_prev = theta_abs_rad();
+	theta_enc_prev = theta_abs_rad();
 
 	/*
 	 * NOTE:
@@ -151,6 +151,7 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
+	check_encoder_region();
 
 	while(1)
 	{
@@ -185,7 +186,7 @@ int main(void)
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
 
-		controller_PI(iqref, i_q, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+		controller_PI(iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
 		controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
 
 
@@ -240,7 +241,16 @@ void find_raw_encoder_angle(float angle, uint32_t timeout)
  */
 void check_encoder_region()
 {
-
+	uint32_t ts = HAL_GetTick();
+	theta_enc_prev = theta_abs_rad();
+	float theta_enc_start = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;	//on your marks...
+	while(HAL_GetTick() < ts + 10)
+	{
+		foc(12,0);
+	}
+	float theta_enc_end = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;
+	if(theta_enc_end - theta_enc_start < 0)
+		align_offset = -align_offset;	//same as add pi. this value relates the electrical angle to the encoder angle
 }
 
 
