@@ -78,7 +78,7 @@ inline void foc(float iqref, float idref)
 	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
 	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
-	float theta_elec = theta_enc*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains

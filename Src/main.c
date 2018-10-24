@@ -64,9 +64,25 @@ void print_int32(int32_t val)
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
 }
  */
-float check_encoder_region();
 
-typedef enum {ADVANCE_TO_ZERO = 0, REST_AT_ZERO = 1, ADVANCE_TO_ANGLE = 2, REST_AT_ANGLE = 3} bang_test_state;
+
+float check_encoder_region();
+void align_offset_test();
+
+void test_foc()
+{
+	uint32_t reverse_ts = 0;
+	float iq = 10;
+	while(1)
+	{
+		if(HAL_GetTick() > reverse_ts)
+		{
+			reverse_ts = HAL_GetTick()+2000;
+			iq = -iq;
+		}
+		foc(iq,0);
+	}
+}
 
 int main(void)
 {
@@ -120,7 +136,8 @@ int main(void)
 	obtain_encoder_midpoints();
 #endif
 #ifdef GET_INIT_OFFSET
-	obtain_encoder_offset();
+//	obtain_encoder_offset();
+	align_offset_test();
 #endif
 
 	TIMER_UPDATE_DUTY(0,0,0);
@@ -132,7 +149,6 @@ int main(void)
 
 	float iqref = 0;
 	float idref = 0;
-
 
 	/*
 	 * NOTE:
@@ -149,9 +165,12 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
+
 	float comp_angle = check_encoder_region();
 	float theta_m_prev = comp_angle;
 	theta_enc_prev = comp_angle;
+
+//	test_foc();
 
 	while(1)
 	{
@@ -177,7 +196,7 @@ int main(void)
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
 		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
-		float theta_elec = theta_enc*num_pole_pairs;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -239,7 +258,7 @@ void find_raw_encoder_angle(float angle, uint32_t timeout)
  * twice the actual angle
  */
 float check_encoder_region()
-{
+ {
 	uint32_t ts = HAL_GetTick();
 	theta_enc_prev = theta_abs_rad();
 	float theta_enc_start = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;	//on your marks...
@@ -256,12 +275,53 @@ float check_encoder_region()
 
 
 
+float ao_pos = 0;
+float ao_neg = 0;
+void align_offset_test()
+{
+	float lower_limit = -PI/elec_conv_ratio;
+	float upper_limit = -lower_limit;
+	uint32_t period = 0;
+	float theta_m_prev = 0;
+	float theta_unwrapped_prev = 0;
+	float theta_m;
+	int prev_rotation_num = 0;
+	uint32_t rotation_start_ts = HAL_GetTick();
+	uint32_t min_pos_period = 0xFFFFFFFF;
+	uint32_t min_neg_period = 0xFFFFFFFF;
+	for(align_offset = lower_limit; align_offset < upper_limit; align_offset+=.00002)
+	{
+		theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		float d_theta = theta_m - theta_unwrapped_prev;
+		float wrapped_theta = theta_m * ONE_BY_TWO_PI;//= fmod_2pi(theta_m);
+		int rotation_num = (int)wrapped_theta;
+		if(rotation_num != prev_rotation_num)
+		{
+			period = HAL_GetTick()-rotation_start_ts;
+			if(period < min_pos_period && d_theta > 0)
+			{
+				min_pos_period = period;
+				ao_pos = align_offset;
+			}
+			if(period < min_neg_period && d_theta < 0)
+			{
+				min_neg_period = period;
+				ao_neg = align_offset;
+			}
+		}
+		if(d_theta > 0.003)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else if(d_theta < -.003)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
-
-
-
-
-
+		foc(10,0);
+		prev_rotation_num = rotation_num;
+		theta_unwrapped_prev = theta_m;
+	}
+//	align_offset = ao_pos;
+	align_offset = (ao_pos - ao_neg)*.5;
+	TIMER_UPDATE_DUTY(0,0,0);
+}
 
 /*
  * 		old 'discrete' position controller (on driver)

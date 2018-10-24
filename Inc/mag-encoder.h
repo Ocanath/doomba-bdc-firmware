@@ -19,6 +19,7 @@
 #define PI						3.14159265359
 #define THREE_BY_TWO_PI     	4.71238898038
 #define TWO_PI              	6.28318530718
+#define ONE_BY_TWO_PI 			0.1591549
 
 const float rad_to_deg;
 

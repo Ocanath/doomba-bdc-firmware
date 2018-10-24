@@ -65,11 +65,12 @@ int16_t cos_mid = 1986;
 int16_t sin_mid = 2006;
 #endif
 #if MODULE_NUMBER == 6							//ms4822 3mm magnet
-float align_offset = -0.264224828;				//
+//float align_offset = -0.264224828;				//
+float align_offset = -0.273223341;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
-const float num_pole_pairs = 5.5;	//MS4822 (11 pole pairs), with KMZ60 encoder (2*theta)
+const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
 int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif

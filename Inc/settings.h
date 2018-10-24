@@ -16,7 +16,7 @@ uint32_t i2c_address;
 const float iq_gain;
 const float id_gain;
 float align_offset;				//offset angle IN RADIANS
-const float num_pole_pairs;
+const float elec_conv_ratio;
 
 
 #endif /* SETTINGS_H_ */

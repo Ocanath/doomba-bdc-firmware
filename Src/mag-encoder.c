@@ -120,7 +120,6 @@ float theta_rel_deg()
 /*
  * Helper Function to quickly perform floating point mod of two pi
  */
-#define ONE_BY_TWO_PI 0.1591549
 float fmod_2pi(float in)
 {
 	uint8_t aneg = 0;
