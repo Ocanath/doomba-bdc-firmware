@@ -7,6 +7,9 @@
 #include "mag-encoder.h"
 #include "settings.h"
 
+//#define HIGH_ACCURACY_SIN
+
+
 float atan2_approx(float sinVal, float cosVal)
 {
 	float abs_s = sinVal;
@@ -64,14 +67,21 @@ float sin_fast(float theta)
 	}
 
 	float theta_2 = theta*theta;
-	float theta_3 = theta_2*theta;
+	float theta_3 = theta*theta_2;
 	float theta_5 = theta_3*theta_2;
+#ifdef HIGH_ACCURACY_SIN
+	float theta_7 = theta_5*theta_2;
+	float res = theta-theta_3*ONE_BY_THREE_FACTORIAL + theta_5 * ONE_BY_FIVE_FACTORIAL - ONE_BY_SEVEN_FACTORIAL*theta_7;
+#else
 	float res = theta-theta_3*ONE_BY_THREE_FACTORIAL + theta_5 * ONE_BY_FIVE_FACTORIAL;
+#endif
+
 	if(is_neg == 1)
 		return -res;
 	else
 		return res;
 }
+
 /*
  * returns cos approx using sin approx
  */

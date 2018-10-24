@@ -177,10 +177,14 @@ void inverse_park_transform(float i_q, float i_d, float sin_theta, float cos_the
 	*i_beta = i_d*sin_theta + i_q*cos_theta;
 }
 
+/*
+This procedure has a 1/2 probability of being correct, a 1/4 probability of being off by -? and a 1/4 probability of being of by ?.
+ */
 void obtain_encoder_offset()
 {
+	/************************************Obtain encoder offset**********************************/
 	float i_alpha,i_beta;
-	inverse_park_transform(0, 0.2, 0, 1, &i_alpha, &i_beta);	//maybe call theta rel again?
+	inverse_park_transform(0, 0.1, 0, 1, &i_alpha, &i_beta);	//maybe call theta rel again?
 	uint32_t tA,tB,tC;
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);		//TODO: since this produces (.2, -.1, -.1) -> (600, 450, 450), test (600, 400+50*sin(t), 400+50*sin(t)) and see if there
@@ -195,6 +199,7 @@ void obtain_encoder_offset()
 		HAL_Delay(1);
 	}
 	align_offset = avg_offset/(float)num_samples;
+	/*****************************************************************************************/
 }
 
 void get_current_cal_offsets()
