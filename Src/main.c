@@ -64,7 +64,7 @@ void print_int32(int32_t val)
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
 }
  */
-void check_encoder_region();
+float check_encoder_region();
 
 typedef enum {ADVANCE_TO_ZERO = 0, REST_AT_ZERO = 1, ADVANCE_TO_ANGLE = 2, REST_AT_ANGLE = 3} bang_test_state;
 
@@ -133,8 +133,6 @@ int main(void)
 	float iqref = 0;
 	float idref = 0;
 
-	float theta_m_prev = 0;
-	theta_enc_prev = theta_abs_rad();
 
 	/*
 	 * NOTE:
@@ -151,7 +149,9 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
-	check_encoder_region();
+	float comp_angle = check_encoder_region();
+	float theta_m_prev = comp_angle;
+	theta_enc_prev = comp_angle;
 
 	while(1)
 	{
@@ -167,6 +167,7 @@ int main(void)
 			iqref = -MAX_CUR;
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
+
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -237,7 +238,7 @@ void find_raw_encoder_angle(float angle, uint32_t timeout)
  * check and correct the encoder region for KMZ60 encoder. Necessary because encoder returns
  * twice the actual angle
  */
-void check_encoder_region()
+float check_encoder_region()
 {
 	uint32_t ts = HAL_GetTick();
 	theta_enc_prev = theta_abs_rad();
@@ -248,7 +249,9 @@ void check_encoder_region()
 	}
 	float theta_enc_end = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;
 	if(theta_enc_end - theta_enc_start < 0)
-		align_offset = -align_offset;	//same as add pi. this value relates the electrical angle to the encoder angle
+		return -TWO_PI;
+	else
+		return 0;
 }
 
 
