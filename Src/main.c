@@ -170,7 +170,9 @@ int main(void)
 	float theta_m_prev = comp_angle;
 	theta_enc_prev = comp_angle;
 
-//	test_foc();
+#ifdef TEST_FOC
+	test_foc();
+#endif
 
 	while(1)
 	{
