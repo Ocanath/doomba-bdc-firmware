@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 9	//module num for preset encoder offset
+#define MODULE_NUMBER 11	//module num for preset encoder offset
 
 
 #if MODULE_NUMBER==0
@@ -102,5 +102,21 @@ const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (p
 int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
-
-
+#if MODULE_NUMBER == 10							//grapple spooler
+float align_offset = 0;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 1912;
+int16_t sin_mid = 2054;
+#endif
+#if MODULE_NUMBER == 11							//gibbon gearbox 1
+float align_offset = 0;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 1912;
+int16_t sin_mid = 2054;
+#endif
