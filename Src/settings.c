@@ -112,7 +112,7 @@ int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
 #if MODULE_NUMBER == 11							//gibbon gearbox 1
-float align_offset = 0;
+float align_offset = -0.17531758;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
