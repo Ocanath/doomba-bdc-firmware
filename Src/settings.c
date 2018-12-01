@@ -11,7 +11,7 @@
 
 
 #if MODULE_NUMBER==0
-float align_offset = -2.69547725;				//original leg hip motor
+float align_offset = -2.69547725;				//original leg hip motor (dyna leg module 0)
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
@@ -20,7 +20,7 @@ int16_t cos_mid = 1986;
 int16_t sin_mid = 2006;
 #endif
 #if MODULE_NUMBER==1
-float align_offset = -0.296428591;				//original leg knee motor
+float align_offset = -0.296428591;				//original leg knee motor (dyna leg module 1)
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+1;
@@ -64,7 +64,7 @@ const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (p
 int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
-#if MODULE_NUMBER == 6							//ms4822 3mm magnet
+#if MODULE_NUMBER == 6							//ms4822 3mm magnet (dynacat module number 6 i hope)
 //float align_offset = -0.264224828;				//
 float align_offset = -0.273223341;
 const float iq_gain = 0.01;
