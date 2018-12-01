@@ -177,9 +177,12 @@ int main(void)
 	while(1)
 	{
 		handle_i2c();
-		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
 
-		float * f_addr = (float *)(&data_in);
+
+//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+//		float * f_addr = (float *)(&data_in);
+//		iqref = *f_addr;
+		float * f_addr = (float *)(i2c_rx_data);
 		iqref = *f_addr;
 
 		if(iqref > MAX_CUR)
@@ -218,13 +221,17 @@ int main(void)
 
 
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
-		uint32_t * d_addr = (uint32_t *)(&theta_m);
-		uint32_t tx_data = *d_addr;
-		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
-		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
-		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
-		i2c_tx_data[3] = (tx_data & 0x000000FF);
-
+//		uint32_t * d_addr = (uint32_t *)(&theta_m);
+//		uint32_t tx_data = *d_addr;
+//		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
+//		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
+//		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
+//		i2c_tx_data[3] = (tx_data & 0x000000FF);
+		uint8_t * ptr = (uint8_t *)(&theta_m);
+		i2c_tx_data[0] = ptr[0];
+		i2c_tx_data[1] = ptr[1];
+		i2c_tx_data[2] = ptr[2];
+		i2c_tx_data[3] = ptr[3];	//i formatted this in reverse
 
 		if(HAL_GetTick()>=led_ts)
 		{
