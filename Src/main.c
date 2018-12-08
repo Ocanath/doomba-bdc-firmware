@@ -219,8 +219,11 @@ int main(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 		/**********************************************END**********************************************/
 
-
+#ifndef USING_OLD_ENCODER
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev);
+#else
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+#endif
 //		uint32_t * d_addr = (uint32_t *)(&theta_m);
 //		uint32_t tx_data = *d_addr;
 //		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
@@ -228,10 +231,10 @@ int main(void)
 //		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
 //		i2c_tx_data[3] = (tx_data & 0x000000FF);
 		uint8_t * ptr = (uint8_t *)(&theta_m);
-		i2c_tx_data[0] = ptr[0];
-		i2c_tx_data[1] = ptr[1];
-		i2c_tx_data[2] = ptr[2];
-		i2c_tx_data[3] = ptr[3];	//i formatted this in reverse
+		i2c_tx_data[0] = ptr[0];	//i did this to keep i2c_tx_data in the same place
+		i2c_tx_data[1] = ptr[1];	//however, just changing it's base pointer
+		i2c_tx_data[2] = ptr[2];	//is probably totally fine
+		i2c_tx_data[3] = ptr[3];
 
 		if(HAL_GetTick()>=led_ts)
 		{

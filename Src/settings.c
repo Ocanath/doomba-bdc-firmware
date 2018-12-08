@@ -15,7 +15,8 @@ float align_offset = -2.69547725;				//original leg hip motor (dyna leg module 0
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
-const float num_pole_pairs = 11.0;	//MS4822
+//const float num_pole_pairs = 11.0;	//MS4822
+const float elec_conv_ratio = 11.0;	//MS4822 has 11 pole pairs.
 int16_t cos_mid = 1986;
 int16_t sin_mid = 2006;
 #endif
@@ -24,7 +25,8 @@ float align_offset = -0.296428591;				//original leg knee motor (dyna leg module
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+1;
-const float num_pole_pairs = 11.0;	//MS4822
+//const float num_pole_pairs = 11.0;	//MS4822
+const float elec_conv_ratio = 11.0;	//MS4822 has 11 pole pairs
 int16_t cos_mid = 1986;
 int16_t sin_mid = 2006;
 #endif
