@@ -1,5 +1,5 @@
 #include "main.h"
-#include "stm32f0xx_hal.h"
+#include "init.h"
 #include "adc.h"
 #include "delay_uS.h"
 #include "foc_commutation.h"
@@ -28,41 +28,12 @@
  * used pointer logic instead of memcpy
  *
  * NOTES:
- * there is a serious i2c bug which occurs when more than 1 device is on the bus at once.
- * THIS HAS BEEN VERY CHALLENGING TO DEBUG.
- * if there is only 1 device, no problems. as soon as 2 are juggled at once (on the nrf middleman) it has this 'popping' effect where the motors... pop and jitter
- *
  *
  * THINGS TO TRY:
  * try on F3, since blocking doesn't work on the f0 middleman and it did work on the f3
  * try using floating point divide instead of copying and reformatting a whole float.
  * if all else fails, try SPI
  *
- */
-
-
-/*
-char msg_buf[32];
-void print_string(char * c)
-{
-	int i;
-	for(i=0; c[i] != 0; i++);
-	HAL_UART_Transmit(&huart1, (uint8_t*)c, i, 100);
-}
-void print_int16(int16_t val)
-{
-	msg_buf[0] = (val & 0x00FF);
-	msg_buf[1] = (val & 0xFF00)>>8;
-	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 2, 100);
-}
-void print_int32(int32_t val)
-{
-	msg_buf[0] = (val & 0x00FF);
-	msg_buf[1] = (val & 0xFF00)>>8;
-	msg_buf[2] = (val & 0xFF0000)>>16;
-	msg_buf[3] = (val & 0xFF000000)>>24;
-	HAL_UART_Transmit(&huart1, (uint8_t*)msg_buf, 4, 100);
-}
  */
 
 
@@ -113,7 +84,7 @@ int main(void)
 	TIMER_UPDATE_DUTY(0,0,0);
 	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
-	HAL_ADC_Start_DMA(&hadc, (uint32_t *)dma_adc_raw, NUM_ADC);
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
 	//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
 
 	HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
