@@ -219,7 +219,7 @@ int main(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 		/**********************************************END**********************************************/
 
-#ifndef USING_OLD_ENCODER
+#ifdef USING_OLD_ENCODER
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev);
 #else
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
