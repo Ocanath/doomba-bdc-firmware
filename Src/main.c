@@ -1,7 +1,6 @@
 #include "main.h"
 #include "init.h"
 #include "adc.h"
-#include "delay_uS.h"
 #include "foc_commutation.h"
 #include "mag-encoder.h"
 #include "i2c.h"
@@ -63,15 +62,12 @@ int main(void)
 
 	MX_GPIO_Init();
 	MX_DMA_Init();
-	MX_ADC_Init();
+	MX_ADC1_Init();
 	MX_I2C1_Init();
 	//	MX_SPI1_Init();
 	//	MX_USART1_UART_Init();
 	MX_TIM1_Init();
-	MX_TIM14_Init();
 
-	HAL_TIM_Base_Start(&htim14);
-	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
 
 //	start_pwm();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);

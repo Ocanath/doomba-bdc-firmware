@@ -70,7 +70,7 @@ void SystemClock_Config(void)
 
 
 /* ADC1 init function */
-static void MX_ADC1_Init(void)
+void MX_ADC1_Init(void)
 {
 
 	ADC_ChannelConfTypeDef sConfig;

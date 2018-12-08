@@ -7,7 +7,7 @@
 
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
-#include "stm32f0xx_hal.h"
+#include "stm32f3xx_hal.h"
 
 //#define GET_INIT_OFFSET
 //#define GET_ENCODER_MIDPOINT

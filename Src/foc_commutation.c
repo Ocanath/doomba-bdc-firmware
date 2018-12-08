@@ -7,7 +7,6 @@
 #include "foc_commutation.h"
 #include "adc.h"
 //#include <math.h>
-#include "delay_uS.h"
 #include "mag-encoder.h"
 float mL = 0;
 float mR = 0;
