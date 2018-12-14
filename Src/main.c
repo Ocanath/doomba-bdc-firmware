@@ -66,7 +66,7 @@ void print_int32(int32_t val)
  */
 
 
-float check_encoder_region();
+void check_encoder_region();
 void align_offset_test();
 
 void test_foc()
@@ -102,7 +102,7 @@ int main(void)
 	HAL_TIM_Base_Start(&htim14);
 	HAL_TIM_PWM_Start_IT(&htim14, TIM_CHANNEL_1);
 
-//	start_pwm();
+	//	start_pwm();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -136,7 +136,7 @@ int main(void)
 	obtain_encoder_midpoints();
 #endif
 #ifdef GET_INIT_OFFSET
-//	obtain_encoder_offset();
+	//	obtain_encoder_offset();
 	align_offset_test();
 #endif
 
@@ -166,9 +166,9 @@ int main(void)
 	 * in the wrong region.
 	 */
 
-	float comp_angle = check_encoder_region();
-	float theta_m_prev = comp_angle;
-	theta_enc_prev = comp_angle;
+	check_encoder_region();
+	float theta_m_prev = theta_enc_prev;
+
 
 #ifdef TEST_FOC
 	test_foc();
@@ -179,9 +179,9 @@ int main(void)
 		handle_i2c();
 
 
-//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
-//		float * f_addr = (float *)(&data_in);
-//		iqref = *f_addr;
+		//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+		//		float * f_addr = (float *)(&data_in);
+		//		iqref = *f_addr;
 		float * f_addr = (float *)(i2c_rx_data);
 		iqref = *f_addr;
 
@@ -224,12 +224,12 @@ int main(void)
 #else
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 #endif
-//		uint32_t * d_addr = (uint32_t *)(&theta_m);
-//		uint32_t tx_data = *d_addr;
-//		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
-//		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
-//		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
-//		i2c_tx_data[3] = (tx_data & 0x000000FF);
+		//		uint32_t * d_addr = (uint32_t *)(&theta_m);
+		//		uint32_t tx_data = *d_addr;
+		//		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
+		//		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
+		//		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
+		//		i2c_tx_data[3] = (tx_data & 0x000000FF);
 		uint8_t * ptr = (uint8_t *)(&theta_m);
 		i2c_tx_data[0] = ptr[0];	//i did this to keep i2c_tx_data in the same place
 		i2c_tx_data[1] = ptr[1];	//however, just changing it's base pointer
@@ -267,27 +267,82 @@ void find_raw_encoder_angle(float angle, uint32_t timeout)
 
 /*
  * check and correct the encoder region for KMZ60 encoder. Necessary because encoder returns
- * twice the actual angle
+ * twice the actual angle, meaning that 1/2 of the time, sin and cosine will be the SAME value
+ * for 2 DIFFERENT motor angles. This means that FOC will think positive is positive 1/2 the time,
+ * and positive is negative the other half of the time.
+ *
+ * This function operates by performing a local position control loop. The setpoint is the current
+ * motor position with a slight positive offset. This is so that the initial 'jerk' from the motor is not
+ * great. It will try position control. If the error exceeds some threshold (greater than the guaranteed
+ * inital error for a still motor) it knows that it's spinning the wrong way. It will then reverse the
+ * motor direction by compensating for the INCORRECT initial error, and guard direction reversals for
+ * a period of time. If the motor reaches it's setpoint (to within an acceptable margin) for some time,
+ * this function will return. If not, it will try reversing again, and allow for a longer period of time
+ * before to try and settle.
+ *
+ * I have tested this on a gearbox motor. It is surprisingly reliable, and usually settles in less than half
+ * a second unless a significant load is applied.
+ *
+ * The driver light will stay on until completion and blink during normal operation; additionally, it will not
+ * parse i2c commands. If both lights are on, the driver is almost certainly calling this function. If it is calling
+ * it indefinitely, you should try and guide the motor by hand to 'help it out'
+ *
+ *
  */
-float check_encoder_region()
- {
+void check_encoder_region()
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	uint32_t ts = HAL_GetTick();
-	theta_enc_prev = theta_abs_rad();
-	float theta_enc_start = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;	//on your marks...
+	float theta_m_prev = 0;
+	float theta_set = (unwrap(theta_abs_rad(), &theta_m_prev)*.5)+.4;	//get the initial position and use it to set the motor setpoint.
+	float err = 0;
+	uint32_t try_ts = 100;
+	uint32_t off_ts = 0;
+	while(1)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+		err = theta_set-theta_m;		// and error
+		float tau = 30*err;				//position control
+		if(tau > 50)
+			tau = 50;
+		if(tau < -50)
+			tau = -50;
+		foc(tau,0);
 
-	int i;
-	for(i=0;i<5;i++)
-		foc(50,0);
+		if(err < 0)
+			err = -err;		//get the absolute value of the error
 
-	float theta_enc_end = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;
-	if(theta_enc_end - theta_enc_start < 0)
-		return -TWO_PI;
-	else
-		return 0;
+		if(err > .6 && HAL_GetTick() > ts)	//if the error is great and you haven't tried for some time, reverse the direction
+		{
+			theta_enc_prev -= TWO_PI;
+			ts = HAL_GetTick()+try_ts;
+			try_ts+=50;	//if you failed on the last attempt, try for just a liiitle bit longer. This improves stability (i.e. no infinite oscillations if you're significantly out of bounds)
+		}
+
+		if(err > .1)	//if the error is great,
+			off_ts = HAL_GetTick();	//set the timestamp
+		else
+		{
+			if(HAL_GetTick() - off_ts > 50)	//if you've settled (low error for an acceptable time) break
+			{
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+				break;
+			}
+		}
+	}
 }
 
 
-
+/*
+ * Unreliable, but generally superior to the angle lock method.
+ * This test finds the angle init offset. to use, call and set
+ * a breakpoint sometime after completion.
+ *
+ * OUTPUTS:
+ * ao_neg
+ * ao_pos
+ *
+ */
 float ao_pos = 0;
 float ao_neg = 0;
 void align_offset_test()
@@ -331,7 +386,7 @@ void align_offset_test()
 		prev_rotation_num = rotation_num;
 		theta_unwrapped_prev = theta_m;
 	}
-//	align_offset = ao_pos;
+	//	align_offset = ao_pos;
 	align_offset = (ao_pos - ao_neg)*.5;
 	TIMER_UPDATE_DUTY(0,0,0);
 }
