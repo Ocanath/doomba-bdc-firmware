@@ -209,7 +209,7 @@ void get_current_cal_offsets()
 	gl_current_input_offset_B = 0;
 	gl_current_input_offset_C = 0;
 	int i;
-	const int numSamples = 1000;
+	const int numSamples = 300;
 	for(i=0;i<numSamples;i++)
 	{
 		gl_current_input_offset_A += dma_adc_raw[ADC_CHAN_CURRENT_A];
