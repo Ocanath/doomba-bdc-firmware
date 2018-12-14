@@ -274,10 +274,11 @@ float check_encoder_region()
 	uint32_t ts = HAL_GetTick();
 	theta_enc_prev = theta_abs_rad();
 	float theta_enc_start = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;	//on your marks...
-	while(HAL_GetTick() < ts + 10)
-	{
-		foc(12,0);
-	}
+
+	int i;
+	for(i=0;i<5;i++)
+		foc(50,0);
+
 	float theta_enc_end = unwrap( theta_rel_rad(), &theta_enc_prev)*.5;
 	if(theta_enc_end - theta_enc_start < 0)
 		return -TWO_PI;
