@@ -174,23 +174,38 @@ int main(void)
 	test_foc();
 #endif
 
+	uint32_t phase_ts = HAL_GetTick()+4000;
+	float q=0;
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	while(HAL_GetTick() < phase_ts)
+	{
+//		tau[0] = -5.5;
+//		handle_i2c_motor_chain(&hi2c1, I2C_BASE, NUM_MOTORS_ON_BUS, q, tau);	//note that the base address is NOT pre-shifted!!!
+		foc(-5.5,0);
+		q = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+	}
+	float q_offset = q;
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	uint32_t t_ts = HAL_GetTick();
+
 	while(1)
 	{
-		handle_i2c();
 
-
-		//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
-		//		float * f_addr = (float *)(&data_in);
-		//		iqref = *f_addr;
-		float * f_addr = (float *)(i2c_rx_data);
-		iqref = *f_addr;
-
-		if(iqref > MAX_CUR)
-			iqref = MAX_CUR;
-		else if (iqref < -MAX_CUR)
-			iqref = -MAX_CUR;
-		if(HAL_GetTick() > recieved_data_ts + 100)
-			iqref = 0;
+//		handle_i2c();
+//
+//
+//		//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+//		//		float * f_addr = (float *)(&data_in);
+//		//		iqref = *f_addr;
+//		float * f_addr = (float *)(i2c_rx_data);
+//		iqref = *f_addr;
+//
+//		if(iqref > MAX_CUR)
+//			iqref = MAX_CUR;
+//		else if (iqref < -MAX_CUR)
+//			iqref = -MAX_CUR;
+//		if(HAL_GetTick() > recieved_data_ts + 100)
+//			iqref = 0;
 
 
 		/****************************************FOC functional block*************************************/
@@ -242,6 +257,23 @@ int main(void)
 			led_state = !led_state & 1;
 			led_ts = HAL_GetTick() + 200;
 		}
+
+
+
+		float t = (float)(HAL_GetTick()-t_ts)*.001;
+		float sin_arg = t*2 - HALF_PI;
+		float theta_set = 16.3*(sin_fast(fmod_2pi(sin_arg + PI) - PI)+1.0);
+
+		q = theta_m;	//hopefully compiler will optimize this out
+		float  err = theta_set - (q-q_offset);
+		iqref = 15*err;// - dtheta/dt*0.2;
+		const float cur_limit = 50;	//new
+		if(iqref > cur_limit)
+			iqref = cur_limit;
+		if(iqref < -cur_limit)
+			iqref = -cur_limit;
+
+
 	}
 
 }
