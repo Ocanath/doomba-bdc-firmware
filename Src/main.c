@@ -261,12 +261,12 @@ int main(void)
 
 
 		float t = (float)(HAL_GetTick()-t_ts)*.001;
-		float sin_arg = t*2 - HALF_PI;
+		float sin_arg = t*2.5 - HALF_PI;
 		float theta_set = 16.3*(sin_fast(fmod_2pi(sin_arg + PI) - PI)+1.0);
 
 		q = theta_m;	//hopefully compiler will optimize this out
 		float  err = theta_set - (q-q_offset);
-		iqref = 15*err;// - dtheta/dt*0.2;
+		iqref = 10*err;// - dtheta/dt*0.2;
 		const float cur_limit = 50;	//new
 		if(iqref > cur_limit)
 			iqref = cur_limit;
