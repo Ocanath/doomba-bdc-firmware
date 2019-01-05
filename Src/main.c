@@ -165,14 +165,15 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
+#ifdef TEST_FOC
+	test_foc();
+#endif
+
 
 	check_encoder_region();
 	float theta_m_prev = theta_enc_prev;
 
 
-#ifdef TEST_FOC
-	test_foc();
-#endif
 
 	while(1)
 	{
