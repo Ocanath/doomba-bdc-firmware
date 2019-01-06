@@ -142,7 +142,7 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-	float x_iq_PI = 0;	//torque pi state
+	float x_iq_PI = 0;	//torque pi state`
 	float x_id_PI = 0;	//flux pi state
 	float uq = 0;
 	float ud = 0;

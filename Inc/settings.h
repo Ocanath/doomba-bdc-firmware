@@ -11,7 +11,7 @@
 
 //#define GET_INIT_OFFSET
 //#define GET_ENCODER_MIDPOINT
-//#define TEST_FOC
+#define TEST_FOC
 
 //#define USING_OLD_ENCODER
 
