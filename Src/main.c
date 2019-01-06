@@ -69,7 +69,7 @@ int main(void)
 	MX_TIM1_Init();
 
 
-//	start_pwm();
+	//	start_pwm();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -109,7 +109,7 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-	float x_iq_PI = 0;	//torque pi state
+	float x_iq_PI = 0;	//torque pi state`
 	float x_id_PI = 0;	//flux pi state
 	float uq = 0;
 	float ud = 0;
@@ -132,23 +132,32 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
+<<<<<<< HEAD
 
 	check_encoder_region();
 	float theta_m_prev = theta_enc_prev;
 
 
+=======
+>>>>>>> 3d156384f041d34d3aaf49abb33b571b70ea502e
 #ifdef TEST_FOC
 	test_foc();
 #endif
+
+
+	check_encoder_region();
+	float theta_m_prev = theta_enc_prev;
+
+
 
 	while(1)
 	{
 		handle_i2c();
 
 
-//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
-//		float * f_addr = (float *)(&data_in);
-//		iqref = *f_addr;
+		//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+		//		float * f_addr = (float *)(&data_in);
+		//		iqref = *f_addr;
 		float * f_addr = (float *)(i2c_rx_data);
 		iqref = *f_addr;
 
@@ -186,6 +195,10 @@ int main(void)
 		/**********************************************END**********************************************/
 
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+<<<<<<< HEAD
+=======
+#endif
+>>>>>>> 3d156384f041d34d3aaf49abb33b571b70ea502e
 		//		uint32_t * d_addr = (uint32_t *)(&theta_m);
 		//		uint32_t tx_data = *d_addr;
 		//		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
@@ -295,8 +308,21 @@ void check_encoder_region()
 }
 
 
+<<<<<<< HEAD
 
 
+=======
+/*
+ * Unreliable, but generally superior to the angle lock method.
+ * This test finds the angle init offset. to use, call and set
+ * a breakpoint sometime after completion.
+ *
+ * OUTPUTS:
+ * ao_neg
+ * ao_pos
+ *
+ */
+>>>>>>> 3d156384f041d34d3aaf49abb33b571b70ea502e
 float ao_pos = 0;
 float ao_neg = 0;
 void align_offset_test()

@@ -1,3 +1,8 @@
 /Debug/
+<<<<<<< HEAD
 .settings/language.settings.xml
 .settings
+=======
+.settings/
+.settings/language.settings.xml
+>>>>>>> 3d156384f041d34d3aaf49abb33b571b70ea502e
