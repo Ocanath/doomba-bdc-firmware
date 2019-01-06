@@ -221,6 +221,10 @@ void get_current_cal_offsets()
 	gl_current_input_offset_C /= numSamples;
 }
 
+float time_seconds()
+{
+	return ((float)HAL_GetTick())*.001;
+}
 
 void obtain_encoder_midpoints()
 {
