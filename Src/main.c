@@ -133,7 +133,7 @@ int main(void)
 
 
 #ifdef GET_ENCODER_MIDPOINT
-	obtain_encoder_midpoints();
+	obtain_encoder_midpoints(1,30);
 #endif
 #ifdef GET_INIT_OFFSET
 	//	obtain_encoder_offset();
@@ -261,7 +261,7 @@ int main(void)
 
 
 		float t = (float)(HAL_GetTick()-t_ts)*.001;
-		float sin_arg = t*2.5 - HALF_PI;
+		float sin_arg = t*3 - HALF_PI;
 		float theta_set = 16.3*(sin_fast(fmod_2pi(sin_arg + PI) - PI)+1.0);
 
 		q = theta_m;	//hopefully compiler will optimize this out
