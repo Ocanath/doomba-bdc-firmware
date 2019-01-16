@@ -133,13 +133,24 @@ int main(void)
 	 * in the wrong region.
 	 */
 
-	check_encoder_region();
-	float theta_m_prev = theta_enc_prev;
-
+	//	for(align_offset = -.135; align_offset < -0.125; align_offset += .0005)
+	//	{
+	//		led_ts = HAL_GetTick()+1000;
+	//		while(HAL_GetTick()<led_ts)
+	//			foc(60,0);
+	//		led_ts = HAL_GetTick()+1000;
+	//		while(HAL_GetTick()<led_ts)
+	//			foc(-60,0);
+	//
+	//	}
 
 #ifdef TEST_FOC
 	test_foc();
 #endif
+
+	check_encoder_region();
+	float theta_m_prev = theta_enc_prev;
+
 
 	while(1)
 	{

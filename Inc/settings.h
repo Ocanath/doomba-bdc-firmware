@@ -13,6 +13,10 @@
 //#define GET_ENCODER_MIDPOINT
 //#define TEST_FOC
 
+//#define GIMBAL_MOTOR
+
+float enc_mid_voltage_amp;
+
 uint32_t i2c_address;
 const float iq_gain;
 const float id_gain;
