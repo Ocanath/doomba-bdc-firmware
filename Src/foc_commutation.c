@@ -234,11 +234,12 @@ float time_seconds()
 
 void obtain_encoder_midpoints()
 {
+	TIMER_UPDATE_DUTY(500,500,500);
 	float t_start = time_seconds();
 	uint16_t s_max = 0;
-	uint16_t s_min = 0xFFFF;
+	uint16_t s_min = 4096;
 	uint16_t c_max = 0;
-	uint16_t c_min = 0xFFFF;
+	uint16_t c_min = 4096;
 	while(time_seconds() - t_start < 30)
 	{
 		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)

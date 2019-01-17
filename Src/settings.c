@@ -140,11 +140,11 @@ int16_t sin_mid = 2011;
 #endif
 
 #if MODULE_NUMBER == 14							//gibbon gearbox 2 UNCALIBRATED
-float align_offset = .178;	//0.273627996, p-0.00627872162, n-0.553534687
+float align_offset = 0.115;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.1;	//need higher gain for higher resistance motor?
 const float id_gain = 0.05;
 uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 10.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 2015;
-int16_t sin_mid = 1948;
+int16_t cos_mid = 2020;
+int16_t sin_mid = 1951;
 #endif
