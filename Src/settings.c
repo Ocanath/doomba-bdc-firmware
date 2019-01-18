@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 14	//module num for preset encoder offset
+#define MODULE_NUMBER 15	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -121,13 +121,13 @@ int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
 #if MODULE_NUMBER == 11							//gibbon gearbox 1 UNCALIBRATED
-float align_offset = 0.40;
+float align_offset = 0.345;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 2029;		//NOTE that this is different, and that this varies probably with each unique device on which it is placed. try it on vishan?
-int16_t sin_mid = 1997;
+int16_t cos_mid = 1964;		//NOTE that this is different, and that this varies probably with each unique device on which it is placed. try it on vishan?
+int16_t sin_mid = 1988;
 #endif
 #if MODULE_NUMBER == 12							//gibbon gearbox 2 UNCALIBRATED
 float align_offset = 0.23;	//0.273627996, p-0.00627872162, n-0.553534687
@@ -135,10 +135,9 @@ const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 2029;
-int16_t sin_mid = 2011;
+int16_t cos_mid = 1956;
+int16_t sin_mid = 1980;
 #endif
-
 #if MODULE_NUMBER == 14							//gibbon gearbox 2 UNCALIBRATED
 float align_offset = 0.115;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.1;	//need higher gain for higher resistance motor?
@@ -147,4 +146,13 @@ uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 10.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
 int16_t cos_mid = 2020;
 int16_t sin_mid = 1951;
+#endif
+#if MODULE_NUMBER == 15
+float align_offset = 1.57079632679;	//0.273627996, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01;	//need higher gain for higher resistance motor?
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 0.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 2043;
+int16_t sin_mid = 1941;
 #endif
