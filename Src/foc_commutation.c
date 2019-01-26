@@ -261,7 +261,7 @@ void obtain_encoder_midpoints()
 		uint32_t tA,tB,tC;
 		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
-//		TIMER_UPDATE_DUTY(tA,tB,tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
 	}
 	TIMER_UPDATE_DUTY(0,0,0);
 	sin_mid = (s_max + s_min)/2;

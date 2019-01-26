@@ -159,6 +159,7 @@ int16_t sin_mid = 1941;
 #endif
 #if MODULE_NUMBER == 16		//AX2804 motor 1
 float align_offset = -0.655;
+//float align_offset = 0.114;
 const float iq_gain = 0.1;
 const float id_gain = 0.003;
 uint32_t i2c_address = I2C_BASE+0;

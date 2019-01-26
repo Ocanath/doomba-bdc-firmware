@@ -63,9 +63,9 @@ void obtain_encoder_midpoints();
 
 
 
-float theta_enc_prev;
-float x_iq_PI;
-float x_id_PI;
+extern float theta_enc_prev;
+extern float x_iq_PI;
+extern float x_id_PI;
 /*
  *	FOC loop for readability/cleanliness
  */

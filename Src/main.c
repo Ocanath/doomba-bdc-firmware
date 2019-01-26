@@ -18,6 +18,20 @@
 #define MAX_CUR 60.0
 
 
+/*TODO:
+ *
+ * sweep sinusoidal/Vhz across 1 ENTIRE motor rotation, and measure the average error between teh
+ * motor /dq aangle and the encoder angle
+ *
+ * This should be the align offset.
+ * thIs is also should be the morst reliable method
+ *
+ *^see function
+ *
+ *ALSO TODO:
+ *new branch which has UART tx, plotting functionality
+ */
+
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
  *
@@ -46,13 +60,87 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
+volatile float max_err;
+volatile float min_err;
+volatile float avg_err;
+
+float obtain_align_offset()
+{
+	max_err = 0;
+	min_err = 100000;
+	avg_err = 0;
+
+
+	float i_alpha,i_beta;
+	uint32_t tA,tB,tC;
+	float sin_theta = 0;
+	float cos_theta = 1;
+	inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+	HAL_Delay(1000);	//lock and settle
+
+	float theta_elec;
+	uint32_t num_samples = 0;
+	for(theta_elec = 0; theta_elec > -TWO_PI*2*elec_conv_ratio; theta_elec-=0.001074533)
+	{
+		num_samples++;
+		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
+
+		float err = theta_elec-theta_enc;
+		avg_err += err;
+
+		if(err < 0)
+			err = -err;
+		if(err > max_err)
+			max_err = err;
+		if(err < min_err)
+			min_err = err;
+
+		//HAL_Delay(5);
+	}
+	HAL_Delay(500);
+	for(theta_elec = -TWO_PI*2*elec_conv_ratio; theta_elec < 0; theta_elec+=0.001074533)
+	{
+		num_samples++;
+		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
+
+		float err = theta_elec-theta_enc;
+		avg_err += err;
+
+		if(err < 0)
+			err = -err;
+		if(err > max_err)
+			max_err = err;
+		if(err < min_err)
+			min_err = err;
+	}
+	avg_err = avg_err / ((float)(num_samples));
+	return avg_err/elec_conv_ratio;
+	//average error is in ELECTRICAL units!!!
+}
+
 void check_encoder_region();
 void align_offset_test();
 
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq = 10;
+	float iq = 15;
 	while(1)
 	{
 		if(HAL_GetTick() > reverse_ts)
@@ -106,6 +194,7 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
+//	align_offset = obtain_align_offset();
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
