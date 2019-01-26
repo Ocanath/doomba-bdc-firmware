@@ -36,15 +36,15 @@
  */
 
 
-//void brushed_tau(float tau)
-//{
-//	if(tau > 1)
-//		tau = 1;
-//	if(tau < -1)
-//		tau = -1;
-//	uint32_t offset = (int32_t)(tau*500.0f);
-//	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
-//}
+void brushed_tau(float tau)
+{
+	if(tau > 1)
+		tau = 1;
+	if(tau < -1)
+		tau = -1;
+	uint32_t offset = (int32_t)(tau*500.0f);
+	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
+}
 
 void check_encoder_region();
 void align_offset_test();
@@ -124,14 +124,6 @@ int main(void)
 
 	float iqref = 0;
 	float idref = 0;
-
-//	while(1)
-//	{
-//		float t = ((float)HAL_GetTick())*.001;
-//		float theta = fmod_2pi(t+PI)-PI;
-//		float tau = sin_fast(theta);
-//		brushed_tau(tau);
-//	}
 
 	/*
 	 * NOTE:
