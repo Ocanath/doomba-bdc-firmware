@@ -26,12 +26,17 @@ uint32_t recieved_data_ts = 0;
 
 uint8_t i2c_tx_data[TX_SIZE] = {0};
 uint8_t i2c_rx_data[RX_SIZE] = {0};
+uint32_t listen_lock_ts = 0;
 /*
  * called in main loop, performs state machine which will manage transmission and reception while properly managing the address interrupt.
  */
-void handle_i2c()
+void handle_i2c(I2C_HandleTypeDef * hi2c)
 {
-	HAL_I2C_EnableListen_IT(&hi2c1); //probably only need 1 call to this.
+	HAL_I2C_EnableListen_IT(hi2c); //probably only need 1 call to this.
+
+	if(hi2c->State != HAL_I2C_STATE_BUSY_TX_LISTEN && hi2c->State != HAL_I2C_STATE_BUSY_RX_LISTEN && hi2c->State != HAL_I2C_STATE_LISTEN)
+		listen_lock_ts = HAL_GetTick();
+
 	if(gl_i2c_mode == I2C_MODE_TRANSMIT)
 	{
 		HAL_I2C_Slave_Sequential_Transmit_IT(&hi2c1, i2c_tx_data, TX_SIZE, I2C_FIRST_AND_LAST_FRAME);
@@ -42,6 +47,15 @@ void handle_i2c()
 		HAL_I2C_Slave_Sequential_Receive_IT(&hi2c1, i2c_rx_data, RX_SIZE, I2C_FIRST_AND_LAST_FRAME);
 		gl_i2c_mode = I2C_MODE_WAIT;
 		recieved_data_ts = HAL_GetTick();
+	}
+	else
+	{
+		if(HAL_GetTick() - listen_lock_ts > 15)	//if you've been listening for a while for some instructions, but ur master has left you hanging, punch him in his fatass bitch mouth kill your fucking masters
+		{
+			//do something
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		}
+
 	}
 }
 

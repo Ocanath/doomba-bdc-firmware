@@ -26,7 +26,7 @@ uint8_t i2c_rx_data[RX_SIZE];
 
 uint32_t recieved_data_ts;
 
-void handle_i2c();
+void handle_i2c(I2C_HandleTypeDef * hi2c);
 void get_i2c_rx(uint8_t * rx_data);
 void get_i2c_tx(uint8_t * tx_data);
 

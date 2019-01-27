@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 16	//module num for preset encoder offset
+#define MODULE_NUMBER 11	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR

@@ -251,7 +251,7 @@ int main(void)
 
 	while(1)
 	{
-		handle_i2c();
+		handle_i2c(&hi2c1);
 
 
 //		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
