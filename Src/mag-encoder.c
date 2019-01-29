@@ -8,7 +8,7 @@
 #include "settings.h"
 
 //#define HIGH_ACCURACY_SIN
-
+float theta_m_prev;
 
 float atan2_approx(float sinVal, float cosVal)
 {

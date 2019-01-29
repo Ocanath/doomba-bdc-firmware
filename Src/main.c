@@ -1,3 +1,4 @@
+
 #include "main.h"
 #include "init.h"
 #include "adc.h"
@@ -6,6 +7,8 @@
 #include "i2c.h"
 #include <string.h>
 #include "settings.h"
+
+
 
 #define BRAKE 0
 #define STOP 1
@@ -60,6 +63,19 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
+void print_float(float v)
+{
+	uint8_t * ptr = (uint8_t * )(&v);
+	HAL_UART_Transmit(&huart2, ptr, 4, 10);
+}
+void print_str(const char * str)
+{
+	int strlen;
+	for(strlen=0;str[strlen] != 0; strlen++);
+	HAL_UART_Transmit(&huart2, (uint8_t*)str, strlen, 10);
+}
+
+
 volatile float max_err;
 volatile float min_err;
 volatile float avg_err;
@@ -82,7 +98,8 @@ float obtain_align_offset()
 
 	float theta_elec;
 	uint32_t num_samples = 0;
-	for(theta_elec = 0; theta_elec > -TWO_PI*2*elec_conv_ratio; theta_elec-=0.001074533)
+	uint32_t print_ts = 0;
+	for(theta_elec = 0; theta_elec > -TWO_PI*2*elec_conv_ratio; theta_elec-=0.002)
 	{
 		num_samples++;
 		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
@@ -103,11 +120,19 @@ float obtain_align_offset()
 			max_err = err;
 		if(err < min_err)
 			min_err = err;
+
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(theta_elec);
+			print_float(theta_enc);
+			print_ts = HAL_GetTick()+1;
+		}
 
 		//HAL_Delay(5);
 	}
 	HAL_Delay(500);
-	for(theta_elec = -TWO_PI*2*elec_conv_ratio; theta_elec < 0; theta_elec+=0.001074533)
+	for(theta_elec = -TWO_PI*2*elec_conv_ratio; theta_elec < 0; theta_elec+=0.002)
 	{
 		num_samples++;
 		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
@@ -122,27 +147,46 @@ float obtain_align_offset()
 		float err = theta_elec-theta_enc;
 		avg_err += err;
 
+
 		if(err < 0)
 			err = -err;
 		if(err > max_err)
 			max_err = err;
 		if(err < min_err)
 			min_err = err;
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(theta_elec);
+			print_float(theta_enc);
+			print_ts = HAL_GetTick()+1;
+		}
 	}
 	avg_err = avg_err / ((float)(num_samples));
-	return avg_err/elec_conv_ratio;
+	return avg_err;
 	//average error is in ELECTRICAL units!!!
 }
 
 void check_encoder_region();
 void align_offset_test();
 
+
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
 	float iq = 15;
+	uint32_t print_ts = 0;
+	float th_m_prev = 0;
 	while(1)
 	{
+		float theta_m = unwrap(theta_abs_rad(), &th_m_prev)*.5;
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(theta_m);
+			print_float(theta_m-PI);
+			print_ts = HAL_GetTick()+1;
+		}
+
 		if(HAL_GetTick() > reverse_ts)
 		{
 			reverse_ts = HAL_GetTick()+2000;
@@ -163,8 +207,17 @@ int main(void)
 	MX_ADC1_Init();
 	MX_I2C1_Init();
 	MX_TIM1_Init();
+	MX_USART2_UART_Init();
 
-
+	if(sizeof(float) != 4)
+	{
+		while(1)
+		{
+			print_str("ERROR! INVALID FLOAT SIZE\r\n");
+			HAL_Delay(1000);
+		}
+	}
+//	print_str("\r\nHELLO WORLD I AM FOC\r\n");
 //	start_pwm();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
@@ -174,7 +227,7 @@ int main(void)
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 	TIMER_UPDATE_DUTY(0,0,0);
-	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
+	TIM1->CCR4 = 950;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
 	//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
@@ -195,6 +248,8 @@ int main(void)
 	int led_state = 1;
 
 //	align_offset = obtain_align_offset();
+//	TIMER_UPDATE_DUTY(500,500,500);
+//	while(1);
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -246,7 +301,7 @@ int main(void)
 #endif
 
 	check_encoder_region();
-	float theta_m_prev = theta_enc_prev;
+	theta_m_prev = theta_enc_prev;
 
 
 	while(1)
@@ -274,7 +329,8 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+//		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+		float theta_enc = unwrap(theta_rel_rad(), &theta_enc_prev);
 		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
@@ -305,6 +361,8 @@ int main(void)
 		i2c_tx_data[1] = ptr[1];	//however, just changing it's base pointer
 		i2c_tx_data[2] = ptr[2];	//is probably totally fine
 		i2c_tx_data[3] = ptr[3];
+
+		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
 
 		if(HAL_GetTick()>=led_ts)
 		{
@@ -476,5 +534,3 @@ void align_offset_test()
 		//		iqref = 5.0;
  *
  */
-
-

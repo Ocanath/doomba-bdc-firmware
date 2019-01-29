@@ -23,8 +23,10 @@
 
 const float rad_to_deg;
 
-int16_t cos_mid;
-int16_t sin_mid;
+extern float theta_m_prev;
+
+extern int16_t cos_mid;
+extern int16_t sin_mid;
 
 float theta_abs_rad();
 float theta_rel_rad();
