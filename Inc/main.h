@@ -49,6 +49,11 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define CAL_Pin GPIO_PIN_14
+#define CAL_GPIO_Port GPIOC
+#define ENABLE_Pin GPIO_PIN_15
+#define ENABLE_GPIO_Port GPIOC
+
 /* ########################## Assert Selection ############################## */
 /**
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 

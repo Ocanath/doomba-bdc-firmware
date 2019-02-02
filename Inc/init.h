@@ -16,11 +16,11 @@
 #define STAT_PORT GPIOC
 #define STAT_PIN GPIO_PIN_13
 
-#define CAL_PORT GPIOB
-#define CAL_PIN GPIO_PIN_8
+#define CAL_PORT GPIOC
+#define CAL_PIN GPIO_PIN_14
 
-#define ENABLE_PORT GPIOA
-#define ENABLE_PIN GPIO_PIN_11
+#define ENABLE_PORT GPIOC
+#define ENABLE_PIN GPIO_PIN_15
 
 
 ADC_HandleTypeDef hadc1;

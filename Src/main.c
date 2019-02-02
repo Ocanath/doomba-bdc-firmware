@@ -23,33 +23,22 @@
 
 /*TODO:
  *
- * sweep sinusoidal/Vhz across 1 ENTIRE motor rotation, and measure the average error between teh
- * motor /dq aangle and the encoder angle
+ *I2C gauntlet!!!
  *
- * This should be the align offset.
- * thIs is also should be the morst reliable method
+ *New align offset procedure:
+ *	-plot UART for a V/hz sinusoidal sweep, to obtain the dc offset (function exists).
+ *	-obtain the min and max with the above method. this is the range across which you align offset will probably sit
+ *	-sweep the min thru the max align offset, with FOC, back and forth. Plot iq over UART!!! Whichever align offset produces
+ *		the closest match for iq, is the selected offset.
  *
- *^see function
- *
- *ALSO TODO:
- *new branch which has UART tx, plotting functionality
  */
 
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
  *
- * CHanges:
- * added some preprocessor directives that make it easier to switch between motor drivers
- * changed to i2c fast mode
- * used pointer logic instead of memcpy
- *
- * NOTES:
- *
- * THINGS TO TRY:
- * try on F3, since blocking doesn't work on the f0 middleman and it did work on the f3
- * try using floating point divide instead of copying and reformatting a whole float.
- * if all else fails, try SPI
- *
+ *Version change. This is now v3 hardware.
+ *since we are using F302, uart is now compatible with SPI pins. We're taking advantage of this.
+ *I also wrote a brushed control, for shits and goggles.
  */
 
 
@@ -285,16 +274,6 @@ int main(void)
 	 * in the wrong region.
 	 */
 
-	//	for(align_offset = -.135; align_offset < -0.125; align_offset += .0005)
-	//	{
-	//		led_ts = HAL_GetTick()+1000;
-	//		while(HAL_GetTick()<led_ts)
-	//			foc(60,0);
-	//		led_ts = HAL_GetTick()+1000;
-	//		while(HAL_GetTick()<led_ts)
-	//			foc(-60,0);
-	//
-	//	}
 
 #ifdef TEST_FOC
 	test_foc();
@@ -362,7 +341,7 @@ int main(void)
 		i2c_tx_data[2] = ptr[2];	//is probably totally fine
 		i2c_tx_data[3] = ptr[3];
 
-		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
+//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
 
 		if(HAL_GetTick()>=led_ts)
 		{
