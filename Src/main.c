@@ -213,6 +213,27 @@ void test_foc()
 	}
 }
 
+
+/*
+ * Checks a candidate align_offset (global variable, used by the encoder)
+ * by producing a triangle speed waveform using constant positive and negative
+ * torques; i.e. positive tau_ref for run_time ms, negative tau_ref  for run_time ms.
+ * The function measures the position at the start of the waveform, the peak/tip of the
+ * triangle, and the endpoint. Since the torque is constant, the speed is determined by physical
+ * system (same conditions for both directions in an unloaded motor) and the quality of the align
+ * offset; therefore, for a good offset, the error between the start and endpoints should be minimal.
+ *
+ * However, some align offsets produce ZERO speed since they're so terrible. To factor this in, the
+ * midpoint is compared to the starting point; if the motor has not moved appreciably (a generous 1 radian)
+ * then the align offset is no good, and an arbitrary large error is returned.
+ *
+ *In general, the align offset which produces the smallest error that is LESS than a given threshold (1 rad or less)
+ *should be accepted.
+ *
+ *For motors with fixed encoder mounts, this function should be used in tandem with sweep_align.
+ *for motors with variable encoder mounts (and fixed align offset values) this function should
+ *relay visual feedback to a human operator, through the light and potentially a matlab plot.
+ */
 #define OUT_OF_BOUNDS_ERROR 1000000
 volatile float gl_error_print = 0;
 uint32_t print_ts=0;
@@ -245,7 +266,7 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 	//	mid_check_err &= ~0x80000000;
 	if(mid_check_err < 0)
 		mid_check_err = -mid_check_err;
-	if(mid_check_err < 3)	//if the motor didn't move during this sweep
+	if(mid_check_err < 1)	//if the motor didn't move during this sweep
 	{
 		gl_error_print = OUT_OF_BOUNDS_ERROR;
 		return gl_error_print;
@@ -285,7 +306,20 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 	return err;
 }
 
-float sweep_align_plot_iq(float align_neg, float align_pos)
+/*
+ * sweeps from the neg to pos candidate limits with check_align_offset. finds
+ * the align offset which produces the smallest absolute value error within bounds,
+ *  error being difference in position endpoints of a triangle waveform. i.e. you select
+ *  the offset which produces the same torque for positive and negative iq references.
+ *
+ *  The negative and positive limits can be obtained from obtain_align_offset (misnomer, and should
+ *  be named). This function is not guaranteed to produce valid limits, so if you have an uncooperative
+ *  motor, try from -PI/elec_conv_ratio to ZERO. this method also should be faster for motors with high
+ *  pole pair counts, such as the MS-4822
+ *
+ *
+ */
+float sweep_align(float align_neg, float align_pos)
 {
 	theta_m_prev = 0;
 	float max_err = 0;
@@ -369,12 +403,16 @@ int main(void)
 	obtain_encoder_midpoints();
 #endif
 #ifdef GET_INIT_OFFSET
+	/*	Depricated rubbish*/
 	//	obtain_encoder_offset();
 	//	align_offset_test();
 
+	/*Method one*/
 	float min_align_offset, max_align_offset;
 	obtain_align_offset(&min_align_offset, &max_align_offset );
-	align_offset = sweep_align_plot_iq(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
+	align_offset = sweep_align(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
+
+	/*Method two*/
 //	align_offset = sweep_align_plot_iq(-PI/elec_conv_ratio,0);
 
 #endif
