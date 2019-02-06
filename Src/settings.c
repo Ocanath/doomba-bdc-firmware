@@ -149,7 +149,7 @@ int16_t cos_mid = 2020;
 int16_t sin_mid = 1951;
 #endif
 #if MODULE_NUMBER == 15			//vishan
-float align_offset = -6.28318530718;
+float align_offset = -1.3;
 const float iq_gain = 0.01;
 const float id_gain = 0.003;
 uint32_t i2c_address = I2C_BASE+0;

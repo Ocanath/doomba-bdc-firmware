@@ -245,20 +245,22 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 	uint8_t dir_correct_flag = 1;
 	while(HAL_GetTick() < run_ts)
 	{
-		if(HAL_GetTick()>print_ts)
-		{
-			print_float(align_offset);
-			print_float(gl_error_print);
-			//should be able to throw in position too
-			print_ts = HAL_GetTick()+10;
-		}
-
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 		if(theta_m - prev_theta < 0)	//if speed is negative and direction is positive
 			dir_correct_flag = 0;
 		prev_theta = theta_m;
 
 		foc(tau_ref,0);
+
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			print_float(theta_m);
+			print_ts = HAL_GetTick()+10;
+		}
+
 	}
 
 	/*make sure we've picked an align offset that's not completely out of bounds, by checking that we've actually traveled an appreciable distance during phase 1*/
@@ -275,20 +277,21 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 	run_ts = HAL_GetTick() + run_time;
 	while(HAL_GetTick() < run_ts)
 	{
-		if(HAL_GetTick()>print_ts)
-		{
-			print_float(align_offset);
-			print_float(gl_error_print);
-			//should be able to throw in position too
-			print_ts = HAL_GetTick()+10;
-		}
-
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 		if(theta_m - prev_theta > 0)	//if speed is positive and direction is negative
 			dir_correct_flag = 0;
 		prev_theta = theta_m;
 
 		foc(-tau_ref,0);
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			print_float(theta_m);
+			//should be able to throw in position too
+			print_ts = HAL_GetTick()+10;
+		}
 	}
 
 	/*First, check to make sure you passed all edge condition flags*/
@@ -342,6 +345,19 @@ float sweep_align(float align_neg, float align_pos)
 			err = max_err;
 	}
 	return align_offset_of_min_error;
+}
+
+
+void manual_align_calib()
+{
+	while(1)
+	{
+		float err = check_align_offset(500, 10);
+		if(err < .5)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	}
 }
 
 int main(void)
@@ -416,6 +432,8 @@ int main(void)
 //	align_offset = sweep_align_plot_iq(-PI/elec_conv_ratio,0);
 
 #endif
+
+//	manual_align_calib();
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
