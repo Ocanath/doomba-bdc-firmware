@@ -13,6 +13,9 @@ float mR = 0;
 float V_psi = 0;
 float L;
 float R;
+float i_q_meas = 0;
+float i_d_meas = 0;
+
 
 #define ONE_BY_SQRT_3 	0.57735026919
 #define TWO_BY_SQRT_3 	1.15470053838

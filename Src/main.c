@@ -65,50 +65,64 @@ void print_str(const char * str)
 }
 
 
-volatile float max_err;
-volatile float min_err;
-volatile float avg_err;
-
-float obtain_align_offset()
+/*
+ * obtain the approximate location of the alignment offset
+ */
+float obtain_align_offset(float * min_err, float * max_err)
 {
-	max_err = 0;
-	min_err = 100000;
-	avg_err = 0;
+
+	*max_err = 0;
+	*min_err = 100000;
+	float avg_err = 0;
 
 
 	float i_alpha,i_beta;
 	uint32_t tA,tB,tC;
 	float sin_theta = 0;
 	float cos_theta = 1;
-	inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+	inverse_park_transform(.15, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	HAL_Delay(1000);	//lock and settle
+	float theta_elec=0;
+	float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
+	while(!(theta_enc < .05 && theta_enc > -.05))
+	{
+		theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
 
-	float theta_elec;
+		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		theta_elec += .003;
+	}
+
 	uint32_t num_samples = 0;
 	uint32_t print_ts = 0;
-	for(theta_elec = 0; theta_elec > -TWO_PI*2*elec_conv_ratio; theta_elec-=0.002)
+	for(theta_elec = 0; theta_elec > -TWO_PI*3*elec_conv_ratio; theta_elec-=0.003)
 	{
 		num_samples++;
 		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
 		cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
-		inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
+		theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
 
 		float err = theta_elec-theta_enc;
 		avg_err += err;
 
 		if(err < 0)
 			err = -err;
-		if(err > max_err)
-			max_err = err;
-		if(err < min_err)
-			min_err = err;
+		if(err > *max_err)
+			*max_err = err;
+		if(err < *min_err)
+			*min_err = err;
 
 
 		if(HAL_GetTick()>print_ts)
@@ -121,17 +135,17 @@ float obtain_align_offset()
 		//HAL_Delay(5);
 	}
 	HAL_Delay(500);
-	for(theta_elec = -TWO_PI*2*elec_conv_ratio; theta_elec < 0; theta_elec+=0.002)
+	for(theta_elec = -TWO_PI*3*elec_conv_ratio; theta_elec < 0; theta_elec+=0.003)
 	{
 		num_samples++;
 		float theta = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
 		cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
-		inverse_park_transform(.6, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-		float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
+		theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev)*elec_conv_ratio;
 
 		float err = theta_elec-theta_enc;
 		avg_err += err;
@@ -139,10 +153,10 @@ float obtain_align_offset()
 
 		if(err < 0)
 			err = -err;
-		if(err > max_err)
-			max_err = err;
-		if(err < min_err)
-			min_err = err;
+		if(err > *max_err)
+			*max_err = err;
+		if(err < *min_err)
+			*min_err = err;
 
 		if(HAL_GetTick()>print_ts)
 		{
@@ -152,37 +166,148 @@ float obtain_align_offset()
 		}
 	}
 	avg_err = avg_err / ((float)(num_samples));
+	avg_err = avg_err / elec_conv_ratio;
+	*max_err = *max_err / elec_conv_ratio;
+	*min_err = *min_err / elec_conv_ratio;
 	return avg_err;
 	//average error is in ELECTRICAL units!!!
 }
 
-void check_encoder_region();
+float check_encoder_region();
 void align_offset_test();
 
 
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq = 15;
+	float iq_ref = 15;
 	uint32_t print_ts = 0;
 	float th_m_prev = 0;
+	float th_tmp = 0;	//unwrap smashes unwrap.
 	while(1)
 	{
+
 		float theta_m = unwrap(theta_abs_rad(), &th_m_prev)*.5;
+
+		if( (theta_m - th_tmp > 0 && iq_ref > 0) || (theta_m - th_tmp < 0 && iq_ref < 0))
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		th_tmp = theta_m;
+
+
 		if(HAL_GetTick()>print_ts)
 		{
-			print_float(theta_m);
-			print_float(theta_m-PI);
-			print_ts = HAL_GetTick()+1;
+			//			print_float(theta_m);
+			//			print_float(theta_m-PI);
+			print_float(align_offset);
+			print_ts = HAL_GetTick()+10;
 		}
 
 		if(HAL_GetTick() > reverse_ts)
 		{
 			reverse_ts = HAL_GetTick()+2000;
-			iq = -iq;
+			iq_ref = -iq_ref;
 		}
-		foc(iq,0);
+		foc(iq_ref,0);
 	}
+}
+
+#define OUT_OF_BOUNDS_ERROR 1000000
+volatile float gl_error_print = 0;
+uint32_t print_ts=0;
+float check_align_offset(uint32_t run_time, float tau_ref)
+{
+	uint32_t run_ts = HAL_GetTick() + run_time;
+	float init_pos = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get the initial motor position
+	float prev_theta = 0;//need to track a second time for speed. unwrap smashes it
+	uint8_t dir_correct_flag = 1;
+	while(HAL_GetTick() < run_ts)
+	{
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			//should be able to throw in position too
+			print_ts = HAL_GetTick()+10;
+		}
+
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		if(theta_m - prev_theta < 0)	//if speed is negative and direction is positive
+			dir_correct_flag = 0;
+		prev_theta = theta_m;
+
+		foc(tau_ref,0);
+	}
+
+	/*make sure we've picked an align offset that's not completely out of bounds, by checking that we've actually traveled an appreciable distance during phase 1*/
+	float mid_check_err = init_pos - prev_theta;
+	//	mid_check_err &= ~0x80000000;
+	if(mid_check_err < 0)
+		mid_check_err = -mid_check_err;
+	if(mid_check_err < 3)	//if the motor didn't move during this sweep
+	{
+		gl_error_print = OUT_OF_BOUNDS_ERROR;
+		return gl_error_print;
+	}
+
+	run_ts = HAL_GetTick() + run_time;
+	while(HAL_GetTick() < run_ts)
+	{
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			//should be able to throw in position too
+			print_ts = HAL_GetTick()+10;
+		}
+
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		if(theta_m - prev_theta > 0)	//if speed is positive and direction is negative
+			dir_correct_flag = 0;
+		prev_theta = theta_m;
+
+		foc(-tau_ref,0);
+	}
+
+	/*First, check to make sure you passed all edge condition flags*/
+//	if(dir_correct_flag == 0)
+//	{
+//		gl_error_print = OUT_OF_BOUNDS_ERROR;
+//		return gl_error_print;	//if direction mismatch, return an out of bounds error.
+//	}
+
+	float final_pos = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+	float err = final_pos - init_pos;
+	if(err < 0)
+		err = -err;
+	gl_error_print = err;
+	return err;
+}
+
+float sweep_align_plot_iq(float align_neg, float align_pos)
+{
+	theta_m_prev = 0;
+	float max_err = 0;
+	float min_err = 1000;
+	float align_offset_of_min_error = align_offset;
+	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
+	{
+		float err = check_align_offset(333, 10);
+		if(err < 1)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		if(err < min_err)
+		{
+			min_err = err;
+			if(err < 1)	//if you're within range, new candidate for best align offset
+				align_offset_of_min_error = align_offset;
+		}
+		if(err > max_err)
+			err = max_err;
+	}
+	return align_offset_of_min_error;
 }
 
 int main(void)
@@ -206,8 +331,8 @@ int main(void)
 			HAL_Delay(1000);
 		}
 	}
-//	print_str("\r\nHELLO WORLD I AM FOC\r\n");
-//	start_pwm();
+	//	print_str("\r\nHELLO WORLD I AM FOC\r\n");
+	//	start_pwm();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -236,16 +361,22 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
-//	align_offset = obtain_align_offset();
-//	TIMER_UPDATE_DUTY(500,500,500);
-//	while(1);
+	//	align_offset = obtain_align_offset();
+	//	TIMER_UPDATE_DUTY(500,500,500);
+	//	while(1);
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
 #endif
 #ifdef GET_INIT_OFFSET
 	//	obtain_encoder_offset();
-	align_offset_test();
+	//	align_offset_test();
+
+	float min_align_offset, max_align_offset;
+	obtain_align_offset(&min_align_offset, &max_align_offset );
+	align_offset = sweep_align_plot_iq(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
+//	align_offset = sweep_align_plot_iq(-PI/elec_conv_ratio,0);
+
 #endif
 
 	TIMER_UPDATE_DUTY(0,0,0);
@@ -273,7 +404,14 @@ int main(void)
 	 * procedure needs to be developed so that the angle is corrected for if it is intialized
 	 * in the wrong region.
 	 */
-
+	//	TIMER_UPDATE_DUTY(0,0,0);
+	//	while(1)
+	//	{
+	//		print_float(1);
+	//		print_float(-1);
+	//		HAL_Delay(10);
+	//	}
+	theta_m_prev = 0;
 
 #ifdef TEST_FOC
 	test_foc();
@@ -288,9 +426,9 @@ int main(void)
 		handle_i2c(&hi2c1);
 
 
-//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
-//		float * f_addr = (float *)(&data_in);
-//		iqref = *f_addr;
+		//		uint32_t data_in = ((i2c_rx_data[0] << 24) | (i2c_rx_data[1] << 16) | (i2c_rx_data[2] << 8) | (i2c_rx_data[3]));
+		//		float * f_addr = (float *)(&data_in);
+		//		iqref = *f_addr;
 		float * f_addr = (float *)(i2c_rx_data);
 		iqref = *f_addr;
 
@@ -308,7 +446,7 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-//		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+		//		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
 		float theta_enc = unwrap(theta_rel_rad(), &theta_enc_prev);
 		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
@@ -341,7 +479,7 @@ int main(void)
 		i2c_tx_data[2] = ptr[2];	//is probably totally fine
 		i2c_tx_data[3] = ptr[3];
 
-//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
+		//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
 
 		if(HAL_GetTick()>=led_ts)
 		{
@@ -396,7 +534,7 @@ void find_raw_encoder_angle(float angle, uint32_t timeout)
  *
  *
  */
-void check_encoder_region()
+float check_encoder_region()
 {
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	uint32_t ts = HAL_GetTick();
@@ -437,6 +575,7 @@ void check_encoder_region()
 			}
 		}
 	}
+	return theta_enc_prev;
 }
 
 

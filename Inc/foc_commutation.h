@@ -69,6 +69,8 @@ extern float x_id_PI;
 /*
  *	FOC loop for readability/cleanliness
  */
+extern float i_q_meas;
+extern float i_d_meas;
 inline void foc(float iqref, float idref)
 {
 	float i_a,i_b,i_c;
@@ -83,12 +85,11 @@ inline void foc(float iqref, float idref)
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
 
-	float i_q, i_d;
-	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
 
 	float uq,ud;
-	controller_PI(iqref, i_q, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-	controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
+	controller_PI(iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+	controller_PI(idref, i_d_meas, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
 
 	uint32_t tA,tB,tC;
 	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta

@@ -68,3 +68,17 @@ hold off
 figure(3)
 plot(diff_offset/3.5)
 mean(diff_offset(547:3000)/3.5)
+
+
+%%
+close all
+figure(1)
+hold on
+plot(saved_data(1,:));
+% normalized_data = (saved_data(2,:)/max(saved_data(2,:))) - 1;
+% plot(normalized_data);
+% maxline = zeros(1,length(saved_data(2,:)));
+% maxline(1,:) = max(normalized_data);
+% plot(maxline);
+plot(saved_data(2,:));
+hold off
