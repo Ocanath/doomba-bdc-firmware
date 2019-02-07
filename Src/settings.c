@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 16	//module num for preset encoder offset
+#define MODULE_NUMBER 10	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -112,13 +112,13 @@ int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
 #if MODULE_NUMBER == 10							//grapple spooler, now cycle tester
-float align_offset = -0.155;
+float align_offset = -.42;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 1912;
-int16_t sin_mid = 2054;
+int16_t cos_mid = 2133;
+int16_t sin_mid = 2015;
 #endif
 #if MODULE_NUMBER == 11							//gibbon gearbox 1 UNCALIBRATED
 float align_offset = 0.345;
@@ -138,7 +138,6 @@ const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (p
 int16_t cos_mid = 1956;
 int16_t sin_mid = 1980;
 #endif
-
 #if MODULE_NUMBER == 14							//gimbal large
 float align_offset = 0.115;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.1;	//need higher gain for higher resistance motor?

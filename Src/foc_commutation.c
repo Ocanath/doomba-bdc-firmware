@@ -243,7 +243,7 @@ void obtain_encoder_midpoints()
 	uint16_t s_min = 4096;
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
-	while(time_seconds() - t_start < 30)
+	while(time_seconds() - t_start < 15)
 	{
 		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)
 			s_max = dma_adc_raw[ADC_SIN_CHAN];

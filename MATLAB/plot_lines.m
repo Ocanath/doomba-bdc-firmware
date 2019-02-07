@@ -20,6 +20,9 @@ for i = 1:num_lines
 end
 
 anim_line(1) = animatedline('Color','b');
+if(num_lines >= 3)
+    anim_line(2) = animatedline('Color',[.3 0 0]);
+end
 
 grid on;
 tic;

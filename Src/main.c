@@ -328,17 +328,17 @@ float sweep_align(float align_neg, float align_pos)
 	float max_err = 0;
 	float min_err = 1000;
 	float align_offset_of_min_error = align_offset;
-	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
+	for(align_offset = align_neg; align_offset < align_pos; align_offset += .008)
 	{
-		float err = check_align_offset(333, 10);
-		if(err < 1)
+		float err = check_align_offset(400, 15);
+		if(err < .3)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 		else
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 		if(err < min_err)
 		{
 			min_err = err;
-			if(err < 1)	//if you're within range, new candidate for best align offset
+			if(err < .3)	//if you're within range, new candidate for best align offset
 				align_offset_of_min_error = align_offset;
 		}
 		if(err > max_err)
@@ -353,7 +353,7 @@ void manual_align_calib()
 	while(1)
 	{
 		float err = check_align_offset(500, 10);
-		if(err < .5)
+		if(err < .25)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 		else
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
@@ -391,7 +391,7 @@ int main(void)
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 	TIMER_UPDATE_DUTY(0,0,0);
-	TIM1->CCR4 = 950;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
+	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
 	//	HAL_SPI_TransmitReceive_DMA(&hspi1, t_data, r_data,2);	//think need to change DMA settings to word from byte or half word
@@ -424,16 +424,16 @@ int main(void)
 	//	align_offset_test();
 
 	/*Method one*/
-	float min_align_offset, max_align_offset;
-	obtain_align_offset(&min_align_offset, &max_align_offset );
-	align_offset = sweep_align(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
+//	float min_align_offset, max_align_offset;
+//	obtain_align_offset(&min_align_offset, &max_align_offset );
+//	align_offset = sweep_align(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
 
 	/*Method two*/
-//	align_offset = sweep_align_plot_iq(-PI/elec_conv_ratio,0);
+	align_offset = sweep_align(-PI/elec_conv_ratio,0);
 
 #endif
 
-//	manual_align_calib();
+//	manual_align_calib();//-0.236198962
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
