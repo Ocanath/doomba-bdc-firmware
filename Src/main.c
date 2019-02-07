@@ -328,7 +328,7 @@ float sweep_align(float align_neg, float align_pos)
 	float max_err = 0;
 	float min_err = 1000;
 	float align_offset_of_min_error = align_offset;
-	for(align_offset = align_neg; align_offset < align_pos; align_offset += .008)
+	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
 	{
 		float err = check_align_offset(400, 15);
 		if(err < .3)
