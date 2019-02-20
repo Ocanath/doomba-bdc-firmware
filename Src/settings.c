@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 17	//module num for preset encoder offset
+#define MODULE_NUMBER 8	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -94,13 +94,13 @@ int16_t cos_mid = 1912;
 int16_t sin_mid = 2054;
 #endif
 #if MODULE_NUMBER == 8							//dyna leg module 8
-float align_offset = 0.190164273;
+float align_offset = -0.0661990345;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
-uint32_t i2c_address = I2C_BASE+6;
+uint32_t i2c_address = I2C_BASE+2;
 const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 1912;
-int16_t sin_mid = 2054;
+int16_t cos_mid = 2100;
+int16_t sin_mid = 1977;
 #endif
 #if MODULE_NUMBER == 9							//dyna leg module 9
 float align_offset = -0.419265962;

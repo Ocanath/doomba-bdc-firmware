@@ -48,15 +48,15 @@ void handle_i2c(I2C_HandleTypeDef * hi2c)
 		gl_i2c_mode = I2C_MODE_WAIT;
 		recieved_data_ts = HAL_GetTick();
 	}
-	else
-	{
-		if(HAL_GetTick() - listen_lock_ts > 15)	//if you've been listening for a while for some instructions, but ur master has left you hanging, punch him in his fatass bitch mouth kill your fucking masters
-		{
-			//do something
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-		}
-
-	}
+//	else
+//	{
+//		if(HAL_GetTick() - listen_lock_ts > 15)	//if you've been listening for a while for some instructions, but ur master has left you hanging, punch him in his fatass bitch mouth kill your fucking masters
+//		{
+//			//do something
+//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+//		}
+//
+//	}
 }
 
 /*
