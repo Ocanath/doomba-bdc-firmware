@@ -13,7 +13,7 @@
 //#define GET_ENCODER_MIDPOINT
 //#define TEST_FOC
 
-//#define GIMBAL_MOTOR
+#define GIMBAL_MOTOR
 
 float enc_mid_voltage_amp;
 

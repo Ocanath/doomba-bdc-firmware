@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 8	//module num for preset encoder offset
+#define MODULE_NUMBER 17	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -159,7 +159,6 @@ int16_t sin_mid = 1941;
 #if MODULE_NUMBER == 16		//AX2804 motor 1
 //float align_offset = -0.653;		//good offset
 float align_offset = .2452;
-
 const float iq_gain = 0.15;
 const float id_gain = 0.003;
 uint32_t i2c_address = I2C_BASE+0;
@@ -168,13 +167,11 @@ int16_t cos_mid = 2026;
 int16_t sin_mid = 1950;
 #endif
 #if MODULE_NUMBER == 17
-float align_offset = -0.106199056;
-const float iq_gain = 0.01;
-const float id_gain = 0.001;
+float align_offset = -0.572598219;
+const float iq_gain = 0.15;
+const float id_gain = 0.003;
 uint32_t i2c_address = I2C_BASE+0;
-const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
-int16_t cos_mid = 2027;
-int16_t sin_mid = 1933;
+const float elec_conv_ratio = 3.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 2127;
+int16_t sin_mid = 2011;
 #endif
-
-

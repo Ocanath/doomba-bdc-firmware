@@ -330,7 +330,7 @@ float sweep_align(float align_neg, float align_pos)
 	float align_offset_of_min_error = align_offset;
 	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
 	{
-		float err = check_align_offset(400, 15);
+		float err = check_align_offset(400, 10);
 		if(err < .3)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 		else
@@ -338,7 +338,7 @@ float sweep_align(float align_neg, float align_pos)
 		if(err < min_err)
 		{
 			min_err = err;
-			if(err < .3)	//if you're within range, new candidate for best align offset
+			if(err < .5)	//if you're within range, new candidate for best align offset
 				align_offset_of_min_error = align_offset;
 		}
 		if(err > max_err)
