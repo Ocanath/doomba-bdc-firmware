@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 17	//module num for preset encoder offset
+#define MODULE_NUMBER 18	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -175,3 +175,13 @@ const float elec_conv_ratio = 3.5;	//MS4822 has 11 pole pairs. this number is (p
 int16_t cos_mid = 2127;
 int16_t sin_mid = 2011;
 #endif
+#if MODULE_NUMBER == 18							//KEDA Ronin Waist.
+float align_offset = -0.872597933;				//OUTPUT UP: left wire->phase C, middle wire-> phase B, right wire->phase A
+const float iq_gain = 0.015;
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 3.5;
+int16_t cos_mid = 2127;
+int16_t sin_mid = 2011;
+#endif
+
