@@ -166,7 +166,7 @@ const float elec_conv_ratio = 3.5;
 int16_t cos_mid = 2026;
 int16_t sin_mid = 1950;
 #endif
-#if MODULE_NUMBER == 17
+#if MODULE_NUMBER == 17			//brown->PHASEC, orange->PHASEB, red->PHASEA
 float align_offset = -0.572598219;
 const float iq_gain = 0.15;
 const float id_gain = 0.003;
