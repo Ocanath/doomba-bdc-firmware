@@ -7,7 +7,7 @@
 #include "settings.h"
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 18	//module num for preset encoder offset
+#define MODULE_NUMBER 20	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -171,7 +171,7 @@ float align_offset = -0.572598219;
 const float iq_gain = 0.15;
 const float id_gain = 0.003;
 uint32_t i2c_address = I2C_BASE+0;
-const float elec_conv_ratio = 3.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+const float elec_conv_ratio = 3.5;
 int16_t cos_mid = 2127;
 int16_t sin_mid = 2011;
 #endif
@@ -184,4 +184,21 @@ const float elec_conv_ratio = 3.5;
 int16_t cos_mid = 2127;
 int16_t sin_mid = 2011;
 #endif
-
+#if MODULE_NUMBER == 19			//brown->PHASEC, orange->PHASEB, red->PHASEA
+float align_offset = -0.572598219;
+const float iq_gain = 0.15;
+const float id_gain = 0.003;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 3.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 2127;
+int16_t sin_mid = 2011;
+#endif
+#if MODULE_NUMBER == 20							//gibbon elbow link left arm
+float align_offset = -0.536198676;	//0.273627996, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+1;
+const float elec_conv_ratio = 5.5;	//MS4822 has 11 pole pairs. this number is (pole pairs)/2 for the KMZ60 encoder to absorb the extra multiply
+int16_t cos_mid = 2119;
+int16_t sin_mid = 1993;
+#endif
