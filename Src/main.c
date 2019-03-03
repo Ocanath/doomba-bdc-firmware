@@ -8,7 +8,10 @@
 #include <string.h>
 #include "settings.h"
 
-
+/*
+ * V3 R1 uses STM32F302C8T6
+ * This version has, but currently does not use, an external oscillator. Future versions will likely use the STM32F301
+ */
 
 #define BRAKE 0
 #define STOP 1
@@ -24,12 +27,6 @@
 /*TODO:
  *
  *I2C gauntlet!!!
- *
- *New align offset procedure:
- *	-plot UART for a V/hz sinusoidal sweep, to obtain the dc offset (function exists).
- *	-obtain the min and max with the above method. this is the range across which you align offset will probably sit
- *	-sweep the min thru the max align offset, with FOC, back and forth. Plot iq over UART!!! Whichever align offset produces
- *		the closest match for iq, is the selected offset.
  *
  */
 
