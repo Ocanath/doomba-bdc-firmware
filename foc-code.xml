@@ -14,6 +14,6 @@
     <name>foc-code</name>
     <dbgIF>SWD</dbgIF>
     <dbgDEV>ST-Link</dbgDEV>
-    <mcuId>stm32f302c8tx</mcuId>
+    <mcuId>stm32f301c6tx</mcuId>
   </board>
 </targetDefinitions>
