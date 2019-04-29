@@ -1,0 +1,379 @@
+/*
+ * calibration.c
+ *
+ *  Created on: Apr 29, 2019
+ *      Author: Ocanath
+ */
+#include "calibration.h"
+#include "mag-encoder.h"
+
+
+void print_float(float v)
+{
+	uint8_t * ptr = (uint8_t * )(&v);
+	HAL_UART_Transmit(&huart2, ptr, 4, 10);
+}
+void print_str(const char * str)
+{
+	int strlen;
+	for(strlen=0;str[strlen] != 0; strlen++);
+	HAL_UART_Transmit(&huart2, (uint8_t*)str, strlen, 10);
+}
+
+
+/*
+ * check and correct the encoder region for KMZ60 encoder. Necessary because encoder returns
+ * twice the actual angle, meaning that 1/2 of the time, sin and cosine will be the SAME value
+ * for 2 DIFFERENT motor angles. This means that FOC will think positive is positive 1/2 the time,
+ * and positive is negative the other half of the time.
+ *
+ * This function operates by performing a local position control loop. The setpoint is the current
+ * motor position with a slight positive offset. This is so that the initial 'jerk' from the motor is not
+ * great. It will try position control. If the error exceeds some threshold (greater than the guaranteed
+ * inital error for a still motor) it knows that it's spinning the wrong way. It will then reverse the
+ * motor direction by compensating for the INCORRECT initial error, and guard direction reversals for
+ * a period of time. If the motor reaches it's setpoint (to within an acceptable margin) for some time,
+ * this function will return. If not, it will try reversing again, and allow for a longer period of time
+ * before to try and settle.
+ *
+ * I have tested this on a gearbox motor. It is surprisingly reliable, and usually settles in less than half
+ * a second unless a significant load is applied.
+ *
+ * The driver light will stay on until completion and blink during normal operation; additionally, it will not
+ * parse i2c commands. If both lights are on, the driver is almost certainly calling this function. If it is calling
+ * it indefinitely, you should try and guide the motor by hand to 'help it out'
+ *
+ *
+ */
+float check_encoder_region()
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint32_t ts = HAL_GetTick();
+	float theta_m_prev = 0;
+	float theta_set = (unwrap(theta_abs_rad(), &theta_m_prev)*.5)+.4;	//get the initial position and use it to set the motor setpoint.
+	float err = 0;
+	uint32_t try_ts = 100;
+	uint32_t off_ts = 0;
+	while(1)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+		err = theta_set-theta_m;		// and error
+		float tau = 30*err;				//position control
+		if(tau > 50)
+			tau = 50;
+		if(tau < -50)
+			tau = -50;
+		foc(tau,0);
+
+		if(err < 0)
+			err = -err;		//get the absolute value of the error
+
+		if(err > .6 && HAL_GetTick() > ts)	//if the error is great and you haven't tried for some time, reverse the direction
+		{
+			theta_enc_prev -= TWO_PI;	//used by inline foc loop
+			ts = HAL_GetTick()+try_ts;
+			try_ts+=50;	//if you failed on the last attempt, try for just a liiitle bit longer. This improves stability (i.e. no infinite oscillations if you're significantly out of bounds)
+		}
+
+		if(err > .1)	//if the error is great,
+			off_ts = HAL_GetTick();	//set the timestamp
+		else
+		{
+			if(HAL_GetTick() - off_ts > 50)	//if you've settled (low error for an acceptable time) break
+			{
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+				break;
+			}
+		}
+	}
+	return theta_enc_prev;
+}
+
+
+static float abs_f(float in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
+}
+static float abs_err_prev = 0.0f;
+void check_encoder_region_2(float start_offset)
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	float inital_position = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+	float setpoint = inital_position + start_offset;
+	uint32_t err_check_ts = HAL_GetTick() + 100;
+	uint32_t consec_pos_err_cnt = 0;
+	uint32_t consec_low_diff_err_cnt = 0;
+	while(1)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+		float err = setpoint - theta_m;
+		float tau = 30*err;				//position control
+		if(tau > 50)
+			tau = 50;
+		if(tau < -50)
+			tau = -50;
+		foc(tau,0);
+
+		if(HAL_GetTick() > err_check_ts)
+		{
+			float abs_err = abs_f(err);
+			float diff_err = abs_err - abs_err_prev;	//i.e. the change in the absolute value of the error
+
+			print_float(diff_err);
+
+			if(diff_err > 0.1f)
+			{
+				consec_low_diff_err_cnt = 0;
+				consec_pos_err_cnt++;
+				if(consec_pos_err_cnt > 0)
+					theta_enc_prev -= TWO_PI; //used by inline foc loop, will reverse the foc direction
+			}
+			else
+			{
+				consec_pos_err_cnt = 0;
+				consec_low_diff_err_cnt++;
+//				if(consec_low_diff_err_cnt >= 30)//300ms of low error
+//					break;
+			}
+			err_check_ts = HAL_GetTick() + 10;
+			abs_err_prev = abs_err;
+		}
+	}
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+}
+
+static float time_seconds()
+{
+	return ((float)HAL_GetTick())*.001f;
+}
+
+void obtain_encoder_midpoints()
+{
+	TIMER_UPDATE_DUTY(500,500,500);
+	float t_start = time_seconds();
+	uint16_t s_max = 0;
+	uint16_t s_min = 4096;
+	uint16_t c_max = 0;
+	uint16_t c_min = 4096;
+	while(time_seconds() - t_start < 15)
+	{
+		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)
+			s_max = dma_adc_raw[ADC_SIN_CHAN];
+		if(dma_adc_raw[ADC_SIN_CHAN] < s_min)
+			s_min = dma_adc_raw[ADC_SIN_CHAN];
+
+		if(dma_adc_raw[ADC_COS_CHAN] > c_max)
+			c_max = dma_adc_raw[ADC_COS_CHAN];
+		if(dma_adc_raw[ADC_COS_CHAN] < c_min)
+			c_min = dma_adc_raw[ADC_COS_CHAN];
+
+
+		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
+		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		float cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		float i_alpha,i_beta;
+		uint32_t tA,tB,tC;
+		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+	}
+	TIMER_UPDATE_DUTY(0,0,0);
+	sin_mid = (s_max + s_min)/2;
+	cos_mid = (c_max + c_min)/2;
+}
+
+/*
+ * Checks a candidate align_offset (global variable, used by the encoder)
+ * by producing a triangle speed waveform using constant positive and negative
+ * torques; i.e. positive tau_ref for run_time ms, negative tau_ref  for run_time ms.
+ * The function measures the position at the start of the waveform, the peak/tip of the
+ * triangle, and the endpoint. Since the torque is constant, the speed is determined by physical
+ * system (same conditions for both directions in an unloaded motor) and the quality of the align
+ * offset; therefore, for a good offset, the error between the start and endpoints should be minimal.
+ *
+ * However, some align offsets produce ZERO speed since they're so terrible. To factor this in, the
+ * midpoint is compared to the starting point; if the motor has not moved appreciably (a generous 1 radian)
+ * then the align offset is no good, and an arbitrary large error is returned.
+ *
+ *In general, the align offset which produces the smallest error that is LESS than a given threshold (1 rad or less)
+ *should be accepted.
+ *
+ *For motors with fixed encoder mounts, this function should be used in tandem with sweep_align.
+ *for motors with variable encoder mounts (and fixed align offset values) this function should
+ *relay visual feedback to a human operator, through the light and potentially a matlab plot.
+ */
+#define OUT_OF_BOUNDS_ERROR 1000000
+volatile float gl_error_print = 0;
+uint32_t print_ts=0;
+float check_align_offset(uint32_t run_time, float tau_ref)
+{
+	uint32_t run_ts = HAL_GetTick() + run_time;
+	float init_pos = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get the initial motor position
+	float prev_theta = 0;//need to track a second time for speed. unwrap smashes it
+	uint8_t dir_correct_flag = 1;
+	while(HAL_GetTick() < run_ts)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		if(theta_m - prev_theta < 0)	//if speed is negative and direction is positive
+			dir_correct_flag = 0;
+		prev_theta = theta_m;
+
+		foc(tau_ref,0);
+
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			print_float(theta_m);
+			print_ts = HAL_GetTick()+10;
+		}
+
+	}
+
+	/*make sure we've picked an align offset that's not completely out of bounds, by checking that we've actually traveled an appreciable distance during phase 1*/
+	float mid_check_err = init_pos - prev_theta;
+	//	mid_check_err &= ~0x80000000;
+	if(mid_check_err < 0)
+		mid_check_err = -mid_check_err;
+	if(mid_check_err < 1)	//if the motor didn't move during this sweep
+	{
+		gl_error_print = OUT_OF_BOUNDS_ERROR;
+		return gl_error_print;
+	}
+
+	run_ts = HAL_GetTick() + run_time;
+	while(HAL_GetTick() < run_ts)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		if(theta_m - prev_theta > 0)	//if speed is positive and direction is negative
+			dir_correct_flag = 0;
+		prev_theta = theta_m;
+
+		foc(-tau_ref,0);
+
+		if(HAL_GetTick()>print_ts)
+		{
+			print_float(align_offset);
+			print_float(gl_error_print);
+			print_float(theta_m);
+			//should be able to throw in position too
+			print_ts = HAL_GetTick()+10;
+		}
+	}
+
+	/*First, check to make sure you passed all edge condition flags*/
+//	if(dir_correct_flag == 0)
+//	{
+//		gl_error_print = OUT_OF_BOUNDS_ERROR;
+//		return gl_error_print;	//if direction mismatch, return an out of bounds error.
+//	}
+
+	float final_pos = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+	float err = final_pos - init_pos;
+	if(err < 0)
+		err = -err;
+	gl_error_print = err;
+	return err;
+}
+
+
+
+/*
+ * sweeps from the neg to pos candidate limits with check_align_offset. finds
+ * the align offset which produces the smallest absolute value error within bounds,
+ *  error being difference in position endpoints of a triangle waveform. i.e. you select
+ *  the offset which produces the same torque for positive and negative iq references.
+ *
+ *  The negative and positive limits can be obtained from obtain_align_offset (misnomer, and should
+ *  be named). This function is not guaranteed to produce valid limits, so if you have an uncooperative
+ *  motor, try from -PI/elec_conv_ratio to ZERO. this method also should be faster for motors with high
+ *  pole pair counts, such as the MS-4822
+ *
+ *
+ */
+float sweep_align(float align_neg, float align_pos)
+{
+	theta_m_prev = 0;
+	float max_err = 0;
+	float min_err = 1000;
+	float align_offset_of_min_error = align_offset;
+	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
+	{
+		float err = check_align_offset(400, 15);
+		if(err < .3)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		if(err < min_err)
+		{
+			min_err = err;
+			if(err < .5)	//if you're within range, new candidate for best align offset
+				align_offset_of_min_error = align_offset;
+		}
+		if(err > max_err)
+			err = max_err;
+	}
+	return align_offset_of_min_error;
+}
+
+
+
+void manual_align_calib()
+{
+	while(1)
+	{
+		float err = check_align_offset(500, 10);
+		if(err < .25)
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	}
+}
+
+
+void test_foc()
+{
+	uint32_t reverse_ts = 0;
+	float iq_ref = 15;
+	uint32_t print_ts = 0;
+	float th_m_prev = 0;
+	float th_tmp = 0;	//unwrap smashes unwrap.
+	while(1)
+	{
+
+		float theta_m = unwrap(theta_abs_rad(), &th_m_prev)*.5;
+
+		if( (theta_m - th_tmp > 0 && iq_ref > 0) || (theta_m - th_tmp < 0 && iq_ref < 0))
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		else
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		th_tmp = theta_m;
+
+
+		if(HAL_GetTick()>print_ts)
+		{
+			float t = (float)HAL_GetTick()*.001f;
+//			theta_m_previous = theta_m;
+			print_float(theta_m);
+//			print_float(v_m);
+			print_float(t);
+			//			print_float(theta_m-PI);
+//			print_float(align_offset);
+			print_ts = HAL_GetTick()+10;
+		}
+
+		if(HAL_GetTick() > reverse_ts)
+		{
+			reverse_ts = HAL_GetTick()+2000;
+			iq_ref = -iq_ref;
+		}
+		foc(iq_ref,0);
+	}
+}
+
+

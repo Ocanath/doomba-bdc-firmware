@@ -179,36 +179,7 @@ void inverse_park_transform(float i_q, float i_d, float sin_theta, float cos_the
 	*i_beta = i_d*sin_theta + i_q*cos_theta;
 }
 
-/*
-This procedure has a 1/2 probability of being correct, a 1/4 probability of being off by -? and a 1/4 probability of being of by ?.
- */
-void obtain_encoder_offset()
-{
-	/************************************Obtain encoder offset**********************************/
-	float i_alpha,i_beta;
 
-	#ifdef GIMBAL_MOTOR
-	inverse_park_transform(0, 0.7, 0, 1, &i_alpha, &i_beta);	//maybe call theta rel again?
-	#else
-	inverse_park_transform(0, 0.1, 0, 1, &i_alpha, &i_beta);	//maybe call theta rel again?
-	#endif
-
-	uint32_t tA,tB,tC;
-	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);		//TODO: since this produces (.2, -.1, -.1) -> (600, 450, 450), test (600, 400+50*sin(t), 400+50*sin(t)) and see if there
-										// is any preturbation in the angle
-	HAL_Delay(100);
-	float avg_offset = 0;
-	int i;
-	int num_samples = 400;
-	for(i=0;i<num_samples;i++)
-	{
-		avg_offset += theta_abs_rad();
-		HAL_Delay(1);
-	}
-	align_offset = avg_offset/(float)num_samples;
-	/*****************************************************************************************/
-}
 
 void get_current_cal_offsets()
 {
@@ -230,46 +201,10 @@ void get_current_cal_offsets()
 	gl_current_input_offset_C /= numSamples;
 }
 
-float time_seconds()
-{
-	return ((float)HAL_GetTick())*.001;
-}
-
-void obtain_encoder_midpoints()
-{
-	TIMER_UPDATE_DUTY(500,500,500);
-	float t_start = time_seconds();
-	uint16_t s_max = 0;
-	uint16_t s_min = 4096;
-	uint16_t c_max = 0;
-	uint16_t c_min = 4096;
-	while(time_seconds() - t_start < 15)
-	{
-		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)
-			s_max = dma_adc_raw[ADC_SIN_CHAN];
-		if(dma_adc_raw[ADC_SIN_CHAN] < s_min)
-			s_min = dma_adc_raw[ADC_SIN_CHAN];
-
-		if(dma_adc_raw[ADC_COS_CHAN] > c_max)
-			c_max = dma_adc_raw[ADC_COS_CHAN];
-		if(dma_adc_raw[ADC_COS_CHAN] < c_min)
-			c_min = dma_adc_raw[ADC_COS_CHAN];
-
-
-		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
-		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
-		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
-		float cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
-		float i_alpha,i_beta;
-		uint32_t tA,tB,tC;
-		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
-		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
-	}
-	TIMER_UPDATE_DUTY(0,0,0);
-	sin_mid = (s_max + s_min)/2;
-	cos_mid = (c_max + c_min)/2;
-}
+//float time_seconds()
+//{
+//	return ((float)HAL_GetTick())*.001;
+//}
 
 
 
