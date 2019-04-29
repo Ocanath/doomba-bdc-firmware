@@ -426,7 +426,7 @@ int main(void)
 //	align_offset = sweep_align(min_align_offset, max_align_offset);	//might need to obtain range from obtain_align_offset
 
 	/*Method two*/
-	align_offset = sweep_align(-PI/elec_conv_ratio,0);
+	align_offset = sweep_align(-.25,0);
 
 #endif
 
