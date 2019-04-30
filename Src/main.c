@@ -104,7 +104,7 @@ int main(void)
 #endif
 #ifdef GET_INIT_OFFSET
 	/*Best Method*/
-	align_offset = sweep_align(-.25,0);
+	align_offset = sweep_align(-PI/elec_conv_ratio,0);
 #endif
 //	manual_align_calib();//-0.236198962
 
