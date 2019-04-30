@@ -131,7 +131,13 @@ int main(void)
 //		if(retc == CAL_ERR_TIMEOUT)
 //			retc = check_encoder_region_2(-1000.0f, 0.05f, 5000);
 //	}
-	check_encoder_region(0.4f, 50, 0.1f, 0.6f);	
+	uint8_t status = CAL_ERR_TIMEOUT;
+	while(status != CAL_SUCCESS)
+	{
+		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
+		if(status == CAL_ERR_TIMEOUT)
+			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
+	}
 	theta_m_prev = theta_enc_prev;
 
 	while(1)

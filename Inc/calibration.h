@@ -15,7 +15,7 @@ typedef enum {CAL_ERR_TIMEOUT, CAL_SUCCESS} regioncheck_retv;
 void print_float(float v);
 void print_str(const char * str);
 
-float check_encoder_region(float start_step, uint32_t settle_time, float settle_error, float reverse_error);
+float check_encoder_region(float start_step, uint32_t settle_time, float settle_error, float reverse_error, uint32_t timeout, uint8_t * status);
 uint8_t check_encoder_region_2(float start_offset, float diff_err_thresh, uint32_t timeout);
 
 float check_align_offset(uint32_t run_time, float tau_ref);

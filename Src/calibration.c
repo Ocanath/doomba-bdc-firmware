@@ -47,9 +47,10 @@ void print_str(const char * str)
  */
 
 /*Note: original values are 0.4f, 50, .1f, .6f*/
-float check_encoder_region(float start_step, uint32_t settle_time, float settle_error, float reverse_error)
+float check_encoder_region(float start_step, uint32_t settle_time, float settle_error, float reverse_error, uint32_t timeout, uint8_t * status)
 {
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint32_t exit_ts = HAL_GetTick()+timeout;
 	uint32_t ts = HAL_GetTick();
 	float theta_m_prev = 0;
 	float theta_set = (unwrap(theta_abs_rad(), &theta_m_prev)*.5)+start_step;	//get the initial position and use it to set the motor setpoint.
@@ -84,9 +85,12 @@ float check_encoder_region(float start_step, uint32_t settle_time, float settle_
 			if(HAL_GetTick() - off_ts > settle_time)	//if you've settled (low error for an acceptable time) break
 			{
 				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+				*status =  CAL_SUCCESS;
 				break;
 			}
 		}
+		if(HAL_GetTick() > exit_ts)
+			*status = CAL_ERR_TIMEOUT;
 	}
 	return theta_enc_prev;
 }
