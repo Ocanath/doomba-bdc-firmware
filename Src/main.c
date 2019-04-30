@@ -123,8 +123,15 @@ int main(void)
 
 	theta_m_prev = 0;
 
-//	check_encoder_region_2(10.0f);
-	check_encoder_region();
+
+//	uint8_t retc = CAL_ERR_TIMEOUT;
+//	while(retc != CAL_SUCCESS)
+//	{
+//		retc = check_encoder_region_2(1000.0f, 0.05f, 5000);
+//		if(retc == CAL_ERR_TIMEOUT)
+//			retc = check_encoder_region_2(-1000.0f, 0.05f, 5000);
+//	}
+	check_encoder_region(0.4f, 50, 0.1f, 0.6f);	
 	theta_m_prev = theta_enc_prev;
 
 	while(1)

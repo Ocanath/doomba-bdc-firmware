@@ -45,12 +45,14 @@ void print_str(const char * str)
  *
  *
  */
-float check_encoder_region()
+
+/*Note: original values are 0.4f, 50, .1f, .6f*/
+float check_encoder_region(float start_step, uint32_t settle_time, float settle_error, float reverse_error)
 {
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	uint32_t ts = HAL_GetTick();
 	float theta_m_prev = 0;
-	float theta_set = (unwrap(theta_abs_rad(), &theta_m_prev)*.5)+.4;	//get the initial position and use it to set the motor setpoint.
+	float theta_set = (unwrap(theta_abs_rad(), &theta_m_prev)*.5)+start_step;	//get the initial position and use it to set the motor setpoint.
 	float err = 0;
 	uint32_t try_ts = 100;
 	uint32_t off_ts = 0;
@@ -68,18 +70,18 @@ float check_encoder_region()
 		if(err < 0)
 			err = -err;		//get the absolute value of the error
 
-		if(err > .6 && HAL_GetTick() > ts)	//if the error is great and you haven't tried for some time, reverse the direction
+		if(err > reverse_error && HAL_GetTick() > ts)	//if the error is great and you haven't tried for some time, reverse the direction
 		{
 			theta_enc_prev -= TWO_PI;	//used by inline foc loop
 			ts = HAL_GetTick()+try_ts;
 			try_ts+=50;	//if you failed on the last attempt, try for just a liiitle bit longer. This improves stability (i.e. no infinite oscillations if you're significantly out of bounds)
 		}
 
-		if(err > .1)	//if the error is great,
+		if(err > settle_error)	//if the error is great,
 			off_ts = HAL_GetTick();	//set the timestamp
 		else
 		{
-			if(HAL_GetTick() - off_ts > 50)	//if you've settled (low error for an acceptable time) break
+			if(HAL_GetTick() - off_ts > settle_time)	//if you've settled (low error for an acceptable time) break
 			{
 				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 				break;
@@ -97,10 +99,15 @@ static float abs_f(float in)
 	else
 		return in;
 }
+
 static float abs_err_prev = 0.0f;
-void check_encoder_region_2(float start_offset)
+static uint32_t check_encoder_region_2_timestamp = 0;
+uint8_t check_encoder_region_2(float start_offset, float diff_err_thresh, uint32_t timeout)
 {
+//	diff_err_thresh = abs_f(diff_err_thresh);//user input guard
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	check_encoder_region_2_timestamp = HAL_GetTick() + timeout;
+
 	float inital_position = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 	float setpoint = inital_position + start_offset;
 	uint32_t err_check_ts = HAL_GetTick() + 100;
@@ -108,9 +115,10 @@ void check_encoder_region_2(float start_offset)
 	uint32_t consec_low_diff_err_cnt = 0;
 	while(1)
 	{
+		uint32_t period = 5;
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
 		float err = setpoint - theta_m;
-		float tau = 30*err;				//position control
+		float tau = 30.0f*err;				//position control
 		if(tau > 50)
 			tau = 50;
 		if(tau < -50)
@@ -122,25 +130,29 @@ void check_encoder_region_2(float start_offset)
 			float abs_err = abs_f(err);
 			float diff_err = abs_err - abs_err_prev;	//i.e. the change in the absolute value of the error
 
-			print_float(diff_err);
-
-			if(diff_err > 0.1f)
+			if(diff_err > diff_err_thresh)
 			{
 				consec_low_diff_err_cnt = 0;
 				consec_pos_err_cnt++;
-				if(consec_pos_err_cnt > 0)
+				if(consec_pos_err_cnt > 5)
+				{
 					theta_enc_prev -= TWO_PI; //used by inline foc loop, will reverse the foc direction
+					period = 50;
+				}
 			}
-			else
+			else if (diff_err < -diff_err_thresh)
 			{
 				consec_pos_err_cnt = 0;
 				consec_low_diff_err_cnt++;
-//				if(consec_low_diff_err_cnt >= 30)//300ms of low error
-//					break;
+				if(consec_low_diff_err_cnt >= 5)//300ms of low error
+					return CAL_SUCCESS;
 			}
-			err_check_ts = HAL_GetTick() + 10;
+			err_check_ts = HAL_GetTick() + period;
 			abs_err_prev = abs_err;
 		}
+
+		if(HAL_GetTick() > check_encoder_region_2_timestamp)
+			return CAL_ERR_TIMEOUT;
 	}
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 }
