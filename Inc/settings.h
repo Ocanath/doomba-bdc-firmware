@@ -9,9 +9,9 @@
 #define SETTINGS_H_
 #include "stm32f3xx_hal.h"
 
-//#define GET_INIT_OFFSET
-//#define GET_ENCODER_MIDPOINT
-//#define TEST_FOC
+#define GET_INIT_OFFSET
+#define GET_ENCODER_MIDPOINT
+#define TEST_FOC
 
 //#define GIMBAL_MOTOR
 

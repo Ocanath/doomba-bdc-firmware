@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 0	//module num for preset encoder offset
+#define MODULE_NUMBER 1	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -24,12 +24,21 @@ float enc_mid_voltage_amp = .09;
 #endif
 
 
-#if MODULE_NUMBER == 0							//spooler module 2
+#if MODULE_NUMBER == 0							//mC4225 module
 float align_offset = -0.18259861;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 3.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2079;
+int16_t sin_mid = 2008;
+#endif
+#if MODULE_NUMBER == 1							//ms4822 v4 module
+float align_offset = -0.0f;	//0.273627996, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01f;
+const float id_gain = 0.01f;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2079;
 int16_t sin_mid = 2008;
 #endif
