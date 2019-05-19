@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 1	//module num for preset encoder offset
+#define MODULE_NUMBER 0	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -25,7 +25,7 @@ float enc_mid_voltage_amp = .09;
 
 
 #if MODULE_NUMBER == 0							//mC4225 module
-float align_offset = -0.18259861;	//0.273627996, p-0.00627872162, n-0.553534687
+float align_offset = -0.45f;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+0;
