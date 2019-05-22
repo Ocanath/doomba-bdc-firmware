@@ -123,22 +123,29 @@ int main(void)
 
 	theta_m_prev = 0;
 
-
-//	uint8_t retc = CAL_ERR_TIMEOUT;
-//	while(retc != CAL_SUCCESS)
+//	uint8_t status = CAL_ERR_TIMEOUT;
+//	while(status != CAL_SUCCESS)
 //	{
-//		retc = check_encoder_region_2(1000.0f, 0.05f, 5000);
-//		if(retc == CAL_ERR_TIMEOUT)
-//			retc = check_encoder_region_2(-1000.0f, 0.05f, 5000);
+//		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
+//		if(status == CAL_ERR_TIMEOUT)
+//			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
 //	}
-	uint8_t status = CAL_ERR_TIMEOUT;
-	while(status != CAL_SUCCESS)
+//	theta_m_prev = theta_enc_prev;
+
+	check_encoder_region_2(333, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
+	theta_m_prev=theta_enc_prev;
+
+	float q_set = unwrap(theta_abs_rad(), &theta_m_prev)*.5 ;	//get current motor position
+	while(1)
 	{
-		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
-		if(status == CAL_ERR_TIMEOUT)
-			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
+		float q = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+		float tau = 15.0f*(q_set-q);
+		if(tau > 20)
+			tau = 20;
+		else if(tau < -20)
+			tau=-20;
+		foc(tau,0);
 	}
-	theta_m_prev = theta_enc_prev;
 
 	while(1)
 	{

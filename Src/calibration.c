@@ -104,62 +104,62 @@ static float abs_f(float in)
 		return in;
 }
 
-static float abs_err_prev = 0.0f;
-static uint32_t check_encoder_region_2_timestamp = 0;
-uint8_t check_encoder_region_2(float start_offset, float diff_err_thresh, uint32_t timeout)
-{
-//	diff_err_thresh = abs_f(diff_err_thresh);//user input guard
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	check_encoder_region_2_timestamp = HAL_GetTick() + timeout;
-
-	float inital_position = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
-	float setpoint = inital_position + start_offset;
-	uint32_t err_check_ts = HAL_GetTick() + 100;
-	uint32_t consec_pos_err_cnt = 0;
-	uint32_t consec_low_diff_err_cnt = 0;
-	while(1)
-	{
-		uint32_t period = 5;
-		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
-		float err = setpoint - theta_m;
-		float tau = 30.0f*err;				//position control
-		if(tau > 50)
-			tau = 50;
-		if(tau < -50)
-			tau = -50;
-		foc(tau,0);
-
-		if(HAL_GetTick() > err_check_ts)
-		{
-			float abs_err = abs_f(err);
-			float diff_err = abs_err - abs_err_prev;	//i.e. the change in the absolute value of the error
-
-			if(diff_err > diff_err_thresh)
-			{
-				consec_low_diff_err_cnt = 0;
-				consec_pos_err_cnt++;
-				if(consec_pos_err_cnt > 5)
-				{
-					theta_enc_prev -= TWO_PI; //used by inline foc loop, will reverse the foc direction
-					period = 50;
-				}
-			}
-			else if (diff_err < -diff_err_thresh)
-			{
-				consec_pos_err_cnt = 0;
-				consec_low_diff_err_cnt++;
-				if(consec_low_diff_err_cnt >= 5)//300ms of low error
-					return CAL_SUCCESS;
-			}
-			err_check_ts = HAL_GetTick() + period;
-			abs_err_prev = abs_err;
-		}
-
-		if(HAL_GetTick() > check_encoder_region_2_timestamp)
-			return CAL_ERR_TIMEOUT;
-	}
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-}
+//static float abs_err_prev = 0.0f;
+//static uint32_t check_encoder_region_2_timestamp = 0;
+//uint8_t check_encoder_region_2(float start_offset, float diff_err_thresh, uint32_t timeout)
+//{
+////	diff_err_thresh = abs_f(diff_err_thresh);//user input guard
+//	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+//	check_encoder_region_2_timestamp = HAL_GetTick() + timeout;
+//
+//	float inital_position = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+//	float setpoint = inital_position + start_offset;
+//	uint32_t err_check_ts = HAL_GetTick() + 100;
+//	uint32_t consec_pos_err_cnt = 0;
+//	uint32_t consec_low_diff_err_cnt = 0;
+//	while(1)
+//	{
+//		uint32_t period = 5;
+//		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+//		float err = setpoint - theta_m;
+//		float tau = 30.0f*err;				//position control
+//		if(tau > 50)
+//			tau = 50;
+//		if(tau < -50)
+//			tau = -50;
+//		foc(tau,0);
+//
+//		if(HAL_GetTick() > err_check_ts)
+//		{
+//			float abs_err = abs_f(err);
+//			float diff_err = abs_err - abs_err_prev;	//i.e. the change in the absolute value of the error
+//
+//			if(diff_err > diff_err_thresh)
+//			{
+//				consec_low_diff_err_cnt = 0;
+//				consec_pos_err_cnt++;
+//				if(consec_pos_err_cnt > 5)
+//				{
+//					theta_enc_prev -= TWO_PI; //used by inline foc loop, will reverse the foc direction
+//					period = 50;
+//				}
+//			}
+//			else if (diff_err < -diff_err_thresh)
+//			{
+//				consec_pos_err_cnt = 0;
+//				consec_low_diff_err_cnt++;
+//				if(consec_low_diff_err_cnt >= 5)//300ms of low error
+//					return CAL_SUCCESS;
+//			}
+//			err_check_ts = HAL_GetTick() + period;
+//			abs_err_prev = abs_err;
+//		}
+//
+//		if(HAL_GetTick() > check_encoder_region_2_timestamp)
+//			return CAL_ERR_TIMEOUT;
+//	}
+//	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+//}
 
 static float time_seconds()
 {
@@ -283,11 +283,11 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 	}
 
 	/*First, check to make sure you passed all edge condition flags*/
-//	if(dir_correct_flag == 0)
-//	{
-//		gl_error_print = OUT_OF_BOUNDS_ERROR;
-//		return gl_error_print;	//if direction mismatch, return an out of bounds error.
-//	}
+	//	if(dir_correct_flag == 0)
+	//	{
+	//		gl_error_print = OUT_OF_BOUNDS_ERROR;
+	//		return gl_error_print;	//if direction mismatch, return an out of bounds error.
+	//	}
 
 	float final_pos = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
 	float err = final_pos - init_pos;
@@ -295,6 +295,108 @@ float check_align_offset(uint32_t run_time, float tau_ref)
 		err = -err;
 	gl_error_print = err;
 	return err;
+}
+
+
+/*
+ * New idea:
+ * To eliminate the initial jerk behaviour and improve stability, sweep
+ */
+
+//static uint32_t check_encoder_region_2_timestamp = 0;
+uint8_t check_encoder_region_2(uint32_t track_time, uint32_t timeout)
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint32_t check_encoder_region_2_timestamp = HAL_GetTick() + timeout;
+
+	uint32_t err_check_ts = HAL_GetTick() + 100;
+	float abs_err_prev = 0.0f;
+	float diff_err = 0.0f;
+	float setpoint = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+	float dq = 0;
+	float q_prev = 0;
+	float dq_prev = 0;
+
+	//float sum_abs_err = 0.0f;
+	float setpoint_change_rate = 0.005f;
+	const float speed_thresh = setpoint_change_rate*1000.0f + 20.0f;
+
+	uint32_t try_ts = 0;	//block execution of the fix block for now.
+	uint32_t print_ts = 0;
+	uint32_t fail_ts = HAL_GetTick();
+	while(1)
+	{
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+
+		/*Position Control*/
+		float err = setpoint - theta_m;
+		float tau = 30.0f*err;				//position control
+		if(tau > 50)
+			tau = 50;
+		if(tau < -50)
+			tau = -50;
+		foc(tau,0);
+		/*END*/
+
+		float abs_err = abs_f(err);
+		//calculate the change in error, speed, and update the setpoint in a periodic wrapper
+		if(HAL_GetTick() > err_check_ts)
+		{
+			diff_err = abs_err - abs_err_prev;	//i.e. the change in the absolute value of the error
+			abs_err_prev = abs_err;
+
+			dq = (theta_m - q_prev)*1000.0f;	//speed
+			dq = (dq+dq_prev)*.5;
+			dq_prev=dq;
+			q_prev = theta_m;
+
+			setpoint+=setpoint_change_rate;	//update setpoint
+
+			err_check_ts = HAL_GetTick();
+		}
+
+
+		float abs_dq = abs_f(dq); //precompute the abs of the motor speed
+		if(HAL_GetTick() >= try_ts)
+		{
+			if(abs_err > 0.6f && abs_dq > speed_thresh && diff_err > .03f)	//if you are rapidly diverging
+			{
+				theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
+				setpoint = theta_m;	//reset tracking so there are no violent pops
+				try_ts = HAL_GetTick()+5;	//wait a couple ms
+				fail_ts = HAL_GetTick();
+			}
+
+			if (abs_err > 2.0f && abs_dq <= speed_thresh) //if your speed is very low but your error is high, you got stuck on something.
+			{
+				setpoint = theta_m;
+				setpoint_change_rate = -setpoint_change_rate;
+				try_ts = HAL_GetTick()+1000;	//wait a couple ms
+				fail_ts = HAL_GetTick();
+			}
+		}
+
+		if(HAL_GetTick()-fail_ts > track_time)
+		{
+			if(abs_err < 0.4f)
+				return CAL_SUCCESS;
+
+		}
+
+
+		if(HAL_GetTick() >= print_ts)
+		{
+			print_float(abs_err);
+			print_float(abs_f(dq));
+			print_float(diff_err);
+
+			print_ts = HAL_GetTick() + 9;
+		}
+
+		if(HAL_GetTick() > check_encoder_region_2_timestamp)
+			return CAL_ERR_TIMEOUT;
+	}
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 }
 
 
@@ -374,12 +476,12 @@ void test_foc()
 		if(HAL_GetTick()>print_ts)
 		{
 			float t = (float)HAL_GetTick()*.001f;
-//			theta_m_previous = theta_m;
+			//			theta_m_previous = theta_m;
 			print_float(theta_m);
-//			print_float(v_m);
+			//			print_float(v_m);
 			print_float(t);
 			//			print_float(theta_m-PI);
-//			print_float(align_offset);
+			//			print_float(align_offset);
 			print_ts = HAL_GetTick()+10;
 		}
 
