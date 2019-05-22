@@ -135,17 +135,17 @@ int main(void)
 	check_encoder_region_2(333, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
 	theta_m_prev=theta_enc_prev;
 
-	float q_set = unwrap(theta_abs_rad(), &theta_m_prev)*.5 ;	//get current motor position
-	while(1)
-	{
-		float q = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
-		float tau = 15.0f*(q_set-q);
-		if(tau > 20)
-			tau = 20;
-		else if(tau < -20)
-			tau=-20;
-		foc(tau,0);
-	}
+//	float q_set = unwrap(theta_abs_rad(), &theta_m_prev)*.5 ;	//get current motor position
+//	while(1)
+//	{
+//		float q = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
+//		float tau = 15.0f*(q_set-q);
+//		if(tau > 20)
+//			tau = 20;
+//		else if(tau < -20)
+//			tau=-20;
+//		foc(tau,0);
+//	}
 
 	while(1)
 	{
