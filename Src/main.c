@@ -132,7 +132,7 @@ int main(void)
 //	}
 //	theta_m_prev = theta_enc_prev;
 
-	check_encoder_region_2(333, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
+	check_encoder_region_2(1000, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
 	theta_m_prev=theta_enc_prev;
 
 //	float q_set = unwrap(theta_abs_rad(), &theta_m_prev)*.5 ;	//get current motor position
