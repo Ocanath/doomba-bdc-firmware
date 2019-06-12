@@ -9,6 +9,8 @@
 #include "settings.h"
 #include "calibration.h"
 
+
+
 /*
  * V3 R1 uses STM32F302C8T6
  * This version has, but currently does not use, an external oscillator. Future versions will likely use the STM32F301
@@ -21,7 +23,6 @@
 #define BACKWARD_OPEN 4
 #define BACKWARD_CLOSED 5
 
-
 #define MAX_CUR 60.0
 
 
@@ -31,6 +32,7 @@
  *
  */
 
+#define BRUSHED_TAU_EBRAKE_VAL -2.0f
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
  *
@@ -38,15 +40,17 @@
  *since we are using F302, uart is now compatible with SPI pins. We're taking advantage of this.
  *I also wrote a brushed control, for shits and goggles.
  */
-
 void brushed_tau(float tau)
 {
-	if(tau > 1)
-		tau = 1;
-	if(tau < -1)
-		tau = -1;
-	uint32_t offset = (int32_t)(tau*500.0f);
-	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
+	if(tau <= 1.0f && tau >= -1.0f)
+	{
+		uint32_t offset = (int32_t)(tau*500.0f);
+		TIMER_UPDATE_DUTY(500+offset,500,500+offset);
+	}
+	else	//I want to add an e-brake feature. Easy way is to just make out of range values stop the motor.
+	{
+		TIMER_UPDATE_DUTY(0,0,0);
+	}
 }
 
 
@@ -99,6 +103,8 @@ int main(void)
 	int led_ts = HAL_GetTick()+100;
 	int led_state = 1;
 
+#ifndef BRUSHED_MODE
+
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
 #endif
@@ -131,21 +137,8 @@ int main(void)
 //			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
 //	}
 //	theta_m_prev = theta_enc_prev;
-
 	check_encoder_region_2(1000, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
 	theta_m_prev=theta_enc_prev;
-
-//	float q_set = unwrap(theta_abs_rad(), &theta_m_prev)*.5 ;	//get current motor position
-//	while(1)
-//	{
-//		float q = unwrap(theta_abs_rad(), &theta_m_prev)*.5;	//get current motor position
-//		float tau = 15.0f*(q_set-q);
-//		if(tau > 20)
-//			tau = 20;
-//		else if(tau < -20)
-//			tau=-20;
-//		foc(tau,0);
-//	}
 
 	while(1)
 	{
@@ -210,6 +203,43 @@ int main(void)
 			led_ts = HAL_GetTick() + 200;
 		}
 	}
+
+
+#else
+
+	float iqref = 0;
+	while(1)
+	{
+		handle_i2c(&hi2c1);
+
+		float * f_addr = (float *)(i2c_rx_data);
+		iqref = *f_addr;
+
+		if(iqref > MAX_CUR)
+			iqref = MAX_CUR;
+		else if (iqref < -MAX_CUR)
+			iqref = -MAX_CUR;
+		if(HAL_GetTick() > recieved_data_ts + 50)
+			iqref = BRUSHED_TAU_EBRAKE_VAL;
+
+		brushed_tau(iqref);
+
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+
+		uint8_t * ptr = (uint8_t *)(&theta_m);
+		i2c_tx_data[0] = ptr[0];	//i did this to keep i2c_tx_data in the same place
+		i2c_tx_data[1] = ptr[1];	//however, just changing it's base pointer
+		i2c_tx_data[2] = ptr[2];	//is probably totally fine
+		i2c_tx_data[3] = ptr[3];
+
+		if(HAL_GetTick()>=led_ts)
+		{
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,led_state);
+			led_state = !led_state & 1;
+			led_ts = HAL_GetTick() + 200;
+		}
+	}
+#endif
 
 }
 

@@ -9,11 +9,14 @@
 #define SETTINGS_H_
 #include "stm32f3xx_hal.h"
 
+#define BRUSHED_MODE
+
 //#define GET_INIT_OFFSET
 //#define GET_ENCODER_MIDPOINT
 //#define TEST_FOC
 
 //#define GIMBAL_MOTOR
+
 
 float enc_mid_voltage_amp;
 
