@@ -45,7 +45,7 @@ void brushed_tau(float tau)
 	if(tau <= 1.0f && tau >= -1.0f)
 	{
 		uint32_t offset = (int32_t)(tau*500.0f);
-		TIMER_UPDATE_DUTY(500+offset,500,500+offset);
+		TIMER_UPDATE_DUTY(500-offset,500+offset,500-offset);
 	}
 	else	//I want to add an e-brake feature. Easy way is to just make out of range values stop the motor.
 	{
@@ -206,7 +206,6 @@ int main(void)
 
 
 #else
-
 	float iqref = 0;
 	while(1)
 	{
@@ -219,7 +218,7 @@ int main(void)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
 			iqref = -MAX_CUR;
-		if(HAL_GetTick() > recieved_data_ts + 50)
+		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = BRUSHED_TAU_EBRAKE_VAL;
 
 		brushed_tau(iqref);
