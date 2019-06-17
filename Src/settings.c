@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 0	//module num for preset encoder offset
+#define MODULE_NUMBER 3	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -50,4 +50,13 @@ uint32_t i2c_address = I2C_BASE+1;
 const float elec_conv_ratio = 3.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2078;
 int16_t sin_mid = 1968;
+#endif
+#if MODULE_NUMBER == 3							//ms4822 v4 module, CYCLETESTER
+float align_offset = -0.1265f;	//0.273627996, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01f;
+const float id_gain = 0.01f;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2090;
+int16_t sin_mid = 1971;
 #endif
