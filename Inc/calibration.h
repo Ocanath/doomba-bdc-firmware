@@ -22,6 +22,8 @@ float check_align_offset(uint32_t run_time, float tau_ref);
 float sweep_align(float align_neg, float align_pos);
 void manual_align_calib();
 void test_foc();
+void force_encoder_region();
+uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout);
 
 
 #endif /* CALIBRATION_H_ */
