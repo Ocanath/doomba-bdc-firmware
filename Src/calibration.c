@@ -537,6 +537,7 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 		if((HAL_GetTick() - tau_switch_ts) > timeout)
 		{
 			tau=-tau;
+			pos_prev = theta_m;
 			tau_switch_ts = HAL_GetTick();
 		}
 
