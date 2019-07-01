@@ -138,6 +138,10 @@ int main(void)
 	force_encoder_region();
 	theta_m_prev=theta_enc_prev;
 
+	/*
+	 * TODO: minor optimization
+ 	 * Only format i2c data ONCE, when new data is recieved.
+	 */
 	while(1)
 	{
 		handle_i2c(&hi2c1);
