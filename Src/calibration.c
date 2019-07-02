@@ -497,6 +497,7 @@ void test_foc()
 enum {VERIFY_FAILED, VERIFY_PASSED, VERIFY_TIMEOUT};
 void force_encoder_region()
 {
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	uint8_t retc = VERIFY_FAILED;
 	float tau = 5.0f;
 	while(retc != VERIFY_PASSED)
@@ -522,8 +523,8 @@ void force_encoder_region()
 			}
 			tau = -tau;
 		}
-
 	}
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 }
 
 uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout)
