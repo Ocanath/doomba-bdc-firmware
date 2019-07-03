@@ -139,14 +139,14 @@ int main(void)
 	{
 		handle_i2c(&hi2c1);
 
-//		iqref = i2c_rx_data.v;
+		iqref = i2c_rx_data.v;
 
 		if(iqref > MAX_CUR)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
 			iqref = -MAX_CUR;
-//		if(HAL_GetTick() > recieved_data_ts + 100)
-//			iqref = 0;
+		if(HAL_GetTick() > recieved_data_ts + 100)
+			iqref = 0;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -176,26 +176,10 @@ int main(void)
 		/**********************************************END**********************************************/
 
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
-//		i2c_tx_data.v = theta_m;
+		i2c_tx_data.v = theta_m;
 
 
 		//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
-
-
-				float t = (float)(HAL_GetTick())*.001;
-				float sin_arg = t*10.60f   - HALF_PI;
-				sin_arg = fmod_2pi(sin_arg + PI) - PI;
-				float theta_set = 16.3*(sin_fast(sin_arg)+1.0);
-				float q = theta_m;	//hopefully compiler will optimize this out
-				float  err = theta_set - q;
-				iqref = 10.0f*err;// - dtheta/dt*0.2;
-				const float cur_limit = 70.0f;	//new
-				if(iqref > cur_limit)
-					iqref = cur_limit;
-				if(iqref < -cur_limit)
-					iqref = -cur_limit;
-
-
 
 		if(HAL_GetTick()>=led_ts)
 		{
