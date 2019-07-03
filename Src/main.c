@@ -24,13 +24,6 @@
 
 #define MAX_CUR 60.0
 
-
-/*TODO:
- *
- *I2C gauntlet!!!
- *
- */
-
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
  *
@@ -106,7 +99,7 @@ int main(void)
 	/*Best Method*/
 	align_offset = sweep_align(-PI/elec_conv_ratio,0);
 #endif
-//	manual_align_calib();//-0.236198962
+	//	manual_align_calib();//-0.236198962
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
@@ -123,38 +116,37 @@ int main(void)
 
 	theta_m_prev = 0;
 
-//	uint8_t status = CAL_ERR_TIMEOUT;
-//	while(status != CAL_SUCCESS)
-//	{
-//		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
-//		if(status == CAL_ERR_TIMEOUT)
-//			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
-//	}
-//	theta_m_prev = theta_enc_prev;
+	//	uint8_t status = CAL_ERR_TIMEOUT;
+	//	while(status != CAL_SUCCESS)
+	//	{
+	//		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
+	//		if(status == CAL_ERR_TIMEOUT)
+	//			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
+	//	}
+	//	theta_m_prev = theta_enc_prev;
 
-//	check_encoder_region_2(1000, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
-//	theta_m_prev=theta_enc_prev;
+	//	check_encoder_region_2(1000, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
+	//	theta_m_prev=theta_enc_prev;
 
 	force_encoder_region();
 	theta_m_prev=theta_enc_prev;
 
 	/*
 	 * TODO: minor optimization
- 	 * Only format i2c data ONCE, when new data is recieved.
+	 * Only format i2c data ONCE, when new data is recieved.
 	 */
 	while(1)
 	{
 		handle_i2c(&hi2c1);
 
-		float * f_addr = (float *)(i2c_rx_data);
-		iqref = *f_addr;
+//		iqref = i2c_rx_data.v;
 
 		if(iqref > MAX_CUR)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
 			iqref = -MAX_CUR;
-		if(HAL_GetTick() > recieved_data_ts + 100)
-			iqref = 0;
+//		if(HAL_GetTick() > recieved_data_ts + 100)
+//			iqref = 0;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -184,19 +176,26 @@ int main(void)
 		/**********************************************END**********************************************/
 
 		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
-		//		uint32_t * d_addr = (uint32_t *)(&theta_m);
-		//		uint32_t tx_data = *d_addr;
-		//		i2c_tx_data[0] = (tx_data & 0xFF000000) >> 24;
-		//		i2c_tx_data[1] = (tx_data & 0x00FF0000) >> 16;
-		//		i2c_tx_data[2] = (tx_data & 0x0000FF00) >> 8;
-		//		i2c_tx_data[3] = (tx_data & 0x000000FF);
-		uint8_t * ptr = (uint8_t *)(&theta_m);
-		i2c_tx_data[0] = ptr[0];	//i did this to keep i2c_tx_data in the same place
-		i2c_tx_data[1] = ptr[1];	//however, just changing it's base pointer
-		i2c_tx_data[2] = ptr[2];	//is probably totally fine
-		i2c_tx_data[3] = ptr[3];
+//		i2c_tx_data.v = theta_m;
+
 
 		//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
+
+
+				float t = (float)(HAL_GetTick())*.001;
+				float sin_arg = t*10.60f   - HALF_PI;
+				sin_arg = fmod_2pi(sin_arg + PI) - PI;
+				float theta_set = 16.3*(sin_fast(sin_arg)+1.0);
+				float q = theta_m;	//hopefully compiler will optimize this out
+				float  err = theta_set - q;
+				iqref = 10.0f*err;// - dtheta/dt*0.2;
+				const float cur_limit = 70.0f;	//new
+				if(iqref > cur_limit)
+					iqref = cur_limit;
+				if(iqref < -cur_limit)
+					iqref = -cur_limit;
+
+
 
 		if(HAL_GetTick()>=led_ts)
 		{

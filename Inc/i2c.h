@@ -10,6 +10,12 @@
 
 #include "init.h"
 
+typedef union
+{
+	float v;
+	uint8_t d[4];
+}floatsend_t;
+
 #define I2C_MODE_WAIT 0
 #define I2C_MODE_TRANSMIT 1
 #define I2C_MODE_RECIEVE 2
@@ -21,14 +27,14 @@ uint8_t gl_i2c_mode;
 
 #define TX_SIZE 4
 #define RX_SIZE 4
-uint8_t i2c_tx_data[TX_SIZE];
-uint8_t i2c_rx_data[RX_SIZE];
+//uint8_t i2c_tx_data[TX_SIZE];
+//uint8_t i2c_rx_data[RX_SIZE];
+extern floatsend_t i2c_tx_data;
+extern floatsend_t i2c_rx_data;
 
 uint32_t recieved_data_ts;
 
 void handle_i2c(I2C_HandleTypeDef * hi2c);
-void get_i2c_rx(uint8_t * rx_data);
-void get_i2c_tx(uint8_t * tx_data);
 
 
 #endif /* I2C_H_ */
