@@ -36,5 +36,37 @@ uint32_t recieved_data_ts;
 
 void handle_i2c(I2C_HandleTypeDef * hi2c);
 
+enum {LED_ON, LED_OFF, ENABLE_ON, ENABLE_OFF, BLINK_ENABLE};
+inline void parse_master_cmd(uint32_t * led_ts)
+{
+	uint32_t rx_cast = (uint32_t)i2c_rx_data.v;
+	if((rx_cast & 0xFFF00000) == 0x7fc00000)	//if we've been fed a NaN, check it for commands. we sneaky like that
+	{
+		uint32_t cmd = rx_cast & 0x000FFFFF;
+		switch(cmd)
+		{
+		case LED_ON:
+		{
+			*led_ts = 0xFFFFFFFF;
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+			break;
+		}
+		case LED_OFF:
+		{
+			*led_ts = 0xFFFFFFFF;
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			break;
+		}
+		case BLINK_ENABLE:
+		{
+			*led_ts = HAL_GetTick()+200;
+			break;
+		}
+		default:
+			break;
+		};
+	}
+}
+
 
 #endif /* I2C_H_ */

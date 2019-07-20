@@ -90,7 +90,6 @@ int main(void)
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
 	int led_ts = HAL_GetTick()+100;
-	int led_state = 1;
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -147,6 +146,7 @@ int main(void)
 			iqref = -MAX_CUR;
 		if(HAL_GetTick() > recieved_data_ts + 100)
 			iqref = 0;
+//		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -175,19 +175,14 @@ int main(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 		/**********************************************END**********************************************/
 
-		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5;
+		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
 		i2c_tx_data.v = theta_m;
-
-
-		//		HAL_UART_Transmit(&huart2, i2c_tx_data, 4, 10);
 
 		if(HAL_GetTick()>=led_ts)
 		{
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,led_state);
-			led_state = !led_state & 1;
+			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
 			led_ts = HAL_GetTick() + 200;
 		}
 	}
 
 }
-

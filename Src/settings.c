@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 3	//module num for preset encoder offset
+#define MODULE_NUMBER 5	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -33,7 +33,7 @@ const float elec_conv_ratio = 3.5f;	//MC4225 has 14 poles, 7 pole pairs, and our
 int16_t cos_mid = 2078;
 int16_t sin_mid = 2006;
 #endif
-#if MODULE_NUMBER == 1							//ms4822 v4 module
+#if MODULE_NUMBER == 1							//ms4822 v4 module, Gimbal Car
 float align_offset = -0.0450;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.01f;
 const float id_gain = 0.01f;
@@ -59,4 +59,22 @@ uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 5.5f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2090;
 int16_t sin_mid = 1971;
+#endif
+#if MODULE_NUMBER == 4							//ms4822 v4 module, for foc car
+float align_offset = -0.226198962f;	//-0.236198962f, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01f;
+const float id_gain = 0.01f;
+uint32_t i2c_address = I2C_BASE+3;
+const float elec_conv_ratio = 5.5f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2054;
+int16_t sin_mid = 1988;
+#endif
+#if MODULE_NUMBER == 5							//ms4822 v4 module, for foc car
+float align_offset = -0.226198962f;	//-0.236198962f, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01f;
+const float id_gain = 0.01f;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 10.0f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2007;
+int16_t sin_mid = 2028;
 #endif
