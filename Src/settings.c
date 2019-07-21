@@ -70,11 +70,11 @@ int16_t cos_mid = 2054;
 int16_t sin_mid = 1988;
 #endif
 #if MODULE_NUMBER == 5							//ms9235
-float align_offset = -0.226198962f;	//-0.236198962f, p-0.00627872162, n-0.553534687
+float align_offset = -0.119159445;	//-0.236198962f, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.01f;
 const float id_gain = 0.01f;
-uint32_t i2c_address = I2C_BASE+0;	//need to switch the phase wires
+uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 10.0f;	//ms9235 has 40 poles, 20 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 2007;
+int16_t cos_mid = 2008;
 int16_t sin_mid = 2028;
 #endif

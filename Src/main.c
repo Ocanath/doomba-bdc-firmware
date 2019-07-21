@@ -89,7 +89,7 @@ int main(void)
 	get_current_cal_offsets();
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
-	int led_ts = HAL_GetTick()+100;
+	uint32_t led_ts = HAL_GetTick()+100;
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
