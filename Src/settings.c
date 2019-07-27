@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 5	//module num for preset encoder offset
+#define MODULE_NUMBER 4	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -37,7 +37,7 @@ int16_t sin_mid = 2006;
 float align_offset = -0.0450;	//0.273627996, p-0.00627872162, n-0.553534687
 const float iq_gain = 0.01f;
 const float id_gain = 0.01f;
-uint32_t i2c_address = I2C_BASE+0;
+uint32_t i2c_address = I2C_BASE+4;
 const float elec_conv_ratio = 5.5f;	//MC4225 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2041;
 int16_t sin_mid = 2006;
@@ -77,4 +77,13 @@ uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 10.0f;	//ms9235 has 40 poles, 20 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2008;
 int16_t sin_mid = 2028;
+#endif
+#if MODULE_NUMBER == 6							//MC4114 v4 module
+float align_offset = -0.101199064f;
+const float iq_gain = 0.01f;
+const float id_gain = 0.01f;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5f;	//MC4114 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2053;
+int16_t sin_mid = 1951;
 #endif
