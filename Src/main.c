@@ -137,6 +137,13 @@ int main(void)
 	while(1)
 	{
 		handle_i2c(&hi2c1);
+		if(hi2c1.ErrorCode != 0 || HAL_GetTick() > recieved_data_ts + 100)
+		{
+			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
+			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
+			I2C1_Reset();
+			gl_i2c_mode = I2C_MODE_WAIT;
+		}
 
 		iqref = i2c_rx_data.v;
 
