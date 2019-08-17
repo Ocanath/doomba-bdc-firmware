@@ -134,10 +134,12 @@ int main(void)
 	 * TODO: minor optimization
 	 * Only format i2c data ONCE, when new data is recieved.
 	 */
+	uint32_t uart_tx_ts = 0;
+
 	while(1)
 	{
-		handle_i2c(&hi2c1);
-		if(hi2c1.ErrorCode != 0 || HAL_GetTick() > recieved_data_ts + 100)
+		int rc = handle_i2c(&hi2c1);
+		if(hi2c1.ErrorCode != 0 || rc != 0)
 		{
 			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
 			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
@@ -151,8 +153,9 @@ int main(void)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
 			iqref = -MAX_CUR;
-		if(HAL_GetTick() > recieved_data_ts + 100)
+		if(rc != 0)
 			iqref = 0;
+
 //		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/

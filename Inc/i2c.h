@@ -34,7 +34,7 @@ extern floatsend_t i2c_rx_data;
 
 uint32_t recieved_data_ts;
 
-uint8_t handle_i2c(I2C_HandleTypeDef * hi2c);
+int handle_i2c(I2C_HandleTypeDef * hi2c);
 void I2C1_Reset();
 
 enum {LED_ON, LED_OFF, ENABLE_ON, ENABLE_OFF, BLINK_ENABLE};
