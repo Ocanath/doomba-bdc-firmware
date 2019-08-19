@@ -149,6 +149,9 @@ int main(void)
 
 		iqref = i2c_rx_data.v;
 
+		uint32_t * fptr_chk = (uint32_t*)(&(i2c_rx_data.v));	//check to make sure your input torque is not NaN
+		if( (*fptr_chk & 0x7f800000) == 0x7f800000)
+			iqref = 0;
 		if(iqref > MAX_CUR)
 			iqref = MAX_CUR;
 		else if (iqref < -MAX_CUR)
