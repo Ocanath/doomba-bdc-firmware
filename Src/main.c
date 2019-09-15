@@ -115,27 +115,11 @@ int main(void)
 
 	theta_m_prev = 0;
 
-	//	uint8_t status = CAL_ERR_TIMEOUT;
-	//	while(status != CAL_SUCCESS)
-	//	{
-	//		check_encoder_region(0.5f, 50, 0.15f, 0.7f, 3000, &status);
-	//		if(status == CAL_ERR_TIMEOUT)
-	//			check_encoder_region(-0.5f, 50, 0.15f, 0.7f, 3000, &status);
-	//	}
-	//	theta_m_prev = theta_enc_prev;
-
-	//	check_encoder_region_2(1000, 100000);	//less violent. For more robust operation, make the first number larger. If the distance sweep is too big, make it smaller.
-	//	theta_m_prev=theta_enc_prev;
 
 	force_encoder_region();
 	theta_m_prev=theta_enc_prev;
 
-	/*
-	 * TODO: minor optimization
-	 * Only format i2c data ONCE, when new data is recieved.
-	 */
 	uint32_t uart_tx_ts = 0;
-
 	while(1)
 	{
 		int rc = handle_i2c(&hi2c1);
