@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 8	//module num for preset encoder offset
+#define MODULE_NUMBER 6	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
