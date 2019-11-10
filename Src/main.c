@@ -117,7 +117,9 @@ int main(void)
 
 
 	force_encoder_region();
-	theta_m_prev=fmod_2pi(theta_enc_prev+PI)-PI;
+	if(theta_enc_prev < -PI)
+		theta_enc_prev += TWO_PI*2.0f;
+	theta_m_prev=theta_enc_prev;
 
 	uint32_t uart_tx_ts = 0;
 	while(1)
