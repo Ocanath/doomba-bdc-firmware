@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 6	//module num for preset encoder offset
+#define MODULE_NUMBER 9	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -97,11 +97,20 @@ int16_t cos_mid = 2028;
 int16_t sin_mid = 1993;
 #endif
 #if MODULE_NUMBER == 8		//motor 2 used in gimbal car after the disasterous i2c explosion of 2019
-float align_offset = -0.216198981f;
+float align_offset = -0.271198928f;
 const float iq_gain = 0.01f;
 const float id_gain = 0.01f;
 uint32_t i2c_address = I2C_BASE+1;
 const float elec_conv_ratio = 5.5f;	//MC4114 has 22 poles, 11 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2052;
 int16_t sin_mid = 1982;
+#endif
+#if MODULE_NUMBER == 9						//mC4225 Gearbox module 4
+float align_offset = -0.608598333f;	//0.273627996, p-0.00627872162, n-0.553534687
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+uint32_t i2c_address = I2C_BASE+4;
+const float elec_conv_ratio = 3.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2071;
+int16_t sin_mid = 1991;
 #endif
