@@ -447,7 +447,7 @@ void force_encoder_region()
 	float tau = 5.0f;
 	while(retc != VERIFY_PASSED)
 	{
-		retc = verify_encoder_region(tau, 1.5f, 2, 500);
+		retc = verify_encoder_region(tau, 0.25f, 3, 500);
 		if(retc == VERIFY_FAILED)
 		{
 			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
