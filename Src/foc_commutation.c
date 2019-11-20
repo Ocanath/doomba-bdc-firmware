@@ -23,8 +23,8 @@ float i_d_meas = 0;
 #define SQRT_3 			1.7320508075688772935274463415f
 
 
-const float adc_conv_A = 0.005754743303571*1.574414186193794;
-const float adc_conv_B = 0.005754743303571*1.126926563916591;
+const float adc_conv_A = 0.005754743303571;
+const float adc_conv_B = 0.005754743303571;
 const float adc_conv_C = 0.005754743303571;
 
 int gl_sector=1;	//for SVM
