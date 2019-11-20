@@ -22,7 +22,8 @@ float i_d_meas = 0;
 #define SQRT_3_BY_2 	0.866025404
 #define SQRT_3 			1.7320508075688772935274463415f
 
-
+//0.02929394531f;//TODO: use actual current shunt val and retune
+//0.005754743303571;
 const float adc_conv_A = 0.005754743303571;
 const float adc_conv_B = 0.005754743303571;
 const float adc_conv_C = 0.005754743303571;
