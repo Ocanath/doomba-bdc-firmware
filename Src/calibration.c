@@ -6,7 +6,7 @@
  */
 #include "calibration.h"
 #include "mag-encoder.h"
-
+#include "i2c.h"
 
 void print_float(float v)
 {
@@ -481,6 +481,7 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 	while(1)
 	{
 		theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
+		i2c_tx_data.v = theta_m;
 		foc(tau,0);
 
 		float diff = theta_m - pos_prev;
@@ -513,6 +514,14 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 		else if (pass_count <= -pass_count_thresh)
 			return VERIFY_FAILED;
 
+		int rc = handle_i2c(&hi2c1);
+		if(hi2c1.ErrorCode != 0 || rc != 0)
+		{
+			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
+			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
+			I2C1_Reset();
+			gl_i2c_mode = I2C_MODE_WAIT;
+		}
 	}
 
 }
