@@ -119,19 +119,6 @@ int main(void)
 
 
 
-
-	uint32_t tA,tB,tC;
-	float a,b;
-	inverse_park_transform(0.78f, 0.0f, 0.0f, 1.0f, &a, &b);	//maybe call theta rel again?sin_theta
-	svm(a,b,TIM1->ARR, &tA, &tB, &tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
-	while(1)
-	{
-		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-	}
-
-
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
 		theta_enc_prev += TWO_PI*2.0f;
