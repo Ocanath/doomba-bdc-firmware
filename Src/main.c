@@ -73,7 +73,7 @@ int main(void)
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 	TIMER_UPDATE_DUTY(0,0,0);
-	TIM1->CCR4 = 650;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
+	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
 
@@ -90,6 +90,8 @@ int main(void)
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
 	uint32_t led_ts = HAL_GetTick()+100;
+
+
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -118,6 +120,7 @@ int main(void)
 	float idref = 0;
 
 	theta_m_prev = 0;
+
 
 
 	force_encoder_region();
