@@ -359,15 +359,16 @@ uint8_t check_encoder_region_2(uint32_t track_time, uint32_t timeout)
  *
  *
  */
-float sweep_align(float align_neg, float align_pos)
+float sweep_align(float align_neg, float align_pos,float step, float tau, uint32_t timestep)
 {
 	theta_m_prev = 0;
 	float max_err = 0;
 	float min_err = 1000;
 	float align_offset_of_min_error = align_offset;
-	for(align_offset = align_neg; align_offset < align_pos; align_offset += .005)
+	uint32_t disp_ts=0;
+	for(align_offset = align_neg; align_offset < align_pos; align_offset += step)
 	{
-		float err = check_align_offset(400, 15);
+		float err = check_align_offset(400, tau);
 		if(err < .3)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 		else
@@ -375,8 +376,8 @@ float sweep_align(float align_neg, float align_pos)
 		if(err < min_err)
 		{
 			min_err = err;
-			if(err < .5)	//if you're within range, new candidate for best align offset
-				align_offset_of_min_error = align_offset;
+//			if(err < .5)	//if you're within range, new candidate for best align offset
+			align_offset_of_min_error = align_offset;
 		}
 		if(err > max_err)
 			err = max_err;
@@ -402,7 +403,7 @@ void manual_align_calib()
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq_ref = 15;
+	float iq_ref = 40;
 	uint32_t print_ts = 0;
 	float th_m_prev = 0;
 	float th_tmp = 0;	//unwrap smashes unwrap.
@@ -447,7 +448,7 @@ void force_encoder_region()
 	float tau = 5.0f;
 	while(retc != VERIFY_PASSED)
 	{
-		retc = verify_encoder_region(tau, 0.25f, 3, 500);
+		retc = verify_encoder_region(tau, 0.33f, 3, 500);
 		if(retc == VERIFY_FAILED)
 		{
 			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region

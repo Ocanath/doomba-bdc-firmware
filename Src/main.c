@@ -100,6 +100,10 @@ int main(void)
 #endif
 	//	manual_align_calib();//-0.236198962
 
+//	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
+//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.005f, 30.0f, 400);
+//	align_offset = sweep_align(align_offset-.1f,align_offset+0.1f, 0.001f, 40.0f, 500);
+
 	TIMER_UPDATE_DUTY(0,0,0);
 
 #ifdef TEST_FOC
