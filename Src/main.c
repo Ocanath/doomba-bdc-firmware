@@ -103,8 +103,8 @@ int main(void)
 	//	manual_align_calib();//-0.236198962
 
 //	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
-//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.005f, 30.0f, 400);
-//	align_offset = sweep_align(align_offset-.1f,align_offset+0.1f, 0.001f, 40.0f, 500);
+//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
+//	align_offset = sweep_align(align_offset-.01f,align_offset+0.01f, 0.0005f, 40.0f, 500);
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
@@ -122,11 +122,11 @@ int main(void)
 	theta_m_prev = 0;
 
 
-
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
 		theta_enc_prev += TWO_PI*2.0f;
 	theta_m_prev=theta_enc_prev;
+
 
 	uint32_t uart_tx_ts = 0;
 	while(1)
@@ -170,8 +170,11 @@ int main(void)
 
 		float i_q, i_d;
 		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
-
+#ifdef FLIP_TAU
+		controller_PI(-iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
+#else
 		controller_PI(iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
+#endif
 		controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
 
 

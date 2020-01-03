@@ -11,8 +11,6 @@
 #include "stm32f3xx_hal.h"
 #include "settings.h"
 
-#define COMM_PWM_PERIOD 1000
-
 #define STAT_PORT GPIOC
 #define STAT_PIN GPIO_PIN_13
 
