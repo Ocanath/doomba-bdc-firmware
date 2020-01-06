@@ -9,7 +9,7 @@
 #define SETTINGS_H_
 #include "stm32f3xx_hal.h"
 
-#define EXTERNAL_OSCILLATOR
+//#define EXTERNAL_OSCILLATOR
 
 #ifdef EXTERNAL_OSCILLATOR
 #define COMM_PWM_PERIOD 1000//1125?
@@ -17,7 +17,7 @@
 #define COMM_PWM_PERIOD 1000
 #endif
 
-#define FLIP_TAU
+//#define FLIP_TAU
 
 //#define GET_INIT_OFFSET
 //#define GET_ENCODER_MIDPOINT
