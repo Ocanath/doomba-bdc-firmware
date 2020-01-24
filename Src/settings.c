@@ -141,14 +141,15 @@ const float elec_conv_ratio = 4.0f;	//MC4225 has 14 poles, 7 pole pairs, and our
 int16_t cos_mid = 2072;
 int16_t sin_mid = 1948;
 #endif
-#if MODULE_NUMBER == 14						//mC4225 Gearbox module 5
-float align_offset = -0.578984737;	//-0.578984737
+#if MODULE_NUMBER == 14						//mC4225 Gearbox module 5. HAS EXTERNAL OSCILLATOR
+float align_offset = -0.578984737;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 uint32_t i2c_address = I2C_BASE+9;
-const float elec_conv_ratio = 4.0f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+const float elec_conv_ratio = 4.0f;
 int16_t cos_mid = 2072;
 int16_t sin_mid = 1948;
+//has external osc
 #endif
 #if MODULE_NUMBER == 15						//mC4225 Gearbox module 6
 float align_offset = -0.390f;	//-0.578984737
