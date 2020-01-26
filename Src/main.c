@@ -42,7 +42,6 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
-
 int main(void)
 {
 	HAL_Init();
@@ -104,7 +103,7 @@ int main(void)
 
 //	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
 //	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
-//	align_offset = sweep_align(align_offset-.01f,align_offset+0.01f, 0.0005f, 40.0f, 500);
+//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
