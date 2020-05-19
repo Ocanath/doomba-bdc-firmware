@@ -17,6 +17,10 @@ float i_q_meas = 0;
 float i_d_meas = 0;
 
 
+extern uint32_t dq_ts = 0;
+extern float prev_theta_m_dq = 0;
+extern float phase_advance_angle = 0;
+
 #define ONE_BY_SQRT_3 	0.57735026919
 #define TWO_BY_SQRT_3 	1.15470053838
 #define SQRT_3_BY_2 	0.866025404

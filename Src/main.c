@@ -124,10 +124,13 @@ int main(void)
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
 		theta_enc_prev += TWO_PI*2.0f;
-	theta_m_prev=theta_enc_prev;
+//	theta_m_prev=theta_enc_prev;
 
 
-	uint32_t uart_tx_ts = 0;
+//	uint32_t uart_tx_ts = 0;
+	uint32_t dq_ts = 0;
+	float prev_theta_m_dq = 0;
+	float phase_advance_angle = 0;
 	while(1)
 	{
 		int rc = handle_i2c(&hi2c1);
@@ -152,6 +155,7 @@ int main(void)
 			iqref = 0;
 
 //		parse_master_cmd(&led_ts);
+		iqref = 90.f;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -160,9 +164,9 @@ int main(void)
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-		//		float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
 		float theta_enc = unwrap(theta_rel_rad(), &theta_enc_prev);
-		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+		float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+//		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -183,8 +187,18 @@ int main(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 		/**********************************************END**********************************************/
 
-		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+		float theta_m = theta_enc*.5f;//unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+//		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
 		i2c_tx_data.v = theta_m;
+
+
+		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+		{
+			float dq = (theta_m-prev_theta_m_dq)*25.0f;
+			prev_theta_m_dq = theta_m;
+			phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+			dq_ts = HAL_GetTick()+40;
+		}
 
 		if(HAL_GetTick()>=led_ts)
 		{
