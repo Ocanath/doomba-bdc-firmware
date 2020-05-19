@@ -134,13 +134,13 @@ int main(void)
 	while(1)
 	{
 		int rc = handle_i2c(&hi2c1);
-		if(hi2c1.ErrorCode != 0 || rc != 0)
-		{
-			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
-			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
-			I2C1_Reset();
-			gl_i2c_mode = I2C_MODE_WAIT;
-		}
+//		if(hi2c1.ErrorCode != 0 || rc != 0)
+//		{
+//			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
+//			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
+//			I2C1_Reset();
+//			gl_i2c_mode = I2C_MODE_WAIT;
+//		}
 
 		iqref = i2c_rx_data.v;
 
@@ -155,7 +155,6 @@ int main(void)
 			iqref = 0;
 
 //		parse_master_cmd(&led_ts);
-		iqref = 90.f;
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -176,9 +175,9 @@ int main(void)
 #ifdef FLIP_TAU
 		controller_PI(-iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
 #else
-		controller_PI(iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
+		controller_PI(iqref, i_q, iq_gain, 0.0f, &x_iq_PI, &uq);		//this sort of works
 #endif
-		controller_PI(idref, i_d, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
+		controller_PI(idref, i_d, id_gain, 0.0f, &x_id_PI, &ud);		//high current
 
 
 		uint32_t tA,tB,tC;
