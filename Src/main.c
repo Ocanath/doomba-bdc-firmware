@@ -22,7 +22,7 @@
 #define BACKWARD_CLOSED 5
 
 
-#define MAX_CUR 60.0
+#define MAX_CUR 90.0
 
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
