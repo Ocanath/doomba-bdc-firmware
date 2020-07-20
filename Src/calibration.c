@@ -376,7 +376,7 @@ float sweep_align(float align_neg, float align_pos,float step, float tau, uint32
 		if(err < min_err)
 		{
 			min_err = err;
-//			if(err < .5)	//if you're within range, new candidate for best align offset
+			//			if(err < .5)	//if you're within range, new candidate for best align offset
 			align_offset_of_min_error = align_offset;
 		}
 		if(err > max_err)
@@ -403,39 +403,52 @@ void manual_align_calib()
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq_ref = 40;
-	uint32_t print_ts = 0;
-	float th_m_prev = 0;
-	float th_tmp = 0;	//unwrap smashes unwrap.
+	float iq_ref = 50;
+	for(int i = 0; i < 20; i ++)
+	{
+		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+		HAL_Delay(100);
+	}
+	uint32_t tstart = HAL_GetTick();
 	while(1)
 	{
+		float absdq = abs_f(gl_dq);
 
-		float theta_m = unwrap(theta_abs_rad(), &th_m_prev)*.5;
+		//		if(abs_f(iq_ref) > 10 && absdq < 100 && abs_f(i_q_meas) < .1f)
+		//		{
+		//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		//
+		//			HAL_Delay(1);
+		//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+		//			TIMER_UPDATE_DUTY(0,0,0);
+		//			HAL_Delay(1);
+		//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+		//			HAL_Delay(1);
+		//		}
+		//		else
+		//		{
+		//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		//		}
+		//		if(HAL_GetTick() > reverse_ts)
+		//		{
+		//			reverse_ts = HAL_GetTick()+2000;
+		//			iq_ref = -iq_ref;
+		//		}
 
-		if( (theta_m - th_tmp > 0 && iq_ref > 0) || (theta_m - th_tmp < 0 && iq_ref < 0))
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-		else
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-		th_tmp = theta_m;
+//		float i_a,i_b,i_c;
+//		conv_raw_current(&i_a,&i_b,&i_c);
+//		if(abs_f(iq_ref) > 5.f && abs_f(i_a) < .5f && abs_f(i_b) < .5f && abs_f(i_c) < .5f)
+//		{
+//			TIMER_UPDATE_DUTY(0,0,0);
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+//			HAL_Delay(1);
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+//			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+//		}
 
+		float t = ((float)(HAL_GetTick()-tstart))*.001f;
+		iq_ref = 80*sin_fast(fmod_2pi(t*.5f));
 
-		if(HAL_GetTick()>print_ts)
-		{
-			float t = (float)HAL_GetTick()*.001f;
-			//			theta_m_previous = theta_m;
-			print_float(theta_m);
-			//			print_float(v_m);
-			print_float(t);
-			//			print_float(theta_m-PI);
-			//			print_float(align_offset);
-			print_ts = HAL_GetTick()+10;
-		}
-
-		if(HAL_GetTick() > reverse_ts)
-		{
-			reverse_ts = HAL_GetTick()+2000;
-			iq_ref = -iq_ref;
-		}
 		foc(iq_ref,0);
 	}
 }
@@ -504,9 +517,9 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 		}
 		if((HAL_GetTick() - tau_switch_ts) > timeout)
 		{
-//			tau=-tau;
-//			pos_prev = theta_m;
-//			tau_switch_ts = HAL_GetTick();
+			//			tau=-tau;
+			//			pos_prev = theta_m;
+			//			tau_switch_ts = HAL_GetTick();
 			return VERIFY_TIMEOUT;
 		}
 

@@ -76,18 +76,12 @@ extern uint32_t dq_ts;
 extern float prev_theta_m_dq;
 extern float phase_advance_angle;
 extern float gl_prop_delay_const;
+
+
+extern float gl_theta_m;
+extern float gl_dq;
 inline void foc(float iqref, float idref)
 {
-
-	float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
-	{
-		float dq = (theta_m-prev_theta_m_dq)*25.0f;
-		prev_theta_m_dq = theta_m;
-		phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
-		dq_ts = HAL_GetTick()+40;
-	}
-
 	float i_a,i_b,i_c;
 	conv_raw_current(&i_a,&i_b, &i_c);
 
@@ -111,10 +105,23 @@ inline void foc(float iqref, float idref)
 #endif
 	controller_PI(idref, i_d_meas, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
 
+
 	uint32_t tA,tB,tC;
 	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+	gl_theta_m = theta_enc*.5f;
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = gl_theta_m;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+	}
+
 }
 
 #endif /* FOC_COMMUTATION_H_ */

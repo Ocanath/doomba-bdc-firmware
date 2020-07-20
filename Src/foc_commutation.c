@@ -16,10 +16,12 @@ float R;
 float i_q_meas = 0;
 float i_d_meas = 0;
 
+float gl_theta_m = 0;
+float gl_dq = 0;
 
-extern uint32_t dq_ts = 0;
-extern float prev_theta_m_dq = 0;
-extern float phase_advance_angle = 0;
+uint32_t dq_ts = 0;
+float prev_theta_m_dq = 0;
+float phase_advance_angle = 0;
 
 #define ONE_BY_SQRT_3 	0.57735026919
 #define TWO_BY_SQRT_3 	1.15470053838
