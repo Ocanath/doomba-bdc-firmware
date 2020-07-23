@@ -223,6 +223,18 @@ void conv_raw_current(float * i_a, float * i_b, float * i_c)
 	*i_a = (float)(gl_current_input_offset_A - dma_adc_raw[ADC_CHAN_CURRENT_A])*adc_conv_A;
 	*i_b = (float)(gl_current_input_offset_B - dma_adc_raw[ADC_CHAN_CURRENT_B])*adc_conv_B;
 	*i_c = (float)(gl_current_input_offset_C - dma_adc_raw[ADC_CHAN_CURRENT_C])*adc_conv_C;
+
+//	*i_a = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_A])*0.0402832031f  );
+//	*i_b = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_B])*0.0402832031f  );
+//	*i_c = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_C])*0.0402832031f  );
+}
+
+float abs_f(float in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
 }
 
 /*

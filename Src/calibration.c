@@ -95,17 +95,6 @@ float check_encoder_region(float start_step, uint32_t settle_time, float settle_
 	return theta_enc_prev;
 }
 
-
-static float abs_f(float in)
-{
-	if(in < 0)
-		return -in;
-	else
-		return in;
-}
-
-
-
 static float time_seconds()
 {
 	return ((float)HAL_GetTick())*.001f;
@@ -403,51 +392,35 @@ void manual_align_calib()
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq_ref = 50;
+	float iq_ref = 30.f;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
 		HAL_Delay(100);
 	}
 	uint32_t tstart = HAL_GetTick();
+	uint32_t disp_ts = tstart;
 	while(1)
 	{
-		float absdq = abs_f(gl_dq);
 
-		//		if(abs_f(iq_ref) > 10 && absdq < 100 && abs_f(i_q_meas) < .1f)
-		//		{
-		//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-		//
-		//			HAL_Delay(1);
-		//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-		//			TIMER_UPDATE_DUTY(0,0,0);
-		//			HAL_Delay(1);
-		//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-		//			HAL_Delay(1);
-		//		}
-		//		else
-		//		{
-		//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-		//		}
-		//		if(HAL_GetTick() > reverse_ts)
-		//		{
-		//			reverse_ts = HAL_GetTick()+2000;
-		//			iq_ref = -iq_ref;
-		//		}
+		if(HAL_GetTick() > disp_ts)
+		{
+////			HAL_GPIO_WritePin(ENABLE_PORT,ENABLE_PIN,0);
+//			float t = ((float)(HAL_GetTick()-tstart))*.001f;
+//			iq_ref = 80.7f*sin_fast(fmod_2pi(t*3.33f+PI)-PI);
+//
+			print_float(i_q_meas);
+			print_float(gl_dq);
+//			//			print_float(-.0480f*abs_f(i_q_meas) + 0.7336f);
+			disp_ts = HAL_GetTick() + 20;
+		}
 
-//		float i_a,i_b,i_c;
-//		conv_raw_current(&i_a,&i_b,&i_c);
-//		if(abs_f(iq_ref) > 5.f && abs_f(i_a) < .5f && abs_f(i_b) < .5f && abs_f(i_c) < .5f)
-//		{
-//			TIMER_UPDATE_DUTY(0,0,0);
-//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-//			HAL_Delay(1);
-//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-//			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
-//		}
-
-		float t = ((float)(HAL_GetTick()-tstart))*.001f;
-		iq_ref = 80*sin_fast(fmod_2pi(t*.5f));
+		if(HAL_GetTick()>reverse_ts)
+		{
+			iq_ref = -iq_ref;
+			reverse_ts = HAL_GetTick()+5000;
+			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+		}
 
 		foc(iq_ref,0);
 	}

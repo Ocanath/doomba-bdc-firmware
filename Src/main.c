@@ -120,11 +120,12 @@ int main(void)
 
 	theta_m_prev = 0;
 
-
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
 		theta_enc_prev += TWO_PI*2.0f;
 //	theta_m_prev=theta_enc_prev;
+
+
 
 
 //	uint32_t uart_tx_ts = 0;
@@ -144,13 +145,10 @@ int main(void)
 
 		iqref = i2c_rx_data.v;
 
+
 		uint32_t * fptr_chk = (uint32_t*)(&(i2c_rx_data.v));	//check to make sure your input torque is not NaN
 		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
 			iqref = 0;
-		if(iqref > MAX_CUR)
-			iqref = MAX_CUR;
-		else if (iqref < -MAX_CUR)
-			iqref = -MAX_CUR;
 		if(rc != 0)
 			iqref = 0;
 
@@ -181,6 +179,10 @@ int main(void)
 
 
 		uint32_t tA,tB,tC;
+		if(uq > 0.7f)
+			uq = 0.7f;
+		if(uq < - 0.7f)
+			uq = -0.7f;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);

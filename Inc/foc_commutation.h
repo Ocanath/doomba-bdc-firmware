@@ -77,9 +77,13 @@ extern float prev_theta_m_dq;
 extern float phase_advance_angle;
 extern float gl_prop_delay_const;
 
-
 extern float gl_theta_m;
 extern float gl_dq;
+
+
+float abs_f(float in);
+
+
 inline void foc(float iqref, float idref)
 {
 	float i_a,i_b,i_c;
@@ -103,9 +107,15 @@ inline void foc(float iqref, float idref)
 #else
 	controller_PI(iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
 #endif
-	controller_PI(idref, i_d_meas, id_gain, 0.0000000001, &x_id_PI, &ud);		//high current
+//	controller_PI(idref, i_d_meas, id_gain, 0.0f, &x_id_PI, &ud);		//high current
+	ud = 0.f;
 
-
+//	float clamp_v = -.0480f*abs_f(i_q_meas) + 0.7f;
+////	float clamp_v = .7f;
+//	if(uq > clamp_v)
+//		uq = clamp_v;
+//	if(uq < -clamp_v)
+//		uq = -clamp_v;
 	uint32_t tA,tB,tC;
 	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
@@ -120,6 +130,13 @@ inline void foc(float iqref, float idref)
 		prev_theta_m_dq = gl_theta_m;
 		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 		dq_ts = HAL_GetTick()+40;
+
+		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+		{
+			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+			for(int i = 0; i < 500; i++);
+			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+		}
 	}
 
 }
