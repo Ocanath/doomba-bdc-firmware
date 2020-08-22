@@ -42,6 +42,18 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
+
+/**
+  * @brief Rx Transfer completed callback.
+  * @param huart UART handle.
+  * @retval None
+  */
+uint8_t gl_uart_cplt_flag = 1;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+}
+
 int main(void)
 {
 	HAL_Init();
@@ -127,6 +139,8 @@ int main(void)
 
 
 
+	floatsend_t uart_encoder_data;
+	uart_encoder_data.v = 0.f;
 
 //	uint32_t uart_tx_ts = 0;
 	uint32_t dq_ts = 0;
@@ -142,8 +156,13 @@ int main(void)
 			I2C1_Reset();
 			gl_i2c_mode = I2C_MODE_WAIT;
 		}
-
 		iqref = i2c_rx_data.v;
+
+		if(gl_uart_cplt_flag == 1)	//should work
+		{
+			gl_uart_cplt_flag=0;
+			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
+		}
 
 
 		uint32_t * fptr_chk = (uint32_t*)(&(i2c_rx_data.v));	//check to make sure your input torque is not NaN
@@ -199,6 +218,17 @@ int main(void)
 			prev_theta_m_dq = theta_m;
 			phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 			dq_ts = HAL_GetTick()+40;
+
+
+			/*
+			 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+			 */
+			if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+			{
+				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+				unwrap( theta_rel_rad(), &theta_enc_prev);
+				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+			}
 		}
 
 		if(HAL_GetTick()>=led_ts)

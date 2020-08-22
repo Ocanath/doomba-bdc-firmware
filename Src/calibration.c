@@ -392,7 +392,7 @@ void manual_align_calib()
 void test_foc()
 {
 	uint32_t reverse_ts = 0;
-	float iq_ref = 30.f;
+	float iq_ref = 70.f;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
@@ -400,6 +400,7 @@ void test_foc()
 	}
 	uint32_t tstart = HAL_GetTick();
 	uint32_t disp_ts = tstart;
+	uint32_t led_ts = HAL_GetTick();
 	while(1)
 	{
 
@@ -415,11 +416,20 @@ void test_foc()
 			disp_ts = HAL_GetTick() + 20;
 		}
 
+		if(HAL_GetTick()>led_ts)
+		{
+			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+			led_ts = HAL_GetTick() + 250;
+		}
 		if(HAL_GetTick()>reverse_ts)
 		{
+
 			iq_ref = -iq_ref;
-			reverse_ts = HAL_GetTick()+5000;
-			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+			uint32_t halt_ts = HAL_GetTick()+250;
+			while(HAL_GetTick()<halt_ts)
+				foc(0,0);
+			reverse_ts = HAL_GetTick()+3000;
+//			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
 		}
 
 		foc(iq_ref,0);

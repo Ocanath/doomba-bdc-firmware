@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 21	//module num for preset encoder offset
+#define MODULE_NUMBER 16	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -161,13 +161,14 @@ int16_t cos_mid = 2027;
 int16_t sin_mid = 1971;
 #endif
 #if MODULE_NUMBER == 16						//mC4225 Gearbox module 6
-float align_offset = -0.670f;	//-0.578984737
+float align_offset = -0.671f;	//-0.578984737
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
+const float gl_prop_delay_const = 475;
 uint32_t i2c_address = I2C_BASE+11;
 const float elec_conv_ratio = 4.0f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 2001;
-int16_t sin_mid = 2018;
+int16_t cos_mid = 2030;
+int16_t sin_mid = 1988;
 #endif
 #if MODULE_NUMBER == 17						//gimbal, test module (severely used motor)
 float align_offset = -0.470f;	//-0.578984737
@@ -200,22 +201,22 @@ int16_t cos_mid = 2056;
 int16_t sin_mid = 1983;
 #endif
 #if MODULE_NUMBER == 20						//rando.
-float align_offset = -0.28f;	//-0.578984737
+float align_offset = -0.0561990365f;	//-0.578984737
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 475;
+uint32_t i2c_address = I2C_BASE+2;
+const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2068;
+int16_t sin_mid = 1941;
+#endif
+#if MODULE_NUMBER == 21						//rando.
+float align_offset = -0.297f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 475;
 uint32_t i2c_address = I2C_BASE+2;
 const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2050;
-int16_t sin_mid = 1984;
-#endif
-#if MODULE_NUMBER == 21						//rando.
-float align_offset = -0.45f;	//-0.578984737
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 475;
-uint32_t i2c_address = I2C_BASE+2;
-const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 2062;
-int16_t sin_mid = 1942;
+int16_t sin_mid = 1987;
 #endif

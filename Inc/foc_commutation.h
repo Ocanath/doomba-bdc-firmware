@@ -131,10 +131,13 @@ inline void foc(float iqref, float idref)
 		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 		dq_ts = HAL_GetTick()+40;
 
+		/*
+		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+		 */
 		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
 		{
 			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-			for(int i = 0; i < 500; i++);
+			unwrap( theta_rel_rad(), &theta_enc_prev);
 			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
 		}
 	}
