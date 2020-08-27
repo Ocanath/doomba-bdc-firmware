@@ -48,10 +48,10 @@ void brushed_tau(float tau)
   * @param huart UART handle.
   * @retval None
   */
-uint8_t gl_uart_cplt_flag = 1;
+uint8_t gl_uart_cplt_flag = 0;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-
+	gl_uart_cplt_flag = 1;
 }
 
 int main(void)

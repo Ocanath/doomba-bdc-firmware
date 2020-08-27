@@ -39,12 +39,12 @@ int handle_i2c(I2C_HandleTypeDef * hi2c)
 
 	if(gl_i2c_mode == I2C_MODE_TRANSMIT)
 	{
-		HAL_I2C_Slave_Sequential_Transmit_IT(&hi2c1, i2c_tx_data.d, TX_SIZE, I2C_LAST_FRAME);
+		HAL_I2C_Slave_Seq_Transmit_IT(&hi2c1, i2c_tx_data.d, TX_SIZE, I2C_LAST_FRAME);
 		gl_i2c_mode = I2C_MODE_WAIT;
 	}
 	else if(gl_i2c_mode == I2C_MODE_RECIEVE)
 	{
-		HAL_I2C_Slave_Sequential_Receive_IT(&hi2c1, i2c_rx_data.d, RX_SIZE, I2C_FIRST_FRAME);
+		HAL_I2C_Slave_Seq_Receive_IT(&hi2c1, i2c_rx_data.d, RX_SIZE, I2C_FIRST_FRAME);
 		gl_i2c_mode = I2C_MODE_WAIT;
 		recieved_data_ts = HAL_GetTick();
 	}
