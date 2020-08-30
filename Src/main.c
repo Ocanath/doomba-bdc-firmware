@@ -44,10 +44,10 @@ void brushed_tau(float tau)
 
 
 /**
-  * @brief Rx Transfer completed callback.
-  * @param huart UART handle.
-  * @retval None
-  */
+ * @brief Rx Transfer completed callback.
+ * @param huart UART handle.
+ * @retval None
+ */
 uint8_t gl_uart_cplt_flag = 0;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -113,9 +113,9 @@ int main(void)
 #endif
 	//	manual_align_calib();//-0.236198962
 
-//	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
-//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
-//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
+	//	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
+	//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
+	//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
@@ -132,20 +132,19 @@ int main(void)
 
 	theta_m_prev = 0;
 
-	force_encoder_region();
-	if(theta_enc_prev < -PI)
-		theta_enc_prev += TWO_PI*2.0f;
-//	theta_m_prev=theta_enc_prev;
-
-
-
 	floatsend_t uart_encoder_data;
 	uart_encoder_data.v = 0.f;
 
-//	uint32_t uart_tx_ts = 0;
+	force_encoder_region();
+	if(theta_enc_prev < -PI)
+		theta_enc_prev += TWO_PI*2.0f;
+	//	theta_m_prev=theta_enc_prev;
+
+	//	uint32_t uart_tx_ts = 0;
 	uint32_t dq_ts = 0;
 	float prev_theta_m_dq = 0;
 	float phase_advance_angle = 0;
+	uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
 	while(1)
 	{
 		int rc = handle_i2c(&hi2c1);
@@ -158,20 +157,13 @@ int main(void)
 		}
 		iqref = i2c_rx_data.v;
 
-		if(gl_uart_cplt_flag == 1)	//should work
-		{
-			gl_uart_cplt_flag=0;
-			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
-		}
-
-
 		uint32_t * fptr_chk = (uint32_t*)(&(i2c_rx_data.v));	//check to make sure your input torque is not NaN
 		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
 			iqref = 0;
 		if(rc != 0)
 			iqref = 0;
 
-//		parse_master_cmd(&led_ts);
+		//		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/
 		float i_a,i_b,i_c;
@@ -182,7 +174,7 @@ int main(void)
 
 		float theta_enc = unwrap(theta_rel_rad(), &theta_enc_prev);
 		float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
-//		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+		//		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -208,9 +200,16 @@ int main(void)
 		/**********************************************END**********************************************/
 
 		float theta_m = theta_enc*.5f;//unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-//		float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-		i2c_tx_data.v = theta_m;
 
+		if(use_uart_encoder == 0)
+			i2c_tx_data.v = theta_m;
+		HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
+		if(gl_uart_cplt_flag == 1)	//should work
+		{
+			i2c_tx_data.v = uart_encoder_data.v;
+			use_uart_encoder = 1;
+			gl_uart_cplt_flag=0;
+		}
 
 		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 		{
