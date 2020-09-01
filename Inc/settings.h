@@ -9,6 +9,8 @@
 #define SETTINGS_H_
 #include "stm32f3xx_hal.h"
 
+#define USE_UART_ENCODER
+
 #define EXTERNAL_OSCILLATOR
 
 #ifdef EXTERNAL_OSCILLATOR

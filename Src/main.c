@@ -144,7 +144,7 @@ int main(void)
 	uint32_t dq_ts = 0;
 	float prev_theta_m_dq = 0;
 	float phase_advance_angle = 0;
-	uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
+	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
 	while(1)
 	{
 		int rc = handle_i2c(&hi2c1);
@@ -201,15 +201,17 @@ int main(void)
 
 		float theta_m = theta_enc*.5f;//unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
 
-		if(use_uart_encoder == 0)
-			i2c_tx_data.v = theta_m;
+//		if(use_uart_encoder == 0)
+#ifndef USE_UART_ENCODER
+		i2c_tx_data.v = theta_m;
+#else
 		HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
 		if(gl_uart_cplt_flag == 1)	//should work
 		{
 			i2c_tx_data.v = uart_encoder_data.v;
-			use_uart_encoder = 1;
 			gl_uart_cplt_flag=0;
 		}
+#endif
 
 		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 		{
