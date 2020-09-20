@@ -109,7 +109,7 @@ int main(void)
 #endif
 #ifdef GET_INIT_OFFSET
 	/*Best Method*/
-	align_offset = sweep_align(-PI/elec_conv_ratio, 0, 0.005f, 15.0f, 400);
+	auto_calibrate_motor();
 #endif
 	//	manual_align_calib();//-0.236198962
 

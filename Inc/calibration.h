@@ -19,11 +19,10 @@ float check_encoder_region(float start_step, uint32_t settle_time, float settle_
 uint8_t check_encoder_region_2(uint32_t track_time, uint32_t timeout);
 
 float check_align_offset(uint32_t run_time, float tau_ref);
-float sweep_align(float align_neg, float align_pos,float step, float tau, uint32_t timestep);
 void manual_align_calib();
 void test_foc();
 void force_encoder_region();
 uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout);
-
+void auto_calibrate_motor(void);
 
 #endif /* CALIBRATION_H_ */

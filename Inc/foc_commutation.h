@@ -83,6 +83,36 @@ extern float gl_dq;
 
 float abs_f(float in);
 
+inline void sinusoidal(float Vq, float Vd)
+{
+
+	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+	//float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+
+	float i_alpha,i_beta;
+	uint32_t tA,tB,tC;
+	inverse_park_transform(Vq, Vd, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+	gl_theta_m = theta_enc*.5f;
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = gl_theta_m;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+
+		/*
+		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+		 */
+	}
+}
 
 inline void foc(float iqref, float idref)
 {
