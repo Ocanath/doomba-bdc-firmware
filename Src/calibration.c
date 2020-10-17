@@ -89,7 +89,8 @@ float run_v(float v, uint32_t run_time, float * run_distance)
 void auto_calibrate_motor(void)
 {
 	TIMER_UPDATE_DUTY(0,0,0);
-	align_offset = -PI/elec_conv_ratio;
+//	align_offset = -PI/elec_conv_ratio;
+	align_offset = -.1f;
 	int passcount = 0;
 	while(1)
 	{

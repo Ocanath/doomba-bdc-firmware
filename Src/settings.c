@@ -14,7 +14,7 @@
  */
 
 #define I2C_BASE 0x20
-#define MODULE_NUMBER 16	//module num for preset encoder offset
+#define MODULE_NUMBER 22	//module num for preset encoder offset
 
 
 #ifdef GIMBAL_MOTOR
@@ -219,4 +219,14 @@ uint32_t i2c_address = I2C_BASE+2;
 const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 2050;
 int16_t sin_mid = 1987;
+#endif
+#if MODULE_NUMBER == 22						//rando.
+float align_offset = -0.261833549f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 475;
+uint32_t i2c_address = I2C_BASE+0;
+const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+int16_t cos_mid = 2062;
+int16_t sin_mid = 1974;
 #endif
