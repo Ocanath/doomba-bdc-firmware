@@ -4,7 +4,6 @@
 #include "adc.h"
 #include "foc_commutation.h"
 #include "mag-encoder.h"
-//#include <string.h>
 #include "settings.h"
 #include "calibration.h"
 
@@ -31,12 +30,11 @@
  *I also wrote a brushed control, for shits and goggles.
  */
 
-typedef struct floatsend_t
+typedef union floatsend_t
 {
 	float v;
-	uint8_t d[sizeof(float)];	//returns 4 at compile time. more readable
+	uint8_t d[sizeof(float)];
 }floatsend_t;
-
 
 void brushed_tau(float tau)
 {
@@ -70,7 +68,7 @@ int main(void)
 	MX_DMA_Init();
 	MX_ADC1_Init();
 	MX_TIM1_Init();
-	MX_I2C1_Init();
+
 	MX_USART2_UART_Init();
 
 	if(sizeof(float) != 4)
@@ -140,8 +138,8 @@ int main(void)
 
 	floatsend_t uart_encoder_data;
 	uart_encoder_data.v = 0.f;
-	floatsend_t tau_data;
-	floatsend_t q_data;
+	floatsend_t tau_data_in;
+	floatsend_t q_data_out;
 
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
@@ -155,11 +153,11 @@ int main(void)
 	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
 	while(1)
 	{
-
-		uint32_t * fptr_chk = (uint32_t*)(&(tau_data.v));	//check to make sure your input torque is not NaN
+		uint32_t * fptr_chk = (uint32_t*)(&(tau_data_in.v));	//check to make sure your input torque is not NaN
 		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
 			iqref = 0;
-
+		else
+			iqref = tau_data_in.v;
 		//		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/
@@ -200,12 +198,12 @@ int main(void)
 
 //		if(use_uart_encoder == 0)
 #ifndef USE_UART_ENCODER
-		i2c_tx_data.v = theta_m;
+		q_data_out.v = theta_m;
 #else
 		HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
 		if(gl_uart_cplt_flag == 1)	//should work
 		{
-			q_data.v = uart_encoder_data.v;
+			q_data_out.v = uart_encoder_data.v;
 			gl_uart_cplt_flag=0;
 		}
 #endif

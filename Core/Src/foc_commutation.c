@@ -251,5 +251,93 @@ void convert_phase_voltage(float * va, float * vb, float * vc)
 	*vc = (float)t3/1000.0;	//period
 }
 
+void sinusoidal(float Vq, float Vd)
+{
+
+	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+	//float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+
+	float i_alpha,i_beta;
+	uint32_t tA,tB,tC;
+	inverse_park_transform(Vq, Vd, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+	gl_theta_m = theta_enc*.5f;
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = gl_theta_m;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+
+		/*
+		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+		 */
+	}
+}
+
+void foc(float iqref, float idref)
+{
+	float i_a,i_b,i_c;
+	conv_raw_current(&i_a,&i_b, &i_c);
+
+	float i_alpha,i_beta;
+	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
+
+	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
+	//float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
+
+	float uq,ud;
+#ifdef FLIP_TAU
+	controller_PI(-iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+#else
+	controller_PI(iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
+#endif
+//	controller_PI(idref, i_d_meas, id_gain, 0.0f, &x_id_PI, &ud);		//high current
+	ud = 0.f;
+
+//	float clamp_v = -.0480f*abs_f(i_q_meas) + 0.7f;
+////	float clamp_v = .7f;
+//	if(uq > clamp_v)
+//		uq = clamp_v;
+//	if(uq < -clamp_v)
+//		uq = -clamp_v;
+	uint32_t tA,tB,tC;
+	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
 
 
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+	gl_theta_m = theta_enc*.5f;
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = gl_theta_m;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+
+		/*
+		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+		 */
+		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+		{
+			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+			unwrap( theta_rel_rad(), &theta_enc_prev);
+			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+		}
+	}
+
+}

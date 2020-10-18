@@ -6,7 +6,8 @@
  */
 #include "calibration.h"
 #include "mag-encoder.h"
-#include "i2c.h"
+#include "foc_commutation.h"
+
 
 void print_float(float v)
 {
@@ -171,37 +172,6 @@ void test_foc()
 }
 
 enum {VERIFY_FAILED, VERIFY_PASSED, VERIFY_TIMEOUT};
-void force_encoder_region()
-{
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	uint8_t retc = VERIFY_FAILED;
-	float tau = 5.0f;
-	while(retc != VERIFY_PASSED)
-	{
-		retc = verify_encoder_region(tau, 0.33f, 3, 500);
-		if(retc == VERIFY_FAILED)
-		{
-			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
-		}
-		if(retc == VERIFY_TIMEOUT)
-		{
-			if(tau > 0)
-			{
-				tau+=5.0f;
-				if(tau > 50.0f)
-					tau = 50.0f;
-			}
-			if(tau < 0)
-			{
-				tau -= 5.0f;
-				if(tau < -50.0f)
-					tau = -50.0f;
-			}
-			tau = -tau;
-		}
-	}
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-}
 
 uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout)
 {
@@ -256,3 +226,37 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 	}
 
 }
+
+void force_encoder_region()
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint8_t retc = VERIFY_FAILED;
+	float tau = 5.0f;
+	while(retc != VERIFY_PASSED)
+	{
+		retc = verify_encoder_region(tau, 0.33f, 3, 500);
+		if(retc == VERIFY_FAILED)
+		{
+			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
+		}
+		if(retc == VERIFY_TIMEOUT)
+		{
+			if(tau > 0)
+			{
+				tau+=5.0f;
+				if(tau > 50.0f)
+					tau = 50.0f;
+			}
+			if(tau < 0)
+			{
+				tau -= 5.0f;
+				if(tau < -50.0f)
+					tau = -50.0f;
+			}
+			tau = -tau;
+		}
+	}
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+}
+
+
