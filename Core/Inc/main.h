@@ -68,6 +68,7 @@ void Error_Handler(void);
 #define ENABLE_GPIO_Port GPIOC
 #define NFAULT_Pin GPIO_PIN_15
 #define NFAULT_GPIO_Port GPIOA
+#define NFAULT_EXTI_IRQn EXTI15_10_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

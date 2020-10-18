@@ -7,7 +7,6 @@
 #include "init.h"
 
 
-#ifdef EXTERNAL_OSCILLATOR
 /**
  * @brief System Clock Configuration
  * @retval None
@@ -18,13 +17,13 @@ void SystemClock_Config(void)
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-	/** Initializes the CPU, AHB and APB busses clocks
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
 	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
 	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -32,7 +31,7 @@ void SystemClock_Config(void)
 	{
 		Error_Handler();
 	}
-	/** Initializes the CPU, AHB and APB busses clocks
+	/** Initializes the CPU, AHB and APB buses clocks
 	 */
 	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
 			|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -45,8 +44,7 @@ void SystemClock_Config(void)
 	{
 		Error_Handler();
 	}
-	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C1|RCC_PERIPHCLK_TIM1;
-	PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_TIM1;
 	PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_HCLK;
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
 	{
@@ -54,57 +52,6 @@ void SystemClock_Config(void)
 	}
 }
 
-#else
-
-/**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void)
-{
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	/**Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-			|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C1|RCC_PERIPHCLK_TIM1
-			|RCC_PERIPHCLK_ADC1;
-	PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
-	PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_HCLK;
-	PeriphClkInit.Adc1ClockSelection = RCC_ADC1PLLCLK_DIV1;
-
-	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-	{
-		Error_Handler();
-	}
-}
-#endif
 
 /**
  * @brief ADC1 Initialization Function
@@ -192,6 +139,8 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
+	/* USER CODE BEGIN ADC1_Init 2 */
+	/* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -223,48 +172,39 @@ void MX_USART2_UART_Init(void)
 }
 
 /**
- * @brief I2C1 Initialization Function
+ * @brief CAN Initialization Function
  * @param None
  * @retval None
  */
-void MX_I2C1_Init(void)
+void MX_CAN_Init(void)
 {
 
-	/* USER CODE BEGIN I2C1_Init 0 */
+	/* USER CODE BEGIN CAN_Init 0 */
 
-	/* USER CODE END I2C1_Init 0 */
+	/* USER CODE END CAN_Init 0 */
 
-	/* USER CODE BEGIN I2C1_Init 1 */
+	/* USER CODE BEGIN CAN_Init 1 */
 
-	/* USER CODE END I2C1_Init 1 */
-	hi2c1.Instance = I2C1;
-	hi2c1.Init.Timing = 0x0000020B;	//Fast mode setting
-	hi2c1.Init.OwnAddress1 = i2c_address<<1;
-	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-	hi2c1.Init.OwnAddress2 = 0;
-	hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+	/* USER CODE END CAN_Init 1 */
+	hcan.Instance = CAN;
+	hcan.Init.Prescaler = 16;
+	hcan.Init.Mode = CAN_MODE_NORMAL;
+	hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
+	hcan.Init.TimeSeg1 = CAN_BS1_1TQ;
+	hcan.Init.TimeSeg2 = CAN_BS2_1TQ;
+	hcan.Init.TimeTriggeredMode = DISABLE;
+	hcan.Init.AutoBusOff = DISABLE;
+	hcan.Init.AutoWakeUp = DISABLE;
+	hcan.Init.AutoRetransmission = DISABLE;
+	hcan.Init.ReceiveFifoLocked = DISABLE;
+	hcan.Init.TransmitFifoPriority = DISABLE;
+	if (HAL_CAN_Init(&hcan) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	/** Configure Analogue filter
-	 */
-	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/** Configure Digital filter
-	 */
-	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN I2C1_Init 2 */
+	/* USER CODE BEGIN CAN_Init 2 */
 
-	/* USER CODE END I2C1_Init 2 */
+	/* USER CODE END CAN_Init 2 */
 
 }
 
@@ -319,11 +259,6 @@ void MX_TIM1_Init(void)
 	}
 
 	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
 	{
 		Error_Handler();
 	}
@@ -383,40 +318,38 @@ void MX_GPIO_Init(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOC, STAT_Pin|CAL_Pin|ENABLE_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_8, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-
-	/*Configure GPIO pins : PC13 PC14 PC15 */
-	GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+	/*Configure GPIO pins : STAT_Pin CAL_Pin ENABLE_Pin */
+	GPIO_InitStruct.Pin = STAT_Pin|CAL_Pin|ENABLE_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : PB12 PB8 */
-	GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_8;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	/*Configure GPIO pins : PA5 PA6 PA7 PA11
+                           PA12 */
+	GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_11
+			|GPIO_PIN_12;
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : PB0 PB1 PB2 PB10
+                           PB11 PB12 PB5 PB6
+                           PB7 */
+	GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10
+			|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_5|GPIO_PIN_6
+			|GPIO_PIN_7;
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : PA11 */
-	GPIO_InitStruct.Pin = GPIO_PIN_11;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-	/*Configure GPIO pin : PA15 */
-	GPIO_InitStruct.Pin = GPIO_PIN_15;
+	/*Configure GPIO pin : NFAULT_Pin */
+	GPIO_InitStruct.Pin = NFAULT_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	HAL_GPIO_Init(NFAULT_GPIO_Port, &GPIO_InitStruct);
 
 	/* EXTI interrupt init*/
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 0);
@@ -437,9 +370,7 @@ void Error_Handler(void)
 {
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
-	while(1)
-	{
-	}
+
 	/* USER CODE END Error_Handler_Debug */
 }
 
@@ -451,7 +382,7 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(char *file, uint32_t line)
+void assert_failed(uint8_t *file, uint32_t line)
 {
 	/* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
