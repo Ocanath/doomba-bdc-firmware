@@ -122,6 +122,8 @@ int main(void)
 	//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
 
 	TIMER_UPDATE_DUTY(0,0,0);
+	while(1)
+		sinusoidal(0.86f,0);
 
 #ifdef TEST_FOC
 	test_foc();

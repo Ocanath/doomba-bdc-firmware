@@ -103,8 +103,7 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
-
-	/**Configure Regular Channel
+	/** Configure Regular Channel
 	 */
 	sConfig.Channel = ADC_CHANNEL_2;
 	sConfig.Rank = ADC_REGULAR_RANK_2;
@@ -112,8 +111,7 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
-
-	/**Configure Regular Channel
+	/** Configure Regular Channel
 	 */
 	sConfig.Channel = ADC_CHANNEL_3;
 	sConfig.Rank = ADC_REGULAR_RANK_3;
@@ -121,8 +119,7 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
-
-	/**Configure Regular Channel
+	/** Configure Regular Channel
 	 */
 	sConfig.Channel = ADC_CHANNEL_4;
 	sConfig.Rank = ADC_REGULAR_RANK_4;
@@ -130,8 +127,7 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
-
-	/**Configure Regular Channel
+	/** Configure Regular Channel
 	 */
 	sConfig.Channel = ADC_CHANNEL_5;
 	sConfig.Rank = ADC_REGULAR_RANK_5;
@@ -140,6 +136,7 @@ void MX_ADC1_Init(void)
 		Error_Handler();
 	}
 	/* USER CODE BEGIN ADC1_Init 2 */
+
 	/* USER CODE END ADC1_Init 2 */
 
 }
@@ -262,7 +259,10 @@ void MX_TIM1_Init(void)
 	{
 		Error_Handler();
 	}
-
+	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+	{
+		Error_Handler();
+	}
 	sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
 	sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
 	sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;

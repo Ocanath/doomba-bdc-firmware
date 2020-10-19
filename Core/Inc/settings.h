@@ -27,13 +27,13 @@
 
 //#define GIMBAL_MOTOR
 
-float enc_mid_voltage_amp;
+extern float enc_mid_voltage_amp;
 
-uint32_t i2c_address;
-const float iq_gain;
-const float id_gain;
-float align_offset;				//offset angle IN RADIANS
-const float elec_conv_ratio;
-
+//uint32_t i2c_address;
+extern uint32_t ser_num;
+extern const float iq_gain;
+extern const float id_gain;
+extern float align_offset;				//offset angle IN RADIANS
+extern const float elec_conv_ratio;
 
 #endif /* SETTINGS_H_ */
