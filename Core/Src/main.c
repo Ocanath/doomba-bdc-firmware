@@ -81,11 +81,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
+typedef union
+{
+	uint32_t v;
+	uint8_t d[sizeof(uint32_t)];
+}uint32_fmt_t;
 
 CAN_TxHeaderTypeDef   can_tx_header;
 CAN_RxHeaderTypeDef   can_rx_header;
-uint8_t               can_tx_data[8] = {10,2,0xFF,0xAB,77,23,0x09,0xBE};
-uint8_t               can_rx_data[8];
+uint8_t               can_tx_data[4] = {0xDE,0xAD,0xBE,0xEF};//,77,23,0x09,0xBE};
+//uint8_t               can_rx_data[4] = {0};
+uint32_fmt_t can_rx_data = {0};
 uint32_t              TxMailbox;
 
 
@@ -126,7 +132,7 @@ int main(void)
 	sFilterConfig.FilterBank = 0;
 	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
 	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdHigh = 0xFFFF;
 	sFilterConfig.FilterIdLow = 0x0000;
 	sFilterConfig.FilterMaskIdHigh = 0x0000;
 	sFilterConfig.FilterMaskIdLow = 0x0000;
@@ -155,23 +161,52 @@ int main(void)
 	}
 
 	/*##-5- Configure Transmission process #####################################*/
-	can_tx_header.StdId = 0x321;
-	can_tx_header.ExtId = 0x01;
+	can_tx_header.StdId = 0x002;
+	can_tx_header.ExtId = 0x00;
 	can_tx_header.RTR = CAN_RTR_DATA;
 	can_tx_header.IDE = CAN_ID_STD;
-	can_tx_header.DLC = 2;
+	can_tx_header.DLC = 4;
 	can_tx_header.TransmitGlobalTime = DISABLE;
+
+	can_tx_data[0] = 0x55;
+	can_tx_data[1] = 0x55;
+	can_tx_data[2] = 0x55;
+	can_tx_data[3] = 0x55;
+
+	can_rx_header.StdId = 0x003;
+	can_rx_header.ExtId = 0x00;
+	can_rx_header.IDE = CAN_ID_STD;
+	can_rx_header.RTR = CAN_RTR_DATA;
+	can_rx_header.DLC = 4;
+	can_rx_header.Timestamp = 0;
+	can_rx_header.FilterMatchIndex = 0;
+
 
 	MX_ADC1_Init();
 	MX_TIM1_Init();
 	MX_USART2_UART_Init();
 
 	HAL_Delay(50);
-
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint32_t tx_ts = 0;
 	while(1)
 	{
-		HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data, &TxMailbox);
-		HAL_Delay(10);
+		if(HAL_GetTick()>tx_ts)
+		{
+			HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data, &TxMailbox);
+			tx_ts = HAL_GetTick()+10;
+		}
+		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
+		{
+			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) != HAL_OK)
+			{}
+
+			if(can_rx_data.v == 0xDEADBEEF)
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+			else if (can_rx_data.v == 0xFEEDDEED)
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+		}
+		//HAL_Delay(10);
 	}
 
 	if(sizeof(float) != 4)
