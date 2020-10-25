@@ -13,9 +13,6 @@
  *more likely to be ok.
  */
 
-#define I2C_BASE 0x20
-#define MODULE_NUMBER 23	//module num for preset encoder offset
-
 
 #ifdef GIMBAL_MOTOR
 float enc_mid_voltage_amp = .6;
@@ -235,7 +232,6 @@ float align_offset = -0.0646049678f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 200;
-uint32_t i2c_address = I2C_BASE+0;
 const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
 int16_t cos_mid = 1975;
 int16_t sin_mid = 1976;

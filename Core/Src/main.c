@@ -1,4 +1,3 @@
-
 #include "main.h"
 #include "init.h"
 #include "adc.h"
@@ -6,6 +5,7 @@
 #include "mag-encoder.h"
 #include "settings.h"
 #include "calibration.h"
+#include "CAN.h"
 
 /*
  * V3 R1 uses STM32F302C8T6
@@ -29,12 +29,6 @@
  *since we are using F302, uart is now compatible with SPI pins. We're taking advantage of this.
  *I also wrote a brushed control, for shits and goggles.
  */
-
-typedef union floatsend_t
-{
-	float v;
-	uint8_t d[sizeof(float)];
-}floatsend_t;
 
 void brushed_tau(float tau)
 {
@@ -81,19 +75,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-typedef union
-{
-	uint32_t v;
-	uint8_t d[sizeof(uint32_t)];
-}uint32_fmt_t;
-
-CAN_TxHeaderTypeDef   can_tx_header;
-CAN_RxHeaderTypeDef   can_rx_header;
-uint8_t               can_tx_data[4] = {0xDE,0xAD,0xBE,0xEF};//,77,23,0x09,0xBE};
-//uint8_t               can_rx_data[4] = {0};
-uint32_fmt_t can_rx_data = {0};
-uint32_t              TxMailbox;
-
 
 int main(void)
 {
@@ -103,110 +84,30 @@ int main(void)
 
 	MX_GPIO_Init();
 	MX_DMA_Init();
-
-	HAL_Delay(100);
-	CAN_FilterTypeDef  sFilterConfig;
-
-	/*##-1- Configure the CAN peripheral #######################################*/
-	hcan.Instance = CAN;
-
-	hcan.Init.TimeTriggeredMode = DISABLE;
-	hcan.Init.AutoBusOff = DISABLE;
-	hcan.Init.AutoWakeUp = DISABLE;
-	hcan.Init.AutoRetransmission = DISABLE;
-	hcan.Init.ReceiveFifoLocked = DISABLE;
-	hcan.Init.TransmitFifoPriority = DISABLE;
-	hcan.Init.Mode = CAN_MODE_NORMAL;
-	hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-	hcan.Init.TimeSeg1 = CAN_BS1_9TQ;
-	hcan.Init.TimeSeg2 = CAN_BS2_8TQ;
-	hcan.Init.Prescaler = 16;
-
-	if (HAL_CAN_Init(&hcan) != HAL_OK)
-	{
-		/* Initialization Error */
-		Error_Handler();
-	}
-
-	/*##-2- Configure the CAN Filter ###########################################*/
-	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0xFFFF;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.SlaveStartFilterBank = 14;
-
-	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
-	{
-		/* Filter configuration Error */
-		Error_Handler();
-	}
-
-	/*##-3- Start the CAN peripheral ###########################################*/
-	if (HAL_CAN_Start(&hcan) != HAL_OK)
-	{
-		/* Start Error */
-		Error_Handler();
-	}
-
-	/*##-4- Activate CAN RX notification #######################################*/
-	if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
-	{
-		/* Notification Error */
-		Error_Handler();
-	}
-
-	/*##-5- Configure Transmission process #####################################*/
-	can_tx_header.StdId = 0x002;
-	can_tx_header.ExtId = 0x00;
-	can_tx_header.RTR = CAN_RTR_DATA;
-	can_tx_header.IDE = CAN_ID_STD;
-	can_tx_header.DLC = 4;
-	can_tx_header.TransmitGlobalTime = DISABLE;
-
-	can_tx_data[0] = 0x55;
-	can_tx_data[1] = 0x55;
-	can_tx_data[2] = 0x55;
-	can_tx_data[3] = 0x55;
-
-	can_rx_header.StdId = 0x003;
-	can_rx_header.ExtId = 0x00;
-	can_rx_header.IDE = CAN_ID_STD;
-	can_rx_header.RTR = CAN_RTR_DATA;
-	can_rx_header.DLC = 4;
-	can_rx_header.Timestamp = 0;
-	can_rx_header.FilterMatchIndex = 0;
-
-
+	CAN_Init();
 	MX_ADC1_Init();
 	MX_TIM1_Init();
 	MX_USART2_UART_Init();
 
 	HAL_Delay(50);
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	uint32_t tx_ts = 0;
+	uint32_fmt_t can_rx_data = {0};
+	uint32_fmt_t can_tx_data = {0x55555555};
 	while(1)
 	{
-		if(HAL_GetTick()>tx_ts)
-		{
-			HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data, &TxMailbox);
-			tx_ts = HAL_GetTick()+10;
-		}
 		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
 		{
-			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) != HAL_OK)
-			{}
+			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
+			{
+				if(can_rx_data.v == 0xDEADBEEF)
+					HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+				else if (can_rx_data.v == 0xFEEDDEED)
+					HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 
-			if(can_rx_data.v == 0xDEADBEEF)
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-			else if (can_rx_data.v == 0xFEEDDEED)
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
+			}	//NOTE the rx header will contain the message ID
+
 		}
-		//HAL_Delay(10);
 	}
 
 	if(sizeof(float) != 4)
@@ -259,50 +160,50 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-	while(1)
-	{
-		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
-		{
-			sinusoidal(0.5f,0);
-
-			if(gl_nfault_flags.fe_flag)
-			{
-				if(HAL_GPIO_ReadPin(NFAULT_GPIO_Port,NFAULT_Pin) == 1)
-				{
-					gl_nfault_flags.fe_flag = 0;
-					gl_nfault_flags.ts_flag = 0;
-				}
-				else
-				{
-					if(gl_nfault_flags.ts_flag == 0)
-					{
-						gl_nfault_flags.ts = HAL_GetTick();
-						gl_nfault_flags.ts_flag = 1;
-					}
-					else if (HAL_GetTick() - gl_nfault_flags.ts > 10)
-					{
-						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-						unwrap( theta_rel_rad(), &theta_enc_prev);
-						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-						gl_nfault_flags.ts_flag = 0;
-						gl_nfault_flags.fe_flag = 0;
-					}
-				}
-			}
-
-		}
-		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
-		{
-			sinusoidal(-0.5f,0);
-			//			if(gl_fault_flag)
-			//			{
-			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-			//				unwrap( theta_rel_rad(), &theta_enc_prev);
-			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-			//				gl_fault_flag = 0;
-			//			}
-		}
-	}
+//	while(1)
+//	{
+//		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
+//		{
+//			sinusoidal(0.5f,0);
+//
+//			if(gl_nfault_flags.fe_flag)
+//			{
+//				if(HAL_GPIO_ReadPin(NFAULT_GPIO_Port,NFAULT_Pin) == 1)
+//				{
+//					gl_nfault_flags.fe_flag = 0;
+//					gl_nfault_flags.ts_flag = 0;
+//				}
+//				else
+//				{
+//					if(gl_nfault_flags.ts_flag == 0)
+//					{
+//						gl_nfault_flags.ts = HAL_GetTick();
+//						gl_nfault_flags.ts_flag = 1;
+//					}
+//					else if (HAL_GetTick() - gl_nfault_flags.ts > 10)
+//					{
+//						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+//						unwrap( theta_rel_rad(), &theta_enc_prev);
+//						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+//						gl_nfault_flags.ts_flag = 0;
+//						gl_nfault_flags.fe_flag = 0;
+//					}
+//				}
+//			}
+//
+//		}
+//		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
+//		{
+//			sinusoidal(-0.5f,0);
+//			//			if(gl_fault_flag)
+//			//			{
+//			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+//			//				unwrap( theta_rel_rad(), &theta_enc_prev);
+//			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+//			//				gl_fault_flag = 0;
+//			//			}
+//		}
+//	}
 
 #ifdef TEST_FOC
 	test_foc();
@@ -334,11 +235,21 @@ int main(void)
 	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
 	while(1)
 	{
-		uint32_t * fptr_chk = (uint32_t*)(&(tau_data_in.v));	//check to make sure your input torque is not NaN
-		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
-			iqref = 0;
-		else
-			iqref = tau_data_in.v;
+//		uint32_t * fptr_chk = (uint32_t*)(&(tau_data_in.v));	//check to make sure your input torque is not NaN
+//		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
+//			iqref = 0;
+//		else
+//			iqref = tau_data_in.v;
+
+		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
+		{
+			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, tau_data_in.d) == HAL_OK)
+			{
+				iqref = tau_data_in.v;
+				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, q_data_out.d, &can_tx_mailbox);
+			}	//NOTE the rx header will contain the message ID
+		}
+
 		//		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/
