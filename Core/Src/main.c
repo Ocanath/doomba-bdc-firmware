@@ -187,10 +187,10 @@ int main(void)
 
 
 		uint32_t tA,tB,tC;
-		if(uq > 0.866f)
-			uq = 0.866f;
-		if(uq < - 0.866f)
-			uq = -0.866f;
+		if(uq > 0.8f)
+			uq = 0.8f;
+		if(uq < - 0.8f)
+			uq = -0.8f;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);

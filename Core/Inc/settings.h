@@ -11,7 +11,7 @@
 /***********************Begin define hardware precomp settings*********************/
 
 /*Motor serial number, for the #define lookup list in settings.c . Also the CAN Node ID*/
-#define MODULE_NUMBER 23
+#define MODULE_NUMBER 24
 
 /*Is a KMZ60 or TLE encoder populated?
  * 	Note: elec_conv_ratio needs to be defined based on this number. elec_conv_ratio is
@@ -36,7 +36,7 @@
 
 //#define GET_INIT_OFFSET
 //#define GET_ENCODER_MIDPOINT
-//#define TEST_FOC
+#define TEST_FOC
 
 //#define GIMBAL_MOTOR
 

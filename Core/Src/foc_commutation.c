@@ -314,6 +314,10 @@ void foc(float iqref, float idref)
 //		uq = clamp_v;
 //	if(uq < -clamp_v)
 //		uq = -clamp_v;
+	if(uq > .8f)
+		uq = .8f;
+	else if (uq < -.8f)
+		uq = -.8f;
 	uint32_t tA,tB,tC;
 	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);

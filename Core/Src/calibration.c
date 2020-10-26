@@ -125,6 +125,7 @@ void auto_calibrate_motor(void)
 
 void test_foc()
 {
+
 	uint32_t reverse_ts = 0;
 	float iq_ref = 70.f;
 	for(int i = 0; i < 20; i ++)
@@ -132,42 +133,21 @@ void test_foc()
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
 		HAL_Delay(100);
 	}
-	uint32_t tstart = HAL_GetTick();
-	uint32_t disp_ts = tstart;
-	uint32_t led_ts = HAL_GetTick();
 	while(1)
 	{
+		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
+			foc(iq_ref,0);//sinusoidal(.8f,0);
 
-		if(HAL_GetTick() > disp_ts)
-		{
-////			HAL_GPIO_WritePin(ENABLE_PORT,ENABLE_PIN,0);
-//			float t = ((float)(HAL_GetTick()-tstart))*.001f;
-//			iq_ref = 80.7f*sin_fast(fmod_2pi(t*3.33f+PI)-PI);
-//
-			print_float(i_q_meas);
-			print_float(gl_dq);
-			print_float(align_offset);
-//			//			print_float(-.0480f*abs_f(i_q_meas) + 0.7336f);
-			disp_ts = HAL_GetTick() + 20;
-		}
+		TIMER_UPDATE_DUTY(0,0,0);
+		HAL_Delay(100);
 
-		if(HAL_GetTick()>led_ts)
-		{
-			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
-			led_ts = HAL_GetTick() + 250;
-		}
-		if(HAL_GetTick()>reverse_ts)
-		{
+		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
+			foc(iq_ref,0);
+			//sinusoidal(-.8f,0);
 
-			iq_ref = -iq_ref;
-			uint32_t halt_ts = HAL_GetTick()+250;
-			while(HAL_GetTick()<halt_ts)
-				foc(0,0);
-			reverse_ts = HAL_GetTick()+3000;
-//			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
-		}
+		TIMER_UPDATE_DUTY(0,0,0);
+		HAL_Delay(100);
 
-		foc(iq_ref,0);
 	}
 }
 
