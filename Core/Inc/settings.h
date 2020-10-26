@@ -20,9 +20,6 @@
  * */
 //#define USE_KMZ60_ENCODER
 
-/*Is an external UART encoder used? (Note: should eventually be volatile, not precompiled, and toggled by CAN)*/
-#define USE_UART_ENCODER
-
 /*Is the external 16Mhz oscillator populated? (Note: all hw should have this populated...)*/
 #define EXTERNAL_OSCILLATOR
 

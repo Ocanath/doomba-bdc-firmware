@@ -3,6 +3,19 @@
  *
  *  Created on: Oct 25, 2020
  *      Author: Ocanath Robotman
+ *
+ *      CAN Motor Protocol Breakdown:
+ *
+ *      For 'NORMAL OPERATION': (torque and position)
+ *      	Message ID will be equal to the serial number of the motor (i.e. 23)
+ *      	Master controller sends a floating point (ieee 32bit spec) number, parsed as a torque command
+ *      	Upon receiving the matching message ID, the motor will put its current position on the bus
+ *
+ *      For 'EXTENDED COMMAND': (miscellaneous settings)
+ *      	Message ID will be equal to MAX ID (0x7FF) minus the motor serial number (i.e. 0x7FF - 23)
+ *      	The byte index 3 will contain a word that corresponds to setting or resetting a given binary setting
+ *      	Upon receiving this message ID, the motor will also respond with its current position on the bus.
+ *
  */
 #include "CAN.h"
 
@@ -11,6 +24,21 @@ CAN_RxHeaderTypeDef		can_rx_header;
 uint32_fmt_t 			can_tx_data = {0x55555555};
 uint32_fmt_t 			can_rx_data = {0};
 uint32_t				can_tx_mailbox;
+
+ext_cmd_flags_t gl_ext_cmd_flags = {
+		.en_blink_led = 1,
+		.use_uart_encoder = 0
+};
+
+const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
+
+enum {
+	LED_ON = 0xDE,
+	LED_OFF =0xFE,
+	LED_BLINK= 0xAA,
+	EN_UART_ENC = 0x34,
+	DIS_UART_ENC = 0x35
+};
 
 void CAN_Init(void)
 {
@@ -41,8 +69,8 @@ void CAN_Init(void)
 	sFilterConfig.FilterBank = 0;
 	sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;	//use id list
 	sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;	//16 bit for idlist
-	sFilterConfig.FilterIdHigh = 0x0001<<5;	//this is the (unimplemented) generic message id? idk
-	sFilterConfig.FilterIdLow = (MODULE_NUMBER)<<5;	//this is the work id
+	sFilterConfig.FilterIdHigh = ext_cmd_id<<5;	//this is the generic message id, for controlling encoder input and the LED
+	sFilterConfig.FilterIdLow = (MODULE_NUMBER)<<5;	//this is the work id, for torque and position commands
 	sFilterConfig.FilterMaskIdHigh = 0x0000;
 	sFilterConfig.FilterMaskIdLow = 0x0000;
 	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
@@ -84,4 +112,25 @@ void CAN_Init(void)
 	can_rx_header.DLC = sizeof(float);	//4
 	can_rx_header.Timestamp = 0;
 	can_rx_header.FilterMatchIndex = 0;
+}
+
+
+void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(float)])
+{
+	if(d[3] == LED_ON)
+	{
+		flags->en_blink_led = 0;
+		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	}
+	else if (d[3] == LED_OFF)
+	{
+		flags->en_blink_led = 0;
+		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	}
+	else if (d[3] == LED_BLINK)
+		flags->en_blink_led = 1;
+	else if (d[3] == EN_UART_ENC)
+		flags->use_uart_encoder = 1;
+	else if (d[3] == DIS_UART_ENC)
+		flags->use_uart_encoder = 0;
 }

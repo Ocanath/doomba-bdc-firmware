@@ -52,30 +52,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	gl_uart_cplt_flag = 1;
 }
 
-typedef struct nfault_handle_flags_t
-{
-	uint8_t fe_flag;	//falling edge
-	uint32_t ts;
-	uint8_t ts_flag;
-}nfault_handle_flags_t;
-
-//uint8_t gl_fault_flag = 0;
-nfault_handle_flags_t gl_nfault_flags = {0};
-
-/**
- * @brief  EXTI line detection callback.
- * @param  GPIO_Pin Specifies the port pin connected to corresponding EXTI line.
- * @retval None
- */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	if(GPIO_Pin == NFAULT_Pin)
-	{
-		gl_nfault_flags.fe_flag = 1;
-	}
-}
-
-
 int main(void)
 {
 	HAL_Init();
@@ -88,27 +64,6 @@ int main(void)
 	MX_ADC1_Init();
 	MX_TIM1_Init();
 	MX_USART2_UART_Init();
-
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	uint32_fmt_t can_rx_data = {0};
-	uint32_fmt_t can_tx_data = {0x55555555};
-	while(1)
-	{
-		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
-		{
-			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
-			{
-				if(can_rx_data.v == 0xDEADBEEF)
-					HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-				else if (can_rx_data.v == 0xFEEDDEED)
-					HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-
-				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
-			}	//NOTE the rx header will contain the message ID
-
-		}
-	}
 
 	if(sizeof(float) != 4)
 	{
@@ -160,51 +115,6 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(0,0,0);
 
-//	while(1)
-//	{
-//		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
-//		{
-//			sinusoidal(0.5f,0);
-//
-//			if(gl_nfault_flags.fe_flag)
-//			{
-//				if(HAL_GPIO_ReadPin(NFAULT_GPIO_Port,NFAULT_Pin) == 1)
-//				{
-//					gl_nfault_flags.fe_flag = 0;
-//					gl_nfault_flags.ts_flag = 0;
-//				}
-//				else
-//				{
-//					if(gl_nfault_flags.ts_flag == 0)
-//					{
-//						gl_nfault_flags.ts = HAL_GetTick();
-//						gl_nfault_flags.ts_flag = 1;
-//					}
-//					else if (HAL_GetTick() - gl_nfault_flags.ts > 10)
-//					{
-//						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-//						unwrap( theta_rel_rad(), &theta_enc_prev);
-//						HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-//						gl_nfault_flags.ts_flag = 0;
-//						gl_nfault_flags.fe_flag = 0;
-//					}
-//				}
-//			}
-//
-//		}
-//		for(uint32_t run_ts = HAL_GetTick()+1000;HAL_GetTick()<run_ts;)
-//		{
-//			sinusoidal(-0.5f,0);
-//			//			if(gl_fault_flag)
-//			//			{
-//			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-//			//				unwrap( theta_rel_rad(), &theta_enc_prev);
-//			//				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-//			//				gl_fault_flag = 0;
-//			//			}
-//		}
-//	}
-
 #ifdef TEST_FOC
 	test_foc();
 #endif
@@ -220,33 +130,33 @@ int main(void)
 
 	floatsend_t uart_encoder_data;
 	uart_encoder_data.v = 0.f;
-	floatsend_t tau_data_in;
-	floatsend_t q_data_out;
+	floatsend_t can_rx_data;
+	floatsend_t can_tx_data;
 
+#ifdef USE_KMZ60_ENCODER
 	force_encoder_region();
 	if(theta_enc_prev < -PI)
 		theta_enc_prev += TWO_PI*2.0f;
 	//	theta_m_prev=theta_enc_prev;
+#endif
 
-	//	uint32_t uart_tx_ts = 0;
 	uint32_t dq_ts = 0;
 	float prev_theta_m_dq = 0;
 	float phase_advance_angle = 0;
 	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
+
 	while(1)
 	{
-//		uint32_t * fptr_chk = (uint32_t*)(&(tau_data_in.v));	//check to make sure your input torque is not NaN
-//		if( (*fptr_chk & 0x7f800000) == 0x7f800000)	//NaN check. can put else in here for future i2c checks and whatnot
-//			iqref = 0;
-//		else
-//			iqref = tau_data_in.v;
-
+		/*CAN protocol. */
 		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
 		{
-			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, tau_data_in.d) == HAL_OK)
+			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
 			{
-				iqref = tau_data_in.v;
-				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, q_data_out.d, &can_tx_mailbox);
+				if(can_rx_header.StdId == MODULE_NUMBER)
+					iqref = can_rx_data.v;
+				else if (can_rx_header.StdId == ext_cmd_id)
+					handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.d);
+				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 			}	//NOTE the rx header will contain the message ID
 		}
 
@@ -277,49 +187,41 @@ int main(void)
 
 
 		uint32_t tA,tB,tC;
-		if(uq > 0.7f)
-			uq = 0.7f;
-		if(uq < - 0.7f)
-			uq = -0.7f;
+		if(uq > 0.866f)
+			uq = 0.866f;
+		if(uq < - 0.866f)
+			uq = -0.866f;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 		/**********************************************END**********************************************/
 
-		float theta_m = theta_enc*.5f;//unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-
-		//		if(use_uart_encoder == 0)
-#ifndef USE_UART_ENCODER
-		q_data_out.v = theta_m;
-#else
-		HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
-		if(gl_uart_cplt_flag == 1)	//should work
-		{
-			q_data_out.v = uart_encoder_data.v;
-			gl_uart_cplt_flag=0;
-		}
-#endif
-
+		/*phase advancement. necessary for high bw commutation*/
 		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 		{
-			float dq = (theta_m-prev_theta_m_dq)*25.0f;
-			prev_theta_m_dq = theta_m;
+			float dq = (theta_enc-prev_theta_m_dq)*25.0f;
+			prev_theta_m_dq = theta_elec;
 			phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 			dq_ts = HAL_GetTick()+40;
 
+//			clear_latched_nfault();	//TODO: add this in and TEST IT
+		}
 
-			/*
-			 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
-			 */
-			if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+		/*Load CAN message with motor position*/
+		if(gl_ext_cmd_flags.use_uart_encoder == 0)
+			can_tx_data.v = theta_enc;
+		else
+		{
+			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
+			if(gl_uart_cplt_flag == 1)	//should work
 			{
-				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-				unwrap( theta_rel_rad(), &theta_enc_prev);
-				HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+				can_tx_data.v = uart_encoder_data.v;
+				gl_uart_cplt_flag=0;
 			}
 		}
 
-		if(HAL_GetTick()>=led_ts)
+
+		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
 		{
 			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
 			led_ts = HAL_GetTick() + 200;
