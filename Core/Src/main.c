@@ -145,6 +145,7 @@ int main(void)
 	float phase_advance_angle = 0;
 	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
 
+
 	while(1)
 	{
 		/*CAN protocol. */
@@ -183,13 +184,13 @@ int main(void)
 #else
 		controller_PI(iqref, i_q, iq_gain, 0.0f, &x_iq_PI, &uq);		//this sort of works
 #endif
-		controller_PI(idref, i_d, id_gain, 0.0f, &x_id_PI, &ud);		//high current
-
+//		controller_PI(idref, i_d, id_gain, 0.0f, &x_id_PI, &ud);		//high current
+		ud = 0.f;
 
 		uint32_t tA,tB,tC;
 		if(uq > 0.8f)
 			uq = 0.8f;
-		if(uq < - 0.8f)
+		if(uq < -0.8f)
 			uq = -0.8f;
 		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
@@ -200,7 +201,7 @@ int main(void)
 		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 		{
 			float dq = (theta_enc-prev_theta_m_dq)*25.0f;
-			prev_theta_m_dq = theta_elec;
+			prev_theta_m_dq = theta_enc;
 			phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 			dq_ts = HAL_GetTick()+40;
 

@@ -8,6 +8,8 @@
 #include "adc.h"
 //#include <math.h>
 #include "mag-encoder.h"
+#include "nfault_handler.h"
+
 float mL = 0;
 float mR = 0;
 float V_psi = 0;
@@ -325,23 +327,24 @@ void foc(float iqref, float idref)
 
 
 	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-	gl_theta_m = theta_enc*.5f;
+//	gl_theta_m = theta_enc*.5f;
 	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 	{
-		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
-		prev_theta_m_dq = gl_theta_m;
+		gl_dq = (theta_enc-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = theta_enc;
 		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
 		dq_ts = HAL_GetTick()+40;
 
-		/*
-		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
-		 */
-		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
-		{
-			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
-			unwrap( theta_rel_rad(), &theta_enc_prev);
-			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
-		}
+		clear_latched_nfault();
+//		/*
+//		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+//		 */
+//		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+//		{
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+//			unwrap( theta_rel_rad(), &theta_enc_prev);
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+//		}
 	}
 
 }
