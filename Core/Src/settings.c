@@ -228,13 +228,13 @@ int16_t cos_mid = 2062;
 int16_t sin_mid = 1974;
 #endif
 #if MODULE_NUMBER == 23						//rando. TLE encoder/v4-r5
-float align_offset = -0.193772942f;
+float align_offset = 0.0945335031f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 476;
 const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 1995;
-int16_t sin_mid = 1974;
+int16_t cos_mid = 1996;
+int16_t sin_mid = 1975;
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
 float align_offset = -0.170561865f;

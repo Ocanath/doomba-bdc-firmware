@@ -143,9 +143,7 @@ int main(void)
 	uint32_t dq_ts = 0;
 	float prev_theta_m_dq = 0;
 	float phase_advance_angle = 0;
-	//uint8_t use_uart_encoder = 0;	//default to not using uart encoder stream
-
-
+	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
 		/*CAN protocol. */
@@ -154,12 +152,17 @@ int main(void)
 			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
 			{
 				if(can_rx_header.StdId == MODULE_NUMBER)
+				{
 					iqref = can_rx_data.v;
+					can_cmd_exp_ts = HAL_GetTick() + 500;
+				}
 				else if (can_rx_header.StdId == ext_cmd_id)
 					handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.d);
 				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 			}	//NOTE the rx header will contain the message ID
 		}
+		if(HAL_GetTick() > can_cmd_exp_ts)
+			iqref = 0.f;
 
 		//		parse_master_cmd(&led_ts);
 
