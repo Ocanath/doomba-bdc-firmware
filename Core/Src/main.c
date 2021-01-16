@@ -52,6 +52,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	gl_uart_cplt_flag = 1;
 }
 
+typedef union floatsend_chk_t
+{
+	float v;
+	uint8_t d[sizeof(float) + 1];
+}floatsend_chk_t;
+
 int main(void)
 {
 	HAL_Init();
@@ -128,8 +134,10 @@ int main(void)
 
 	theta_m_prev = 0;
 
-	floatsend_t uart_encoder_data;
-	uart_encoder_data.v = 0.f;
+	floatsend_chk_t uart_encoder_data;
+	for(int i = 0; i < 5; i++)
+		uart_encoder_data.d[i] = 0;
+
 	floatsend_t can_rx_data;
 	floatsend_t can_tx_data;
 
@@ -216,9 +224,10 @@ int main(void)
 			can_tx_data.v = theta_enc;
 		else
 		{
-			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 4);
+			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 5);
 			if(gl_uart_cplt_flag == 1)	//should work
 			{
+				//TODO: add checksum calculation and check
 				can_tx_data.v = uart_encoder_data.v;
 				gl_uart_cplt_flag=0;
 			}
