@@ -11,7 +11,7 @@
 /***********************Begin define hardware precomp settings*********************/
 
 /*Motor serial number, for the #define lookup list in settings.c . Also the CAN Node ID*/
-#define MODULE_NUMBER 28
+#define MODULE_NUMBER 23
 
 /*Is a KMZ60 or TLE encoder populated?
  * 	Note: elec_conv_ratio needs to be defined based on this number. elec_conv_ratio is
