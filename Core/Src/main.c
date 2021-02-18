@@ -91,6 +91,8 @@ int main(void)
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
+	hdma_adc1.Instance->CCR &= ~(1 << 1);	//disable transfer complete interrupt
+	hdma_adc1.Instance->CCR &= ~(1 << 2);	//disable half transfer complete interrupt
 
 	HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
 
