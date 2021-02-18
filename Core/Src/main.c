@@ -52,24 +52,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	gl_uart_cplt_flag = 1;
 }
 
-typedef union floatsend_chk_t
-{
-	float v;
-	uint8_t d[sizeof(float) + 1];
-}floatsend_chk_t;
-
-/*
-Generic hex checksum calculation.
-TODO: use this in the psyonic API
-*/
-uint8_t get_checksum(uint8_t * arr, int size)
-{
-
-	int8_t checksum = 0;
-	for (int i = 0; i < size; i++)
-		checksum += (int8_t)arr[i];
-	return -checksum;
-}
 
 int main(void)
 {
@@ -151,21 +133,8 @@ int main(void)
 	float idref = 0;
 	float i_a,i_b,i_c;
 
-	floatsend_chk_t ia,ib,ic;
-	int count = 0;
 	while(1)
-	{
-		sinusoidal(0.1f,0);
-		conv_raw_current(&(ia.v),&(ib.v), &(ic.v));
-
-		count++;
-		if((count % 14)==0)
-		{
-			ia.v = gl_theta_m;
-			ia.d[4] = get_checksum(ia.d,4);
-			HAL_UART_Transmit_IT(&huart2,ia.d,5);
-		}
-	}
+		sinusoidal(0.05f,0);
 
 	theta_m_prev = 0;
 
@@ -207,9 +176,10 @@ int main(void)
 		if(HAL_GetTick() > can_cmd_exp_ts)
 			iqref = 0.f;
 //		parse_master_cmd(&led_ts);
+		iqref = 0.5f;
 
 		/****************************************FOC functional block*************************************/
-		conv_raw_current(&i_a,&i_b, &i_c);
+		conv_raw_current(&i_a, &i_b, &i_c);
 
 		float i_alpha,i_beta;
 		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);

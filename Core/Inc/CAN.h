@@ -21,6 +21,12 @@ typedef union floatsend_t
 	uint8_t d[sizeof(float)];
 }floatsend_t;
 
+typedef union floatsend_chk_t
+{
+	float v;
+	uint8_t d[sizeof(float) + 1];
+}floatsend_chk_t;
+
 typedef struct ext_cmd_flags_t
 {
 	uint8_t en_blink_led;

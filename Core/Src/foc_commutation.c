@@ -9,6 +9,7 @@
 //#include <math.h>
 #include "mag-encoder.h"
 #include "nfault_handler.h"
+#include "CAN.h"
 
 float mL = 0;
 float mR = 0;
@@ -249,8 +250,26 @@ void convert_phase_voltage(float * va, float * vb, float * vc)
 	*vc = (float)t3/1000.0;	//period
 }
 
+static volatile int count = 0;
+/*
+Generic hex checksum calculation.
+TODO: use this in the psyonic API
+*/
+uint8_t get_checksum(uint8_t * arr, int size)
+{
+
+	int8_t checksum = 0;
+	for (int i = 0; i < size; i++)
+		checksum += (int8_t)arr[i];
+	return -checksum;
+}
+
 void sinusoidal(float Vq, float Vd)
 {
+	float i_a,i_b,i_c;
+	float i_alpha,i_beta;
+	conv_raw_current(&i_a, &i_b, &i_c);
+	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
 	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
 	//float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
@@ -259,7 +278,18 @@ void sinusoidal(float Vq, float Vd)
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
 
-	float i_alpha,i_beta;
+	floatsend_chk_t i_q,i_d;
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &(i_q.v), &(i_d.v));
+
+	count++;
+	if((count % 14)==0)
+	{
+		//i_q.v = i_alpha;
+		i_q.d[4] = get_checksum(i_q.d,4);
+		HAL_UART_Transmit_IT(&huart2, i_q.d, 5);
+	}
+
+
 	uint32_t tA,tB,tC;
 	inverse_park_transform(Vq, Vd, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
@@ -278,6 +308,7 @@ void sinusoidal(float Vq, float Vd)
 		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
 		 */
 	}
+
 }
 
 void foc(float iqref, float idref)
