@@ -66,6 +66,7 @@ void MX_ADC1_Init(void)
 	/* USER CODE END ADC1_Init 0 */
 
 	ADC_ChannelConfTypeDef sConfig = {0};
+	ADC_InjectionConfTypeDef sConfigInjected = {0};
 
 	/* USER CODE BEGIN ADC1_Init 1 */
 
@@ -81,7 +82,7 @@ void MX_ADC1_Init(void)
 	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_FALLING;
 	hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T1_TRGO;
 	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc1.Init.NbrOfConversion = 5;
+	hadc1.Init.NbrOfConversion = 2;
 	hadc1.Init.DMAContinuousRequests = ENABLE;
 	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
 	hadc1.Init.LowPowerAutoWait = DISABLE;
@@ -90,10 +91,9 @@ void MX_ADC1_Init(void)
 	{
 		Error_Handler();
 	}
-
-	/**Configure Regular Channel
+	/** Configure Regular Channel
 	 */
-	sConfig.Channel = ADC_CHANNEL_1;
+	sConfig.Channel = ADC_CHANNEL_4;
 	sConfig.Rank = ADC_REGULAR_RANK_1;
 	sConfig.SingleDiff = ADC_SINGLE_ENDED;
 	sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -105,33 +105,43 @@ void MX_ADC1_Init(void)
 	}
 	/** Configure Regular Channel
 	 */
-	sConfig.Channel = ADC_CHANNEL_2;
+	sConfig.Channel = ADC_CHANNEL_5;
 	sConfig.Rank = ADC_REGULAR_RANK_2;
 	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	/** Configure Regular Channel
+	/** Configure Injected Channel
 	 */
-	sConfig.Channel = ADC_CHANNEL_3;
-	sConfig.Rank = ADC_REGULAR_RANK_3;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
+	sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
+	sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
+	sConfigInjected.InjectedNbrOfConversion = 3;
+	sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+	sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_FALLING;
+	sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
+	sConfigInjected.AutoInjectedConv = DISABLE;
+	sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
+	sConfigInjected.QueueInjectedContext = DISABLE;
+	sConfigInjected.InjectedOffset = 0;
+	sConfigInjected.InjectedOffsetNumber = ADC_OFFSET_NONE;
+	if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	/** Configure Regular Channel
+	/** Configure Injected Channel
 	 */
-	sConfig.Channel = ADC_CHANNEL_4;
-	sConfig.Rank = ADC_REGULAR_RANK_4;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	sConfigInjected.InjectedChannel = ADC_CHANNEL_2;
+	sConfigInjected.InjectedRank = ADC_INJECTED_RANK_2;
+	if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	/** Configure Regular Channel
+	/** Configure Injected Channel
 	 */
-	sConfig.Channel = ADC_CHANNEL_5;
-	sConfig.Rank = ADC_REGULAR_RANK_5;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	sConfigInjected.InjectedChannel = ADC_CHANNEL_3;
+	sConfigInjected.InjectedRank = ADC_INJECTED_RANK_3;
+	if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
 	{
 		Error_Handler();
 	}
@@ -142,39 +152,38 @@ void MX_ADC1_Init(void)
 }
 
 
-
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
 void MX_USART2_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART2_Init 0 */
+	/* USER CODE BEGIN USART2_Init 0 */
 
-  /* USER CODE END USART2_Init 0 */
+	/* USER CODE END USART2_Init 0 */
 
-  /* USER CODE BEGIN USART2_Init 1 */
+	/* USER CODE BEGIN USART2_Init 1 */
 
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 230400;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
+	/* USER CODE END USART2_Init 1 */
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = 230400;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart2) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART2_Init 2 */
 
-  /* USER CODE END USART2_Init 2 */
+	/* USER CODE END USART2_Init 2 */
 
 }
 

@@ -200,9 +200,9 @@ void get_current_cal_offsets()
 	const int numSamples = 300;
 	for(i=0;i<numSamples;i++)
 	{
-		gl_current_input_offset_A += dma_adc_raw[ADC_CHAN_CURRENT_A];
-		gl_current_input_offset_B += dma_adc_raw[ADC_CHAN_CURRENT_B];
-		gl_current_input_offset_C += dma_adc_raw[ADC_CHAN_CURRENT_C];
+		gl_current_input_offset_A += hadc1.Instance->JDR1;//dma_adc_raw[ADC_CHAN_CURRENT_A];
+		gl_current_input_offset_B += hadc1.Instance->JDR2;//dma_adc_raw[ADC_CHAN_CURRENT_B];
+		gl_current_input_offset_C += hadc1.Instance->JDR3;//dma_adc_raw[ADC_CHAN_CURRENT_C];
 		HAL_Delay(1);
 	}
 	gl_current_input_offset_A /= numSamples;
@@ -222,13 +222,9 @@ void get_current_cal_offsets()
  */
 void conv_raw_current(float * i_a, float * i_b, float * i_c)
 {
-	*i_a = (float)(gl_current_input_offset_A - dma_adc_raw[ADC_CHAN_CURRENT_A])*adc_conv_A;
-	*i_b = (float)(gl_current_input_offset_B - dma_adc_raw[ADC_CHAN_CURRENT_B])*adc_conv_B;
-	*i_c = (float)(gl_current_input_offset_C - dma_adc_raw[ADC_CHAN_CURRENT_C])*adc_conv_C;
-
-//	*i_a = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_A])*0.0402832031f  );
-//	*i_b = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_B])*0.0402832031f  );
-//	*i_c = (82.5f - ((float)dma_adc_raw[ADC_CHAN_CURRENT_C])*0.0402832031f  );
+	*i_c = ((float)(hadc1.Instance->JDR3))*adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
+	*i_b = ((float)(hadc1.Instance->JDR2))*adc_conv_B;
+	*i_a = ((float)(hadc1.Instance->JDR1))*adc_conv_A;
 }
 
 float abs_f(float in)

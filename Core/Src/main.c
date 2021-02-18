@@ -80,6 +80,13 @@ int main(void)
 		}
 	}
 
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);	//start dma conversions before the trigger for them (i.e. timer1 triggerout)
+	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
+	//disable adc dma interrupts. The adc itself should only have overrun interrupt enabled
+	hdma_adc1.Instance->CCR &= ~(1 << 2);	//disable half transfer complete interrupt
+	hdma_adc1.Instance->CCR &= ~(1 << 1);	//disable transfer complete interrupt
+
+
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -89,8 +96,6 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(0,0,0);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
-
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);
 
 	HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
 
