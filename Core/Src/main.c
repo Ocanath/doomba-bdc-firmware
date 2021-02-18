@@ -58,6 +58,19 @@ typedef union floatsend_chk_t
 	uint8_t d[sizeof(float) + 1];
 }floatsend_chk_t;
 
+/*
+Generic hex checksum calculation.
+TODO: use this in the psyonic API
+*/
+uint8_t get_checksum(uint8_t * arr, int size)
+{
+
+	int8_t checksum = 0;
+	for (int i = 0; i < size; i++)
+		checksum += (int8_t)arr[i];
+	return -checksum;
+}
+
 int main(void)
 {
 	HAL_Init();
@@ -136,6 +149,23 @@ int main(void)
 	float ud = 0;
 	float iqref = 0;
 	float idref = 0;
+	float i_a,i_b,i_c;
+
+	floatsend_chk_t ia,ib,ic;
+	int count = 0;
+	while(1)
+	{
+		sinusoidal(0.1f,0);
+		conv_raw_current(&(ia.v),&(ib.v), &(ic.v));
+
+		count++;
+		if((count % 14)==0)
+		{
+			ia.v = gl_theta_m;
+			ia.d[4] = get_checksum(ia.d,4);
+			HAL_UART_Transmit_IT(&huart2,ia.d,5);
+		}
+	}
 
 	theta_m_prev = 0;
 
@@ -176,11 +206,9 @@ int main(void)
 		}
 		if(HAL_GetTick() > can_cmd_exp_ts)
 			iqref = 0.f;
-
-		//		parse_master_cmd(&led_ts);
+//		parse_master_cmd(&led_ts);
 
 		/****************************************FOC functional block*************************************/
-		float i_a,i_b,i_c;
 		conv_raw_current(&i_a,&i_b, &i_c);
 
 		float i_alpha,i_beta;

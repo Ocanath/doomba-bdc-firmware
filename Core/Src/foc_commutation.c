@@ -32,9 +32,9 @@ float phase_advance_angle = 0;
 
 //0.02929394531f;//TODO: use actual current shunt val and retune
 //0.005754743303571;
-const float adc_conv_A = 0.005754743303571;
-const float adc_conv_B = 0.005754743303571;
-const float adc_conv_C = 0.005754743303571;
+const float adc_conv_A = 0.005754743303571f;
+const float adc_conv_B = 0.005754743303571f;
+const float adc_conv_C = 0.005754743303571f;
 
 int gl_sector=1;	//for SVM
 
@@ -266,7 +266,7 @@ void sinusoidal(float Vq, float Vd)
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
 	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-	gl_theta_m = theta_enc*.5f;
+	gl_theta_m = theta_enc;	//*.5 is carryover from kmz and is incorrect.
 	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 	{
 		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
@@ -298,13 +298,10 @@ void foc(float iqref, float idref)
 	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
 
 	float uq,ud;
-#ifdef FLIP_TAU
-	controller_PI(-iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-#else
 	controller_PI(iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-#endif
+	controller_PI(0, 	i_d_meas, .0001f, 0.0000000001f, &x_id_PI, &ud);		//this sort of works
 //	controller_PI(idref, i_d_meas, id_gain, 0.0f, &x_id_PI, &ud);		//high current
-	ud = 0.f;
+//	ud = 0.f;
 
 //	float clamp_v = -.0480f*abs_f(i_q_meas) + 0.7f;
 ////	float clamp_v = .7f;
