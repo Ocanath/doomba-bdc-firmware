@@ -91,7 +91,7 @@ void auto_calibrate_motor(void)
 {
 	TIMER_UPDATE_DUTY(0,0,0);
 //	align_offset = -PI/elec_conv_ratio;
-	align_offset = -.1f;
+	align_offset = 2.7f;
 	int passcount = 0;
 	while(1)
 	{
@@ -139,13 +139,14 @@ void test_foc()
 	while(1)
 	{
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			foc(iq_ref,0);//sinusoidal(.8f,0);
+			sinusoidal(.8f,0);
+			//foc(iq_ref,0);//sinusoidal(.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
 
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			foc(iq_ref,0);
+			sinusoidal(.8f,0);//foc(iq_ref,0);
 			//sinusoidal(-.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
