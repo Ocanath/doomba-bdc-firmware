@@ -91,7 +91,7 @@ void auto_calibrate_motor(void)
 {
 	TIMER_UPDATE_DUTY(0,0,0);
 //	align_offset = -PI/elec_conv_ratio;
-	align_offset = -.1f;
+	align_offset = -0.9f;
 	int passcount = 0;
 	while(1)
 	{
