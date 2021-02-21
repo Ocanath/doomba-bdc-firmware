@@ -134,7 +134,7 @@ int main(void)
 	float i_a,i_b,i_c;
 
 	while(1)
-		sinusoidal(0.05f,0);
+		sinusoidal(0.2f,0);
 
 	theta_m_prev = 0;
 

@@ -17,10 +17,6 @@ float gl_I;
 float gl_T;
 float gl_V;
 
-
-int32_t gl_current_input_offset_A;
-int32_t gl_current_input_offset_B;
-int32_t gl_current_input_offset_C;
 float L;
 float R;
 

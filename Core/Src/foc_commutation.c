@@ -37,6 +37,10 @@ const float adc_conv_A = 0.005754743303571f;
 const float adc_conv_B = 0.005754743303571f;
 const float adc_conv_C = 0.005754743303571f;
 
+static float gl_current_input_offset_A;
+static float gl_current_input_offset_B;
+static float gl_current_input_offset_C;
+
 int gl_sector=1;	//for SVM
 
 
@@ -198,12 +202,12 @@ void get_current_cal_offsets()
 	gl_current_input_offset_B = 0;
 	gl_current_input_offset_C = 0;
 	int i;
-	const int numSamples = 300;
+	const float numSamples = 300.f;
 	for(i=0;i<numSamples;i++)
 	{
-		gl_current_input_offset_A += hadc1.Instance->JDR1;//dma_adc_raw[ADC_CHAN_CURRENT_A];
-		gl_current_input_offset_B += hadc1.Instance->JDR2;//dma_adc_raw[ADC_CHAN_CURRENT_B];
-		gl_current_input_offset_C += hadc1.Instance->JDR3;//dma_adc_raw[ADC_CHAN_CURRENT_C];
+		gl_current_input_offset_A += (float)(hadc1.Instance->JDR1);//dma_adc_raw[ADC_CHAN_CURRENT_A];
+		gl_current_input_offset_B += (float)(hadc1.Instance->JDR2);//dma_adc_raw[ADC_CHAN_CURRENT_B];
+		gl_current_input_offset_C += (float)(hadc1.Instance->JDR3);//dma_adc_raw[ADC_CHAN_CURRENT_C];
 		HAL_Delay(1);
 	}
 	gl_current_input_offset_A /= numSamples;
@@ -223,9 +227,9 @@ void get_current_cal_offsets()
  */
 void conv_raw_current(float * i_a, float * i_b, float * i_c)
 {
-	*i_c = ((float)(hadc1.Instance->JDR3))*adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
-	*i_b = ((float)(hadc1.Instance->JDR2))*adc_conv_B;
-	*i_a = ((float)(hadc1.Instance->JDR1))*adc_conv_A;
+	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)*adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
+	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)*adc_conv_B;
+	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)*adc_conv_A;
 }
 
 float abs_f(float in)
@@ -264,6 +268,14 @@ uint8_t get_checksum(uint8_t * arr, int size)
 	return -checksum;
 }
 
+#define UART_PKT_SIZE 4
+typedef union tx_pkt_t
+{
+	float v_list[UART_PKT_SIZE];
+	uint8_t data[sizeof(float)*UART_PKT_SIZE];
+}tx_pkt_t;
+static volatile tx_pkt_t utx_pkt = {0};
+
 void sinusoidal(float Vq, float Vd)
 {
 	float i_a,i_b,i_c;
@@ -284,9 +296,16 @@ void sinusoidal(float Vq, float Vd)
 	count++;
 	if((count % 14)==0)
 	{
+		utx_pkt.v_list[0] = i_a;
+		utx_pkt.v_list[1] = i_b;
+		utx_pkt.v_list[2] = i_c;
+		utx_pkt.v_list[3] = theta_elec;
+		HAL_UART_Transmit_IT(&huart2, (uint8_t*)utx_pkt.data, sizeof(float)*UART_PKT_SIZE);	//may need to be separate transmissions, idk
 		//i_q.v = i_alpha;
-		i_q.d[4] = get_checksum(i_q.d,4);
-		HAL_UART_Transmit_IT(&huart2, i_q.d, 5);
+//		i_q.d[4] = get_checksum(i_q.d,4);
+//		HAL_UART_Transmit_IT(&huart2, i_q.d, 4);
+//		HAL_UART_Transmit_IT(&huart2, i_d.d, 4);
+
 	}
 
 
