@@ -133,6 +133,12 @@ int main(void)
 	float idref = 0;
 	float i_a,i_b,i_c;
 
+	/*TODO:
+	 * 1. compare against non-injected (should see difference?)
+	 * 2. use matlab for better normalization of current values
+	 * 3. change channel rank and determine whether it changes the scaling differences
+	 * 4. close loop and retry
+	 * */
 	while(1)
 		sinusoidal(0.2f,0);
 
