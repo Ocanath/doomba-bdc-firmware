@@ -33,9 +33,9 @@ float phase_advance_angle = 0;
 
 //0.02929394531f;//TODO: use actual current shunt val and retune
 //0.005754743303571;
-const float adc_conv_A = 0.005754743303571f;
-const float adc_conv_B = 0.005754743303571f;
-const float adc_conv_C = 0.005754743303571f;
+const float adc_conv_A = 525.9366f;
+const float adc_conv_B = 340.4033f;
+const float adc_conv_C = 185.8066f;
 
 static float gl_current_input_offset_A;
 static float gl_current_input_offset_B;
@@ -166,13 +166,18 @@ void controller_PI(float i_q_ref, float i_q, float Kp, float Ki, float * x, floa
 {
 	float err = i_q_ref-i_q;
 	*u = *x + Kp*err;
-	*x = *x + Ki*err;
+	*x = *x + err/Ki;
 }
-
+#define TWO_BY_THREE 0.666666667f
+#define ONE_BY_THREE 0.333333333f
 void clarke_transform(float i_a, float i_b, float i_c, float * i_alpha, float * i_beta)
 {
-	(*i_alpha) = i_a;
-	*i_beta = ONE_BY_SQRT_3*i_a + TWO_BY_SQRT_3*i_b;
+//	(*i_alpha) = i_a;
+//	*i_beta = ONE_BY_SQRT_3*i_a + TWO_BY_SQRT_3*i_b;
+
+	float ibmic = i_b - i_c;
+	*i_alpha = TWO_BY_THREE*i_a - ONE_BY_THREE*(ibmic);
+	*i_beta = TWO_BY_SQRT_3*ibmic;
 }
 void park_transform(float i_alpha, float i_beta, float sin_theta, float cos_theta, float * i_q, float * i_d)
 {
@@ -227,9 +232,9 @@ void get_current_cal_offsets()
  */
 void conv_raw_current(float * i_a, float * i_b, float * i_c)
 {
-	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)*adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
-	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)*adc_conv_B;
-	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)*adc_conv_A;
+	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
+	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)/adc_conv_B;
+	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)/adc_conv_A;
 }
 
 float abs_f(float in)
@@ -268,13 +273,14 @@ uint8_t get_checksum(uint8_t * arr, int size)
 	return -checksum;
 }
 
-#define UART_PKT_SIZE 4
+#define UART_PKT_SIZE 3
 typedef union tx_pkt_t
 {
 	float v_list[UART_PKT_SIZE];
 	uint8_t data[sizeof(float)*UART_PKT_SIZE];
 }tx_pkt_t;
 static volatile tx_pkt_t utx_pkt = {0};
+static volatile uint32_t tx_ts = 0;
 
 void sinusoidal(float Vq, float Vd)
 {
@@ -290,24 +296,30 @@ void sinusoidal(float Vq, float Vd)
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
 
-	floatsend_chk_t i_q,i_d;
-	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &(i_q.v), &(i_d.v));
+	float iqm,idm;
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &iqm, &idm);
 
-	count++;
-	if((count % 14)==0)
+	if(HAL_GetTick()>=tx_ts)
 	{
-		utx_pkt.v_list[0] = i_a;
-		utx_pkt.v_list[1] = i_b;
-		utx_pkt.v_list[2] = i_c;
-		utx_pkt.v_list[3] = theta_elec;
+		utx_pkt.v_list[0] = -i_q_meas;
+		utx_pkt.v_list[1] = Vq;
+		utx_pkt.v_list[2] = theta_enc;
+//		utx_pkt.v_list[3] = theta_elec;
+//		utx_pkt.v_list[4] = i_q_meas;
+//		utx_pkt.v_list[5] = i_d_meas;
 		HAL_UART_Transmit_IT(&huart2, (uint8_t*)utx_pkt.data, sizeof(float)*UART_PKT_SIZE);	//may need to be separate transmissions, idk
 		//i_q.v = i_alpha;
 //		i_q.d[4] = get_checksum(i_q.d,4);
 //		HAL_UART_Transmit_IT(&huart2, i_q.d, 4);
 //		HAL_UART_Transmit_IT(&huart2, i_d.d, 4);
-
+		tx_ts=HAL_GetTick()+15;
 	}
 
+
+	if(Vq > .86f)
+		Vq = .86f;
+	else if(Vq < -.86f)
+		Vq = -.86f;
 
 	uint32_t tA,tB,tC;
 	inverse_park_transform(Vq, Vd, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
@@ -330,14 +342,9 @@ void sinusoidal(float Vq, float Vd)
 
 }
 
+
 void foc(float iqref, float idref)
 {
-	float i_a,i_b,i_c;
-	conv_raw_current(&i_a,&i_b, &i_c);
-
-	float i_alpha,i_beta;
-	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
-
 	float theta_enc = unwrap( theta_rel_rad(), &theta_enc_prev);
 	//float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 	float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
@@ -345,24 +352,57 @@ void foc(float iqref, float idref)
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
 
-	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
+	count++;
+	float i_alpha,i_beta;
+	if(count%1==0)
+	{
+		float i_a,i_b,i_c;
+		conv_raw_current(&i_a,&i_b, &i_c);
+
+		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
+
+		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
+	}
 
 	float uq,ud;
-	controller_PI(iqref, i_q_meas, iq_gain, 0.0000000001, &x_iq_PI, &uq);		//this sort of works
-	controller_PI(0, 	i_d_meas, .0001f, 0.0000000001f, &x_id_PI, &ud);		//this sort of works
+	controller_PI(iqref, -i_q_meas, iq_gain, 1000.f, &x_iq_PI, &uq);		//this sort of works
+	controller_PI(0.f, 	-i_d_meas, id_gain, 100000000.f, &x_id_PI, &ud);		//this sort of works
 //	controller_PI(idref, i_d_meas, id_gain, 0.0f, &x_id_PI, &ud);		//high current
 //	ud = 0.f;
-
 //	float clamp_v = -.0480f*abs_f(i_q_meas) + 0.7f;
 ////	float clamp_v = .7f;
 //	if(uq > clamp_v)
 //		uq = clamp_v;
 //	if(uq < -clamp_v)
 //		uq = -clamp_v;
-	if(uq > .8f)
-		uq = .8f;
-	else if (uq < -.8f)
-		uq = -.8f;
+	const float clamp_v = .4f;
+	if(uq > clamp_v)
+		uq = clamp_v;
+	else if (uq < -clamp_v)
+		uq = -clamp_v;
+	if(ud > clamp_v)
+		ud = clamp_v;
+	else if(ud < -clamp_v)
+		ud = -clamp_v;
+
+
+	if(HAL_GetTick()>=tx_ts)
+	{
+		utx_pkt.v_list[0] = -i_q_meas;
+		utx_pkt.v_list[1] = iqref;
+		utx_pkt.v_list[2] = theta_enc;
+//		utx_pkt.v_list[3] = theta_elec;
+//		utx_pkt.v_list[4] = i_q_meas;
+//		utx_pkt.v_list[5] = i_d_meas;
+		HAL_UART_Transmit_IT(&huart2, (uint8_t*)utx_pkt.data, sizeof(float)*UART_PKT_SIZE);	//may need to be separate transmissions, idk
+		//i_q.v = i_alpha;
+//		i_q.d[4] = get_checksum(i_q.d,4);
+//		HAL_UART_Transmit_IT(&huart2, i_q.d, 4);
+//		HAL_UART_Transmit_IT(&huart2, i_d.d, 4);
+		tx_ts=HAL_GetTick()+15;
+	}
+
+
 	uint32_t tA,tB,tC;
 	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
@@ -371,6 +411,7 @@ void foc(float iqref, float idref)
 
 	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
 //	gl_theta_m = theta_enc*.5f;
+	gl_theta_m = theta_enc;
 	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 	{
 		gl_dq = (theta_enc-prev_theta_m_dq)*25.0f;

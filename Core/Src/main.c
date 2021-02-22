@@ -134,13 +134,26 @@ int main(void)
 	float i_a,i_b,i_c;
 
 	/*TODO:
-	 * 1. compare against non-injected (should see difference?)
-	 * 2. use matlab for better normalization of current values
-	 * 3. change channel rank and determine whether it changes the scaling differences
-	 * 4. close loop and retry
+	 * 1. compare against non-injected (should see difference?) - check, but no significant difference between current measurements. I did invert though... which is odd?
+	 * 2. use matlab to retune current sensor gains	- check, done
+	 * 3. change channel rank and determine whether it changes the scaling differences - check. rank does NOT effect gain, meaning that it is a resistive gain.
+	 * 4. check no-load current response
+	 * 5. close loop and retry
 	 * */
+	uint32_t start_ts = HAL_GetTick();
 	while(1)
-		sinusoidal(0.2f,0);
+	{
+//		float t = (float)(HAL_GetTick()-start_ts)*.001f;
+		float ref;// = t*.1f;
+		ref=0;
+//		float iqref = 3.3f*(.5f*sin_fast(fmod_2pi(t+PI)-PI)+.5f);
+//		sinusoidal(0.2f,0);
+		iqref = 1.0f*(ref - gl_theta_m);// - gl_dq/30.f;
+//		iqref=0.3f;
+		foc(iqref,0);
+//		sinusoidal(iqref*.1f,0);
+	}
+//
 
 	theta_m_prev = 0;
 

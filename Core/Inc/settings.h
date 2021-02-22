@@ -27,7 +27,7 @@
 
 /**/
 #ifdef EXTERNAL_OSCILLATOR
-#define COMM_PWM_PERIOD 1000//1125?
+#define COMM_PWM_PERIOD 1125//1125?
 #else
 #define COMM_PWM_PERIOD 1000
 #endif
