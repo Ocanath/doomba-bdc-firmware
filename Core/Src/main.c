@@ -52,7 +52,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	gl_uart_cplt_flag = 1;
 }
 
-
 int main(void)
 {
 	HAL_Init();
@@ -141,17 +140,33 @@ int main(void)
 	 * 5. close loop and retry
 	 * */
 	uint32_t start_ts = HAL_GetTick();
+
 	while(1)
 	{
-//		float t = (float)(HAL_GetTick()-start_ts)*.001f;
+		float t = (float)(HAL_GetTick()-start_ts)*.001f;
 		float ref;// = t*.1f;
-		ref=0;
+		ref= t*.1f;
+
+		float vr1 = cos_fast(fmod_2pi(gl_theta_m + PI) - PI);
+		float vr2 = sin_fast(fmod_2pi(gl_theta_m + PI) - PI);
+
+		float vt1 = cos_fast(fmod_2pi(ref + PI) - PI);
+		float vt2 = sin_fast(fmod_2pi(ref + PI) - PI);
+
+		float k = 1.f;
+
+		float vd1 = vt1 - vr1;
+		float vd2 = vt2 - vr2;
+
+		float iqref = k*(vr2 * vd1) + k*(-vr1 * vd2);
 //		float iqref = 3.3f*(.5f*sin_fast(fmod_2pi(t+PI)-PI)+.5f);
 //		sinusoidal(0.2f,0);
-		iqref = 1.0f*(ref - gl_theta_m);// - gl_dq/30.f;
+
+//		iqref = 1.0f*(ref - gl_theta_m);// - gl_dq/30.f;
+
 //		iqref=0.3f;
-		foc(iqref,0);
-//		sinusoidal(iqref*.1f,0);
+//		foc(iqref,0);
+		sinusoidal(iqref*.2f,0);
 	}
 //
 
