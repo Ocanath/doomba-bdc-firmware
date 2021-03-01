@@ -141,11 +141,15 @@ int main(void)
 	 * */
 	uint32_t start_ts = HAL_GetTick();
 
+	const float max_v = .4f;
 	while(1)
 	{
 		float t = (float)(HAL_GetTick()-start_ts)*.001f;
 		float ref;// = t*.1f;
-		ref= t*.1f;
+//		if(t >= 0 && t < 10.f)
+//			ref= t*10.f;
+//		else
+		ref = PI;
 
 		float vr1 = cos_fast(fmod_2pi(gl_theta_m + PI) - PI);
 		float vr2 = sin_fast(fmod_2pi(gl_theta_m + PI) - PI);
@@ -153,17 +157,18 @@ int main(void)
 		float vt1 = cos_fast(fmod_2pi(ref + PI) - PI);
 		float vt2 = sin_fast(fmod_2pi(ref + PI) - PI);
 
-		float k = 1.f;
+		float k = 3.f;
 
 		float vd1 = vt1 - vr1;
 		float vd2 = vt2 - vr2;
 
-		float iqref = k*(vr2 * vd1) + k*(-vr1 * vd2);
-//		float iqref = 3.3f*(.5f*sin_fast(fmod_2pi(t+PI)-PI)+.5f);
-//		sinusoidal(0.2f,0);
+		float iqref = k*(vr1*vd2 - vr2*vd1);
 
 //		iqref = 1.0f*(ref - gl_theta_m);// - gl_dq/30.f;
-
+		if(iqref > max_v)
+			iqref = max_v;
+		if(iqref < -max_v)
+			iqref = -max_v;
 //		iqref=0.3f;
 //		foc(iqref,0);
 		sinusoidal(iqref*.2f,0);
