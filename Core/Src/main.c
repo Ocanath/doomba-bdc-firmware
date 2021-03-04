@@ -125,51 +125,6 @@ int main(void)
 #endif
 	float iqref = 0.f;
 
-	/*TODO:
-	 * 1. compare against non-injected (should see difference?) - check, but no significant difference between current measurements. I did invert though... which is odd?
-	 * 2. use matlab to retune current sensor gains	- check, done
-	 * 3. change channel rank and determine whether it changes the scaling differences - check. rank does NOT effect gain, meaning that it is a resistive gain.
-	 * 4. check no-load current response
-	 * 5. close loop and retry
-	 * */
-	uint32_t start_ts = HAL_GetTick();
-	const float max_v = .4f;
-	const float offset = -2.243951f;
-	while(1)
-	{
-		float t = (float)(HAL_GetTick()-start_ts)*.001f;
-		float targ = 0+offset;// = t*.1f;
-		if(t >= 0 && t < 10.f)
-		{
-			iqref = 0.2f*(targ - gl_theta_m);// - gl_dq/30.f;
-		}
-		else
-		{
-			float thr = fmod_2pi(gl_theta_m + PI) - PI;
-			float vr1 = cos_fast(thr);
-			float vr2 = sin_fast(thr);
-
-			float th_targ = fmod_2pi(targ + PI) - PI;
-			float vt1 = cos_fast(th_targ);
-			float vt2 = sin_fast(th_targ);
-
-			float k = 1.f;
-
-			float vd1 = vt1 - vr1;
-			float vd2 = vt2 - vr2;
-
-			iqref = k*(vr1*vd2 - vr2*vd1);
-		}
-
-		if(iqref > max_v)
-			iqref = max_v;
-		if(iqref < -max_v)
-			iqref = -max_v;
-
-		sinusoidal(iqref,0);
-	}
-
-
 	theta_m_prev = 0;
 
 	floatsend_chk_t uart_encoder_data;
