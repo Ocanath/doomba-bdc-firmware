@@ -10,7 +10,7 @@
 #include "init.h"
 #include "mag-encoder.h"
 #include "settings.h"
-
+#include "nfault_handler.h"
 
 #define CONST_E 0.367879441171442321595523770161460867445811131031767834507
 float gl_I;
@@ -79,8 +79,107 @@ extern float gl_dq;
 
 float abs_f(float in);
 
-void sinusoidal(float Vq, float Vd);
-void foc(float iqref, float idref);
+/**/
+static inline void sinusoidal(float Vq, float Vd)
+{
+	float i_a,i_b,i_c;
+	float i_alpha,i_beta;
+	conv_raw_current(&i_a, &i_b, &i_c);
+	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
+
+	float theta_elec = theta_rel_rad()*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+
+	float iqm,idm;
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &iqm, &idm);
+
+	if(Vq > .86f)
+		Vq = .86f;
+	else if(Vq < -.86f)
+		Vq = -.86f;
+
+	uint32_t tA,tB,tC;
+	inverse_park_transform(Vq, Vd, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+
+	float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev);
+	gl_theta_m = theta_enc;	//*.5 is carryover from kmz and is incorrect.
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = gl_theta_m;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+
+		/*
+		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+		 */
+	}
+}
+
+/**/
+static inline void foc(float iqref, float idref)
+{
+	float theta_elec = theta_rel_rad()*elec_conv_ratio + phase_advance_angle;
+	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
+	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
+
+	float i_alpha,i_beta;
+	float i_a,i_b,i_c;
+	conv_raw_current(&i_a,&i_b, &i_c);
+	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
+	park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q_meas, &i_d_meas);
+
+	float uq,ud;
+	controller_PI(iqref, -i_q_meas, iq_gain, 1000.f, &x_iq_PI, &uq);		//this sort of works
+	controller_PI(0.f, 	-i_d_meas, id_gain, 100000000.f, &x_id_PI, &ud);		//this sort of works
+
+	const float clamp_v = .86f;
+	if(uq > clamp_v)
+		uq = clamp_v;
+	else if (uq < -clamp_v)
+		uq = -clamp_v;
+	if(ud > clamp_v)
+		ud = clamp_v;
+	else if(ud < -clamp_v)
+		ud = -clamp_v;
+
+	uint32_t tA,tB,tC;
+	inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
+	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
+//	gl_theta_m = theta_enc*.5f;
+
+	float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev);
+	gl_theta_m = theta_enc;
+	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
+	{
+		gl_dq = (theta_enc-prev_theta_m_dq)*25.0f;
+		prev_theta_m_dq = theta_enc;
+		phase_advance_angle = gl_dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
+		dq_ts = HAL_GetTick()+40;
+
+		clear_latched_nfault();
+//		/*
+//		 * TODO: swap the two drivers (my pop and pcbgogo mod). compare against module 019
+//		 */
+//		if(abs_f(gl_dq) < 20.f && abs_f(iqref) > 5.f && abs_f(i_q_meas) < 1.f)
+//		{
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 0);
+//			unwrap( theta_rel_rad(), &theta_enc_prev);
+//			HAL_GPIO_WritePin(ENABLE_PORT, ENABLE_PIN, 1);
+//		}
+	}
+}
+
 
 
 #endif /* FOC_COMMUTATION_H_ */

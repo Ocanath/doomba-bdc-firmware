@@ -123,14 +123,7 @@ int main(void)
 #ifdef TEST_FOC
 	test_foc();
 #endif
-
-	float x_iq_PI = 0;	//torque pi state
-	float x_id_PI = 0;	//flux pi state
-	float uq = 0;
-	float ud = 0;
-	float iqref = 0;
-	float idref = 0;
-	float i_a,i_b,i_c;
+	float iqref = 0.f;
 
 	/*TODO:
 	 * 1. compare against non-injected (should see difference?) - check, but no significant difference between current measurements. I did invert though... which is odd?
@@ -140,14 +133,17 @@ int main(void)
 	 * 5. close loop and retry
 	 * */
 	uint32_t start_ts = HAL_GetTick();
-
 	const float max_v = .4f;
+	const float offset = -2.243951f;
 	while(1)
 	{
 		float t = (float)(HAL_GetTick()-start_ts)*.001f;
-		float targ = PI;// = t*.1f;
-		float iqref;
+		float targ = 0+offset;// = t*.1f;
 		if(t >= 0 && t < 10.f)
+		{
+			iqref = 0.2f*(targ - gl_theta_m);// - gl_dq/30.f;
+		}
+		else
 		{
 			float thr = fmod_2pi(gl_theta_m + PI) - PI;
 			float vr1 = cos_fast(thr);
@@ -157,27 +153,22 @@ int main(void)
 			float vt1 = cos_fast(th_targ);
 			float vt2 = sin_fast(th_targ);
 
-			float k = 3.f;
+			float k = 1.f;
 
 			float vd1 = vt1 - vr1;
 			float vd2 = vt2 - vr2;
 
 			iqref = k*(vr1*vd2 - vr2*vd1);
 		}
-		else
-		{
-			iqref = 1.0f*(targ - gl_theta_m);// - gl_dq/30.f;
-		}
-
 
 		if(iqref > max_v)
 			iqref = max_v;
 		if(iqref < -max_v)
 			iqref = -max_v;
 
-		sinusoidal(iqref*.2f,0);
+		sinusoidal(iqref,0);
 	}
-//
+
 
 	theta_m_prev = 0;
 
@@ -195,9 +186,6 @@ int main(void)
 	//	theta_m_prev=theta_enc_prev;
 #endif
 
-	uint32_t dq_ts = 0;
-	float prev_theta_m_dq = 0;
-	float phase_advance_angle = 0;
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
@@ -218,56 +206,13 @@ int main(void)
 		}
 		if(HAL_GetTick() > can_cmd_exp_ts)
 			iqref = 0.f;
-//		parse_master_cmd(&led_ts);
-		iqref = 0.5f;
 
-		/****************************************FOC functional block*************************************/
-		conv_raw_current(&i_a, &i_b, &i_c);
+		sinusoidal(iqref, 0);
 
-		float i_alpha,i_beta;
-		clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
-
-		float theta_enc = unwrap(theta_rel_rad(), &theta_enc_prev);
-		float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
-		//		float theta_elec = theta_enc*elec_conv_ratio;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
-		theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
-		float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
-		float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
-
-		float i_q, i_d;
-		park_transform(i_alpha, i_beta, sin_theta,cos_theta, &i_q, &i_d);
-#ifdef FLIP_TAU
-		controller_PI(-iqref, i_q, iq_gain, 0.000000001, &x_iq_PI, &uq);		//this sort of works
-#else
-		controller_PI(iqref, i_q, iq_gain, 0.0f, &x_iq_PI, &uq);		//this sort of works
-#endif
-//		controller_PI(idref, i_d, id_gain, 0.0f, &x_id_PI, &ud);		//high current
-		ud = 0.f;
-
-		uint32_t tA,tB,tC;
-		if(uq > 0.8f)
-			uq = 0.8f;
-		if(uq < -0.8f)
-			uq = -0.8f;
-		inverse_park_transform(uq, ud, sin_theta,cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?sin_theta
-		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
-		/**********************************************END**********************************************/
-
-		/*phase advancement. necessary for high bw commutation*/
-		if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
-		{
-			float dq = (theta_enc-prev_theta_m_dq)*25.0f;
-			prev_theta_m_dq = theta_enc;
-			phase_advance_angle = dq/gl_prop_delay_const;//division yields more accurate advance angle for better performance.
-			dq_ts = HAL_GetTick()+40;
-
-//			clear_latched_nfault();	//TODO: add this in and TEST IT
-		}
 
 		/*Load CAN message with motor position*/
 		if(gl_ext_cmd_flags.use_uart_encoder == 0)
-			can_tx_data.v = theta_enc;
+			can_tx_data.v = gl_theta_m;
 		else
 		{
 			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 5);

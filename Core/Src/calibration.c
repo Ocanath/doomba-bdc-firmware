@@ -129,8 +129,8 @@ void auto_calibrate_motor(void)
 void test_foc()
 {
 
-	uint32_t reverse_ts = 0;
-	float iq_ref = 70.f;
+//	uint32_t reverse_ts = 0;
+//	float iq_ref = 70.f;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
