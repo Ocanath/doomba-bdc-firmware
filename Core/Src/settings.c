@@ -208,7 +208,7 @@ int16_t cos_mid = 2068;
 int16_t sin_mid = 1941;
 #endif
 #if MODULE_NUMBER == 21					//rando.
-float align_offset = 0.0912888497f;
+float align_offset = 0.0899067894f;
 const float iq_gain = 0.3f;
 const float id_gain = 0.01f;
 float gl_prop_delay_const = 800.f;
