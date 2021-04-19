@@ -197,26 +197,25 @@ const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our
 int16_t cos_mid = 2056;
 int16_t sin_mid = 1983;
 #endif
-#if MODULE_NUMBER == 20						//rando.
-float align_offset = -0.0561990365f;	//-0.578984737
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 475;
-uint32_t i2c_address = I2C_BASE+2;
-const float elec_conv_ratio = 5.5f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 2068;
-int16_t sin_mid = 1941;
+#if MODULE_NUMBER == 20				//currently in gearbox
+float align_offset = 0.0229281429f;
+const float iq_gain = 0.3f;
+const float id_gain = 0.01f;
+float gl_prop_delay_const = 800.f;
+const float elec_conv_ratio = 8.f;	//16pole, 8pp
+int16_t cos_mid = 1973;
+int16_t sin_mid = 1973;
 #endif
-#if MODULE_NUMBER == 21					//rando.
+#if MODULE_NUMBER == 21					//currently in spinner launcher
 float align_offset = 0.0899067894f;
 const float iq_gain = 0.3f;
 const float id_gain = 0.01f;
 float gl_prop_delay_const = 800.f;
-const float elec_conv_ratio = 8.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
+const float elec_conv_ratio = 8.f;	//16 poles, 8 pole pairs, suitable for KMZ60 no-force if u wanna be cheap
 int16_t cos_mid = 1997;
 int16_t sin_mid = 1985;
 #endif
-#if MODULE_NUMBER == 22						//rando.
+#if MODULE_NUMBER == 22						//currently in spinner launcher
 float align_offset = -0.877466202f;
 const float iq_gain = 0.3f;
 const float id_gain = 0.01f;
