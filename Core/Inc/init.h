@@ -10,6 +10,7 @@
 #include "main.h"
 #include "stm32f3xx_hal.h"
 #include "settings.h"
+#include "m_uart.h"
 
 #define STAT_PORT GPIOC
 #define STAT_PIN GPIO_PIN_13

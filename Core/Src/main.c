@@ -40,16 +40,20 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
-
+static volatile floatsend_chk_t uart_encoder_data;
+static volatile floatsend_chk_t uart_loaded_buf;
+static int num_uart_bytes = 5;
 /**
- * @brief Rx Transfer completed callback.
- * @param huart UART handle.
- * @retval None
- */
-uint8_t gl_uart_cplt_flag = 0;
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+  */
+void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	gl_uart_cplt_flag = 1;
+	for(int i = 0; i < num_uart_bytes; i++)	//only need to load however many bytes we're expecting (not however many we've actually got, although they're the same 99.99% of the time
+		uart_loaded_buf.d[i] = m_huart2.rx_buf[i];
+//	m_uart_tx_start(&m_huart1, (uint8_t*)uart_loaded_buf.buf, num_uart_bytes);
+	if(get_checksum(m_huart2.rx_buf, 4) == m_huart2.rx_buf[4])
+	{
+		uart_encoder_data.v = uart_loaded_buf.v;
+	}
 }
 
 int main(void)
@@ -127,7 +131,6 @@ int main(void)
 
 	theta_m_prev = 0;
 
-	floatsend_chk_t uart_encoder_data;
 	for(int i = 0; i < 5; i++)
 		uart_encoder_data.d[i] = 0;
 
@@ -166,17 +169,12 @@ int main(void)
 
 
 		/*Load CAN message with motor position*/
-		if(gl_ext_cmd_flags.use_uart_encoder == 0)
+		if (gl_ext_cmd_flags.use_uart_encoder == 0)
 			can_tx_data.v = gl_theta_m;
 		else
 		{
-			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 5);
-			if(gl_uart_cplt_flag == 1)	//should work
-			{
-				//TODO: add checksum calculation and check
-				can_tx_data.v = uart_encoder_data.v;
-				gl_uart_cplt_flag=0;
-			}
+			//TODO: add checksum calculation and check
+			can_tx_data.v = uart_encoder_data.v;
 		}
 
 
