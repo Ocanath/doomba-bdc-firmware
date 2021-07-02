@@ -27,7 +27,7 @@ uint32_t				can_tx_mailbox;
 
 ext_cmd_flags_t gl_ext_cmd_flags = {
 		.en_blink_led = 1,
-		.use_uart_encoder = 0
+		.use_uart_encoder = 1
 };
 
 const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
