@@ -87,7 +87,8 @@ static inline void sinusoidal(float Vq, float Vd)
 	conv_raw_current(&i_a, &i_b, &i_c);
 	clarke_transform(i_a,i_b,i_c,&i_alpha, &i_beta);
 
-	float theta_elec = theta_rel_rad()*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
+	float theta_enc = theta_rel_rad();
+	float theta_elec = theta_enc*elec_conv_ratio + phase_advance_angle;		//test this! MS motor has 22 pole pairs, which means multiply by 11. ENCODER RETURNS 2*theta so we absorb .5 into this term
 	theta_elec = fmod_2pi(theta_elec + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 	float sin_theta = sin_fast(theta_elec);				//calculate the sin of the electrical (magnetic flux) angle
 	float cos_theta = cos_fast(theta_elec);				//and the cosine for park and inverse park domains
@@ -105,10 +106,7 @@ static inline void sinusoidal(float Vq, float Vd)
 	svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	//float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;
-
-	float theta_enc = unwrap( theta_abs_rad(), &theta_enc_prev);
-	gl_theta_m = theta_enc;	//*.5 is carryover from kmz and is incorrect.
+	gl_theta_m = unwrap(theta_enc, &theta_enc_prev);
 	if(HAL_GetTick() > dq_ts) //in this implementation, mechanical theta is computed outside the loop and shared with foc.
 	{
 		gl_dq = (gl_theta_m-prev_theta_m_dq)*25.0f;
