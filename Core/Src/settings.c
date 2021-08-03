@@ -246,7 +246,7 @@ int16_t sin_mid = 1976;
 float align_offset = -0.0f;	//needs algining
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
-const float gl_prop_delay_const = 476;	//needs tuning
+const float gl_prop_delay_const = 800.f;	//needs tuning
 const float elec_conv_ratio = 8.f;	//MS motor with 16 poles, with TLE makes 8 pole pairs
 int16_t cos_mid = 1976;
 int16_t sin_mid = 1976;
@@ -255,10 +255,10 @@ int16_t sin_mid = 1976;
 float align_offset = -0.0818852335f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
-const float gl_prop_delay_const = 476;
-const float elec_conv_ratio = 11.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1986;
-int16_t sin_mid = 1984;
+const float gl_prop_delay_const = 800.f;
+const float elec_conv_ratio = 8.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 1988;
+int16_t sin_mid = 1962;
 #endif
 #if MODULE_NUMBER == 27						//rando. TLE encoder/v4-r5
 float align_offset = -0.170397103f;
