@@ -225,13 +225,13 @@ int16_t cos_mid = 1996;
 int16_t sin_mid = 1974;
 #endif
 #if MODULE_NUMBER == 23						//rando. TLE encoder/v4-r5
-float align_offset = 0.0395689383f;
+float align_offset = 0.0346194729f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 560.f;
 const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 1996;
-int16_t sin_mid = 1975;
+int16_t cos_mid = 1985;
+int16_t sin_mid = 1986;
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
 float align_offset = -0.170561865f;
@@ -277,4 +277,49 @@ const float gl_prop_delay_const = 476;
 const float elec_conv_ratio = 11.f;	//22 poles + TLE encoder, so 11 pole pairs
 int16_t cos_mid = 1993;
 int16_t sin_mid = 1984;
+#endif
+#if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
+float align_offset = 0.216673866f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 2000;
+int16_t sin_mid = 1987;
+#endif
+#if MODULE_NUMBER == 31						//rando. TLE encoder/v4-r5
+float align_offset = 0.393527597f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 1973;
+int16_t sin_mid = 1974;
+#endif
+#if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
+float align_offset = -0.256763965f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 1971;
+int16_t sin_mid = 1978;
+#endif
+#if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
+float align_offset = -0.115011632f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 1991;
+int16_t sin_mid = 1970;
+#endif
+#if MODULE_NUMBER == 34						//rando. TLE encoder/v4-r5
+float align_offset = 0.42705825f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+int16_t cos_mid = 1976;
+int16_t sin_mid = 1974;
 #endif
