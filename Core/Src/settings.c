@@ -278,3 +278,12 @@ const float elec_conv_ratio = 11.f;	//22 poles + TLE encoder, so 11 pole pairs
 int16_t cos_mid = 1993;
 int16_t sin_mid = 1984;
 #endif
+#if MODULE_NUMBER == 29						//TLE Aerosky
+float align_offset = 0.471103966f;
+const float iq_gain = 0.01;
+const float id_gain = 0.01;
+const float gl_prop_delay_const = 900.f;
+const float elec_conv_ratio = 7.f;	//14magnets, 7 pole pairs
+int16_t cos_mid = 1985;
+int16_t sin_mid = 1985;
+#endif
