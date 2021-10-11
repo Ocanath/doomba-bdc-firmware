@@ -36,12 +36,11 @@ plot(double(fixed_ref)/4096);
 plot(float_ref);
 hold off
 
-
 figure(2)
 clf
 err = float_ref-double(fixed_ref)/4096;
 plot(err);
-fprintf("max diff = %f\n",max(abs(err)));
+fprintf("max err in degrees = %f\n",max(abs(err))*(360/pi));
 
 %% Basis for computation of fast fixed point '12 bit' atan2
 
