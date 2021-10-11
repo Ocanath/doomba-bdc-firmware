@@ -1,0 +1,80 @@
+% Inputs:
+%   Adc data y and x. 
+%   Expected input range is [-2048 to 2048], int16. This means adc data is 
+%   input biased BEFORE the call to this function
+%
+% Outputs: 
+%   atan2, fixed point. 4096 -> pi, -4096 -> -pi.
+%   OUTPUT RANGE -4096 to 4096 GUARANTEED
+function out = atan2_fixed(y,x)
+    assert(isa(y,'int32') & isa(x,'int32'),'Error: inputs must be of type int32');
+    
+    %div by 0
+%     if(x == 0)
+%         if(y == 0)
+%             out = 0;
+%         elseif(y > 0)
+%             out = 2048; %pi/2
+%         else
+%             out = -2048; %-pi/2
+%         end
+%         return;
+%     end
+%     if(y == 0)
+%         if(x > 0)
+%             out = 0;
+%         else
+%             out = 4096;    %pi
+%         end
+%         return;
+%     end
+%     
+    % get absolute value of both
+    abs_s = y;
+    if(abs_s < 0)
+        abs_s = -abs_s;
+    end
+    abs_c = x;
+    if(abs_c < 0)
+        abs_c = -abs_c;
+    end
+    
+    % get min value of both
+    minv = abs_c;
+    maxv = abs_s;
+    if(maxv < minv)
+        minv = abs_s;
+        maxv = abs_c;
+    end
+    
+%     % do a fixed point division...
+    a = bitshift(minv,12)/maxv; %this is guaranteed to range from 0-4096
+%                                 %as min/max logic above constrains a to
+%                                 %nominally be 0-1
+%                                 %2^12 is our scf for atan2, and the 
+%                                 % max resolution of the encoder, so it 
+%                                 %works out nicely
+%     c = int32([580, -1406, -66, 4112, -1]);
+%     a2 = bitshift(a*a,-12);
+%     a3 = bitshift(a2*a,-12);
+%     a4 = bitshift(a3*a,-12);
+%     r = bitshift(a4*c(1) + a3*c(2) + a2*c(3) + a*c(4) + c(5),-12);
+    
+%     a = single(a)/4096;
+%     r = -0.0464964749*a^7 + 0.15931422*a^5 - 0.327622764*a^3 + a;
+%     r = int32(r*4096/pi);
+%     r = a;
+    
+    %fp_coef from fixed_point_foc
+    if(abs_s > abs_c)
+        r = int32(2048) - r;
+    end
+    if(x < 0)
+        r = int32(4096) - r;
+    end
+    if(y < 0)
+        r = -r;
+    end
+    out = 0;
+    
+end
