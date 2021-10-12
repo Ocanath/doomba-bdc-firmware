@@ -1,0 +1,45 @@
+% INPUT: angle, fixed point. Must be constrained from -4096*pi to 4096*pi
+% externally, or else the internal constraint must be applied.
+%
+% OUTPUT: sin theta
+%
+function y = sin_fixed(theta)
+    assert(isa(theta,'int32'),'Error! input must be type int32');
+    
+    % defines
+    ONE_BY_THREE_FACTORIAL  =   int32(683);    %int32(0.16666666666*4096);
+    ONE_BY_FIVE_FACTORIAL   =   int32(34);   %int32(0.00833333333*4096);
+    HALF_PI                 =   int32(6434);  %int32(1.57079632679*4096);
+    PI                      =   int32(12868);    %int32(3.14159265359*4096);
+    THREE_BY_TWO_PI         =   int32(19302);    %int32(4.71238898038*4096);
+    TWO_PI                  =   int32(25736);   %int32(6.28318530718*4096);
+    
+    % optional. constrain input from -pi to pi
+    theta = mod(theta+PI,TWO_PI)-PI;    
+
+    % Begin
+    is_neg = 0;
+    if(theta > HALF_PI && theta <= PI)	% if positive and in quadrant II, put in quadrant I (same)
+		theta = PI - theta;
+    elseif (theta >= PI && theta < THREE_BY_TWO_PI)  % if positive and in quadrant III (possible for cosine)
+        is_neg = 1;
+        theta = theta - PI;
+    elseif (theta > THREE_BY_TWO_PI && theta < TWO_PI)  % if positive and in quadrant IV (edge case of cosine, rare but possible)
+        theta = theta - TWO_PI;
+    elseif (theta < -HALF_PI && theta >= -PI ) % if negative and in quadrant III,
+		is_neg = 1;
+		theta = PI + theta;
+    end
+    
+	theta_2 = bitshift(theta*theta,-12);
+	theta_3 = bitshift(theta_2*theta,-12);
+	theta_5 = bitshift(theta_3*theta_2,-12);
+	res = bitshift(theta,12)-theta_3*ONE_BY_THREE_FACTORIAL + theta_5 * ONE_BY_FIVE_FACTORIAL;
+	res = bitshift(res,-12);
+    
+    if(is_neg == 1)
+		y = -res;
+	else
+		y = res;
+    end    
+end

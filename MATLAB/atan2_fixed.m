@@ -62,10 +62,12 @@ function out = atan2_fixed(y,x)
     a2 = bitshift(a*a,-12); %remove double application of scaling factor 2^12 with a rightshift
     a3 = bitshift(a2*a,-12);
     a4 = bitshift(a3*a,-12);
-    
+    a5 = bitshift(a4*a,-12);
     %best, most multiplies, 4th order
-    c = int32([580, -1406, -66, 4112, -1]); %this also has a factor of 4096
+%     c = int32([580, -1406, -66, 4112, -1]); %this also has a factor of 4096
+    c = int32([4637      -11250        -532       32894          -5]);
     r = a4*c(1) + a3*c(2) + a2*c(3) + a*c(4) + c(5);
+    r = bitshift(r,-3);
     
     %second best, 3rd order
 %     c = int32([-247,-812,4277,-9]);
@@ -75,6 +77,11 @@ function out = atan2_fixed(y,x)
 %     c = int32([-1182, 4425, -21]);
 %     r = a2*c(1) + a*c(2) + c(3);
 
+    %fifth order. slower, more accurate than 4th. you get the picture
+%     c = int32([-1778, 9083, -15201, 950, 32682, 2]); %this is fifth order poly
+% 	r = a5*c(1) + a4*c(2) + a3*c(3) + a2*c(4) + a*c(5) + c(6);
+%     r = bitshift(r,-3); %need to shift 15 for these coefficients
+    
 %     r = r/12867;    % 1/(4096*pi). this is sort of like res(0-1) = res*4096/pi,
                     % except that we have 2 factors of 4096 already present
                     % in r from its presence in a2, a3 and a4 as well as
