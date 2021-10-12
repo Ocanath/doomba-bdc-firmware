@@ -66,20 +66,20 @@ function out = atan2_fixed(y,x)
     %best, most multiplies, 4th order
 %     c = int32([580, -1406, -66, 4112, -1]); %this also has a factor of 4096
     c = int32([4637      -11250        -532       32894          -5]);
-    r = a4*c(1) + a3*c(2) + a2*c(3) + a*c(4) + c(5);
+    r = a4*c(1) + a3*c(2) + a2*c(3) + a*c(4) + bitshift(c(5),12);
     r = bitshift(r,-3);
     
     %second best, 3rd order
 %     c = int32([-247,-812,4277,-9]);
-%     r = a3*c(1) + a2*c(2) + a*c(3) + c(4);
+%     r = a3*c(1) + a2*c(2) + a*c(3) + bitshift(c(4),12);
     
     %third best, 2nd order. Fastest
 %     c = int32([-1182, 4425, -21]);
-%     r = a2*c(1) + a*c(2) + c(3);
+%     r = a2*c(1) + a*c(2) + bitshift(c(3),12);
 
     %fifth order. slower, more accurate than 4th. you get the picture
 %     c = int32([-1778, 9083, -15201, 950, 32682, 2]); %this is fifth order poly
-% 	r = a5*c(1) + a4*c(2) + a3*c(3) + a2*c(4) + a*c(5) + c(6);
+% 	r = a5*c(1) + a4*c(2) + a3*c(3) + a2*c(4) + a*c(5) + bitshift(c(6),12);
 %     r = bitshift(r,-3); %need to shift 15 for these coefficients
     
 %     r = r/12867;    % 1/(4096*pi). this is sort of like res(0-1) = res*4096/pi,

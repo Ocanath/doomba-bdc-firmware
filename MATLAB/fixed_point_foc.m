@@ -4,7 +4,60 @@
 % 32 bits only operations to avoid implicit casting.
 % 
 
-%% Full Check
+%% inverse park + SVM check
+theta = (-pi-1):.001:(pi+1);
+
+PI                      =   int32(12868);    %int32(3.14159265359*4096);
+TWO_PI = 2*PI;
+
+align_offset = 0.2;
+align_offset_fixed = int32(align_offset *4096); %compute fixed align offset from floating point one
+elec_conv_ratio = int32(7);
+iq = int32(sqrt(3)/2*2^12);
+id = int32(0);
+
+%generate fake encoder signal
+adc_sin = int32(sin(theta)*2018+1975);
+adc_cos = int32(cos(theta)*2018+1975);
+sin_in = adc_sin - int32(1975);
+cos_in = adc_cos - int32(1975);
+
+%allocate logger memory
+sin_f = int32(zeros(1,length(theta)));
+cos_f = int32(zeros(1,length(theta)));
+tA = int32(zeros(1,length(theta)));
+tB = int32(zeros(1,length(theta)));
+tC = int32(zeros(1,length(theta)));
+
+prev_theta_m = int32(0);
+%foc loop
+for i = 1:length(theta)
+    theta_m = atan2_fixed(sin_in(i),cos_in(i)) - align_offset_fixed;
+    theta_elec = mod( (theta_m*elec_conv_ratio) +PI, TWO_PI)-PI;
+    sin_f(i) = sin_fixed(theta_elec);
+    cos_f(i) = cos_fixed(theta_elec);   
+    
+    [alpha,beta] = inverse_park_fixed(iq,id,sin_f(i),cos_f(i));
+    [tA(i),tB(i),tC(i)] = svm_fixed(alpha,beta,int32(1000));
+end
+
+figure(1)
+clf
+hold on
+plot(sin_in*2);
+plot(cos_in*2);
+plot(sin_f);
+plot(cos_f);
+plot(tA);
+plot(tB);
+plot(tC);
+hold off
+
+% [ialpha,ibeta] = inverse_park_fixed(iq,id,
+
+
+
+%% Atan2+Sin+Cos with encoder quantization check
 PI                      =   int32(12868);    %int32(3.14159265359*4096);
 TWO_PI = 2*PI;
 
@@ -31,7 +84,6 @@ for i = 1:length(theta)
     cos_fixed_shifted(i) = cth;
     fixed_theta_shifted(i) = atan2_fixed(sth/2,cth/2);
 end
-
 
 figure(6)
 clf
@@ -102,29 +154,63 @@ plot(err);
 fprintf('max err in degrees = %f\n',max(abs(err))*(360/pi));
 
 %% sin and cos check
+theta = (-pi-1):.001:(pi+1);
+
 theta_fixed = int32(floor(theta*4096));
 
 sth = sin(theta);
 sin_fixed_theta = int32(zeros(1,length(theta)));
+cos_fixed_theta = sin_fixed_theta;
 for i = 1:length(theta)
-    sin_fixed_theta(i) = sin_fixed(theta_fixed(i));
+    thf = mod(theta_fixed(i)+int32(4096*pi),int32(2*pi*4096))-int32(4096*pi);
+    sin_fixed_theta(i) = sin_fixed(thf);
+    cos_fixed_theta(i) = cos_fixed(thf);
 end
 figure(3)
 clf
 hold on
-plot(sth);
-plot(double(sin_fixed_theta)/4096)
+plot(theta/pi,sth);
+plot(theta/pi,double(cos_fixed_theta)/4096);
+plot(theta/pi,double(sin_fixed_theta)/4096);
 hold off
 
 err = double(sin_fixed_theta)/4096 - sth;
-fprintf('max err degrees %f\n',max(abs(err)) );
+fprintf('max err %f\n',max(abs(err)) );
 figure(4)
 clf
 hold on
 plot(err);
 hold off
+%% sanity check, delete
+theta = -pi/2:.001:0;
+figure(1)
+clf
+plot(theta/pi,(theta+pi/2)/pi);
 
 %% Sin and cos alt basis
+theta = 0:.001:pi/2;
+
+c = polyfit(theta,sin(theta),4);
+cf = int32(round(c*2^15))
+pv_fit = polyval(c,theta);
+
+taylor = theta-theta.^3*(1/factorial(3)) + theta.^5*(1/factorial(5));
+
+figure(1)
+clf
+hold on
+plot(sin(theta));
+plot(taylor);
+plot(pv_fit);
+hold off
+
+figure(2)
+clf
+hold on
+plot(sin(theta)-taylor);
+plot(sin(theta)-pv_fit);
+hold off
+
 
 %% Basis for computation of fast fixed point '12 bit' atan2
 
