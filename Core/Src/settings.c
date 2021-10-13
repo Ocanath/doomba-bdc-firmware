@@ -279,7 +279,7 @@ int16_t cos_mid = 1993;
 int16_t sin_mid = 1984;
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
-//float align_offset = 0.471103966f;
+float align_offset = 0.471103966f;
 int32_t align_offset_fixed = (int32_t)(0.471103966f*4096.f);
 const float iq_gain = 0.01;
 const float id_gain = 0.01;

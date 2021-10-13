@@ -142,11 +142,16 @@ int main(void)
 	//	theta_m_prev=theta_enc_prev;
 #endif
 
-	int32_t iq = (int32_t)(.80f*4096.f);
+	int32_t iq = (int32_t)(-.80f*4096.f);
 	int32_t phase_adv_12b = 0;
 	uint32_t v12_ts = 0;
 	int32_t v_12b = 0;
 	int32_t prev_mtheta_12b = 0;
+
+	CoreDebug->DEMCR |= 0x01000000;
+	DWT->CYCCNT = 0;
+	DWT->CTRL |= 1;	//enable it
+
 	while(1)
 	{
 		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
@@ -169,6 +174,7 @@ int main(void)
 			phase_adv_12b = v_12b/gl_prop_delay_const_12b;
 			prev_mtheta_12b = theta_m;
 		}
+		DWT->CYCCNT = 0;
 	}
 
 	uint32_t can_cmd_exp_ts = 0;
