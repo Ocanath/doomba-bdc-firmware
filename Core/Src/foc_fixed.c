@@ -1,5 +1,7 @@
 #include "foc_fixed.h"
-
+#include "mag-encoder.h"
+#include "init.h"
+#include "foc_commutation.h"
 //static const int32_t SQRT_3 = int32(sqrt(3) * 2 ^ n);
 //static const int32_t 	TWO_BY_SQRT_3 = int32((2 / sqrt(3)) * 2 ^ n);
 //static const int32_t ONE_BY_SQRT_3 = int32((1 / sqrt(3)) * 2 ^ n);
@@ -7,6 +9,36 @@
 #define SQRT_3_12B			7094
 #define TWO_BY_SQRT_3_12B	4730
 #define	ONE_BY_SQRT_3_12B	2365
+
+static int32_t phase_adv_12b = 0;
+static uint32_t v12_ts = 0;
+static int32_t v_12b = 0;
+static int32_t prev_mtheta_12b = 0;
+
+void sinusoidal_fixed(int32_t iq, int32_t id)
+{
+	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_fixed(theta_elec);
+	int32_t cos_val = cos_fixed(theta_elec);
+
+	int32_t alpha,beta,tA,tB,tC;
+	inverse_park_fixed(iq,0,sin_val,cos_val,&alpha,&beta);
+	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	uint32_t tick = HAL_GetTick();
+	if(tick >= v12_ts)
+	{
+		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+		v12_ts = tick + 5;	//can change this to smaller value if overflow occurs
+		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		prev_mtheta_12b = theta_m;
+	}
+
+}
 
 /* 
 Inputs:

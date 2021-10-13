@@ -1,5 +1,13 @@
 #include "trig_fixed.h"
 
+/*
+ * NOTE TO FUTURE JESSE:
+ *
+ * If you're thinking about switching all these functions to inline... STOP
+ * You already benchmarked them both ways. Switching to inline REDUCES performance
+ * when compiler optimizations are on. Basically, stop trying to outsmart the compiler.
+ * */
+
 /*Poly Coefficients used for sin calculation, scaled up by 2^12*/
 static const int32_t sc1 = 117;
 static const int32_t sc2 = -835;
