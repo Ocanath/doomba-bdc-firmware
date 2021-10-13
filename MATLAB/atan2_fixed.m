@@ -64,10 +64,10 @@ function out = atan2_fixed(y,x)
     a4 = bitshift(a3*a,-12);
     a5 = bitshift(a4*a,-12);
     %best, most multiplies, 4th order
-%     c = int32([580, -1406, -66, 4112, -1]); %this also has a factor of 4096
-    c = int32([4637      -11250        -532       32894          -5]);
+    c = int32([580, -1406, -66, 4112, -1]); %this also has a factor of 4096
+%     c = int32([4637      -11250        -532       32894          -5]);
     r = a4*c(1) + a3*c(2) + a2*c(3) + a*c(4) + bitshift(c(5),12);
-    r = bitshift(r,-3);
+    r = bitshift(r,-12);
     
     %second best, 3rd order
 %     c = int32([-247,-812,4277,-9]);
@@ -93,7 +93,7 @@ function out = atan2_fixed(y,x)
                     %changes what value pi is equal to from the calculation
                     %result. just 1/4096 makes pi equal to (4096*pi)
                     
-    r = bitshift(r,-12);    %remove one of 4096, but leave one for scaling. Using a shift here means the output format is a multiple of pi
+%     r = bitshift(r,-12);    %remove one of 4096, but leave one for scaling. Using a shift here means the output format is a multiple of pi
     
     %fp_coef from fixed_point_foc
     if(abs_s > abs_c)

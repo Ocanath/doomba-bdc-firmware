@@ -1,5 +1,0 @@
-% This doesn't work well for fixed point.
-% Unwraps 12bit angle (
-function out = unwrap_fixed(in, prev_out)
-
-end

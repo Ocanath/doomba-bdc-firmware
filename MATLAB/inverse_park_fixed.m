@@ -16,5 +16,5 @@ function [ialpha,ibeta] = inverse_park_fixed(iq,id,sth,cth)
     % the controller to have a higher res. This function removes the 2^12
     % term from sin and cos, but not the 2^n term from iq and id
     ialpha = bitshift((id*cth - iq*sth), -12);
-    ibeta = bitshift(id*sth,-12) + bitshift(iq*cth,-12);
+    ibeta = bitshift((id*sth + iq*cth), -12);
 end
