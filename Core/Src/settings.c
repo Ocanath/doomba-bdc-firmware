@@ -279,13 +279,17 @@ int16_t cos_mid = 1993;
 int16_t sin_mid = 1984;
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
-float align_offset = 0.471103966f;
+//float align_offset = 0.471103966f;
+int32_t align_offset_fixed = (int32_t)(0.471103966f*4096.f);
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 900.f;
 const float elec_conv_ratio = 7.f;	//14magnets, 7 pole pairs
+const int32_t elec_conv_ratio_fixed = 7;
+const int32_t gl_prop_delay_const_12b = 12;//(int32_t)(25.f/ gl_prop_delay_const);
 int16_t cos_mid = 1985;
 int16_t sin_mid = 1985;
+#endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
 float align_offset = 0.216673866f;
 const float iq_gain = 0.01;

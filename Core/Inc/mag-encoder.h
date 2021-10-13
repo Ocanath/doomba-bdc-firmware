@@ -32,6 +32,7 @@ float theta_abs_rad();
 float theta_rel_rad();
 float theta_abs_deg();
 float theta_rel_deg();
+int32_t theta_rel_fixed(void);
 
 /*
  * fast trig functions
@@ -41,6 +42,5 @@ float sin_fast(float theta);
 float cos_fast(float theta);
 float fmod_2pi(float in);
 float unwrap(float theta, float * prev_theta);
-
 
 #endif /* MAG_ENCODER_H_ */

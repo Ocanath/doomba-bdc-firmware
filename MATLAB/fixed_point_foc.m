@@ -5,7 +5,10 @@
 % 
 
 %% inverse park + SVM check
-theta = (-pi-1):.001:(pi+1);
+% theta = (-pi-1):.001:(pi+1);
+% theta = T.theta_gen;
+t = 0:.001:10;
+theta = t.^3/4-5*pi;
 
 PI                      =   int32(12868);    %int32(3.14159265359*4096);
 TWO_PI = 2*PI;
@@ -25,20 +28,37 @@ cos_in = adc_cos - int32(1975);
 %allocate logger memory
 sin_f = int32(zeros(1,length(theta)));
 cos_f = int32(zeros(1,length(theta)));
+thm = int32(zeros(1,length(theta)));
 tA = int32(zeros(1,length(theta)));
 tB = int32(zeros(1,length(theta)));
 tC = int32(zeros(1,length(theta)));
 
 prev_theta_m = int32(0);
+phase_adv = int32(0);
+get_v_ts = uint32(0);
+v_m = zeros(1,length(theta));
 %foc loop
 for i = 1:length(theta)
+    tick = uint32(t(i)*1000);
+    
     theta_m = atan2_fixed(sin_in(i),cos_in(i)) - align_offset_fixed;
-    theta_elec = mod( (theta_m*elec_conv_ratio) +PI, TWO_PI)-PI;
+    theta_elec = mod( (theta_m*elec_conv_ratio + phase_adv) +PI, TWO_PI)-PI;
     sin_f(i) = sin_fixed(theta_elec);
     cos_f(i) = cos_fixed(theta_elec);   
     
     [alpha,beta] = inverse_park_fixed(iq,id,sin_f(i),cos_f(i));
     [tA(i),tB(i),tC(i)] = svm_fixed(alpha,beta,int32(1000));
+    
+    if(tick >= get_v_ts)
+        v_m(i) = mod( (theta_m - prev_theta_m) + PI,TWO_PI)-PI;
+%         v_m(i) = theta_m - prev_theta_m;
+        phase_adv = v_m(i)/int32(28);   %implicitly multiply this by 25
+        prev_theta_m = theta_m;
+        get_v_ts = tick() + 40;
+    elseif(i > 2)   %do this so we can check vm calculation
+        v_m(i) = v_m(i-1);
+    end
+    thm(i) = theta_m;
 end
 
 figure(1)
@@ -51,11 +71,17 @@ plot(cos_f);
 plot(tA);
 plot(tB);
 plot(tC);
+xlim([1,3000])
 hold off
 
+figure(2)
+clf
+hold on
+plot(v_m);
+plot(thm);
+plot(v_m/28);
+hold off
 % [ialpha,ibeta] = inverse_park_fixed(iq,id,
-
-
 
 %% Atan2+Sin+Cos with encoder quantization check
 PI                      =   int32(12868);    %int32(3.14159265359*4096);

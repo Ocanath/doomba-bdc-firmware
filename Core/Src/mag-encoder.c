@@ -6,6 +6,7 @@
  */
 #include "mag-encoder.h"
 #include "settings.h"
+#include "trig_fixed.h"
 
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
@@ -106,6 +107,14 @@ float theta_rel_rad()
 //	return atan2((float)sinVal,(float)cosVal) - align_offset;
 	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
 }
+
+int32_t theta_rel_fixed(void)
+{
+	int32_t sinVal = (int32_t)(dma_adc_raw[ADC_SIN_CHAN]-sin_mid);
+	int32_t cosVal = (int32_t)(dma_adc_raw[ADC_COS_CHAN]-cos_mid);
+	return atan2_fixed(sinVal,cosVal) - align_offset_fixed;
+}
+
 const float rad_to_deg = 180.0/PI;
 float theta_abs_deg()
 {

@@ -6,6 +6,7 @@
 #include "settings.h"
 #include "calibration.h"
 #include "CAN.h"
+#include "foc_fixed.h"
 
 /*
  * V3 R1 uses STM32F302C8T6
@@ -140,6 +141,35 @@ int main(void)
 		theta_enc_prev += TWO_PI*2.0f;
 	//	theta_m_prev=theta_enc_prev;
 #endif
+
+	int32_t iq = (int32_t)(.80f*4096.f);
+	int32_t phase_adv_12b = 0;
+	uint32_t v12_ts = 0;
+	int32_t v_12b = 0;
+	int32_t prev_mtheta_12b = 0;
+	while(1)
+	{
+		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+		int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+		int32_t sin_val = sin_fixed(theta_elec);
+		int32_t cos_val = cos_fixed(theta_elec);
+
+		int32_t alpha,beta,tA,tB,tC;
+		inverse_park_fixed(iq,0,sin_val,cos_val,&alpha,&beta);
+		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= v12_ts)
+		{
+			/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+			 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+			v12_ts = tick + 5;	//can change this to smaller value if overflow occurs
+			v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+			phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+			prev_mtheta_12b = theta_m;
+		}
+	}
 
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
