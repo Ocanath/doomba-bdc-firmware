@@ -31,6 +31,35 @@ static int32_t v_12b = 0;
 static int32_t prev_mtheta_12b = 0;
 uint32_t count = 0;
 
+/*Structs and variables for FOC controllers*/
+typedef struct fixed_PI_params_t
+{
+	int32_t kp_m;
+	int32_t kp_div;
+	int32_t ki_m;
+	int32_t ki_div;
+	int32_t x;
+	int32_t x_sat;
+}fixed_PI_params_t;
+fixed_PI_params_t g_iq = {
+		.kp_m = 12288,
+		.kp_div = 10,
+		.ki_m = 4096,
+		.ki_div = 1000,
+		.x = 0,
+		.x_sat = 2000
+};
+fixed_PI_params_t g_id = {
+		.kp_m = 3,
+		.kp_div = 100,
+		.ki_m = 3,
+		.ki_div = 100,
+		.x = 0,
+		.x_sat = 819
+};
+
+
+
 /*LOG*/
 #define LOG_SIZE 3500
 static volatile int32_t iq_log[LOG_SIZE] = {0};
@@ -38,18 +67,44 @@ static int32_t iq_log_idx = 0;
 static uint32_t current_samp_count = 0;
 static const uint32_t current_interval = 10;
 
-void sinusoidal_fixed(int32_t iq, int32_t id)
+/*
+ * x is state variable for integral delay
+ */
+int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
+{
+	int32_t err = i_q_ref - i_q_meas;
+	int32_t u = p->x + (p->kp_m*err)/p->kp_div; //multiplying then dividing by scaled gains has the effect of leftshifting 12, then rightshifting 12
+	p->x = p->x + (p->ki_m*err)/p->ki_div;
+	int32_t sat = p->x_sat;
+	if(p->x > sat)
+		p->x = sat;
+	if(p->x < -sat)
+		p->x = -sat;
+	return u;
+}
+
+void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
+	int32_t iq_meas, id_meas;
+	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+
+	int32_t vq_ref = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
+	int32_t vd_ref = ctl_PI_fixed(id_in, id_meas, &g_iq);
+//	vd_ref = 0;
+//	vq_ref = 819;
+	if(vq_ref > 1228)
+		vq_ref = 1228;
+	if(vq_ref < -1228)
+		vq_ref = -1228;
+	vd_ref = 0;
+/*
 	if(current_samp_count > current_interval)
 	{
-		int32_t iq_meas, id_meas;
-		get_current(sin_val, cos_val, &iq_meas, &id_meas);
-
 		if(iq_log_idx < LOG_SIZE)
 			iq_log[iq_log_idx++] = iq_meas;
 		else
@@ -60,7 +115,6 @@ void sinusoidal_fixed(int32_t iq, int32_t id)
 				int32_fmt_t fmt;
 				fmt.v = iq_log[i];
 				HAL_UART_Transmit(&huart2,fmt.d,sizeof(int32_t),5);
-				HAL_Delay(1);
 			}
 			while(1)
 			{
@@ -72,10 +126,12 @@ void sinusoidal_fixed(int32_t iq, int32_t id)
 		current_samp_count = 0;
 	}
 	current_samp_count++;
+*/
+
 
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(iq,0,sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq_ref, vd_ref, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 

@@ -154,6 +154,7 @@ int svm(float alpha, float beta, uint32_t pwm_period_cnt, uint32_t * tA, uint32_
 const float Kcor = 0.0;
 const float u_max = .3;
 const float u_min = -.3;
+
 /*
  * x is state variable for integral delay
  */
@@ -163,6 +164,7 @@ void controller_PI(float i_q_ref, float i_q, float Kp, float Ki, float * x, floa
 	*u = *x + Kp*err;
 	*x = *x + err/Ki;
 }
+
 #define TWO_BY_THREE 0.666666667f
 #define ONE_BY_THREE 0.333333333f
 void clarke_transform(float i_a, float i_b, float i_c, float * i_alpha, float * i_beta)

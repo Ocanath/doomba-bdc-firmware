@@ -146,7 +146,8 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
-	int32_t iq = (int32_t)(.5f*4096.f);
+//	int32_t iq = (int32_t)(.1f*4096.f);
+	int32_t iq = 50;
 	while(1)
 	{
 		sinusoidal_fixed(iq,0);
