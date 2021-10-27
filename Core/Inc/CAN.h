@@ -15,6 +15,12 @@ typedef union
 	uint8_t d[sizeof(uint32_t)];
 }uint32_fmt_t;
 
+typedef union
+{
+	int32_t v;
+	uint8_t d[sizeof(int32_t)];
+}int32_fmt_t;
+
 typedef union floatsend_t
 {
 	float v;

@@ -11,7 +11,7 @@
 /***********************Begin define hardware precomp settings*********************/
 
 /*Motor serial number, for the #define lookup list in settings.c . Also the CAN Node ID*/
-#define MODULE_NUMBER 29
+#define MODULE_NUMBER 32
 
 /*Is a KMZ60 or TLE encoder populated?
  * 	Note: elec_conv_ratio needs to be defined based on this number. elec_conv_ratio is
@@ -51,5 +51,6 @@ extern int32_t align_offset_fixed;
 extern const float elec_conv_ratio;
 extern const int32_t elec_conv_ratio_fixed;
 extern const int32_t gl_prop_delay_const_12b;
+extern const int32_t gl_prop_delayloop_interval;
 
 #endif /* SETTINGS_H_ */

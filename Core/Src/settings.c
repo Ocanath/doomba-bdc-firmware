@@ -279,16 +279,23 @@ int16_t cos_mid = 1993;
 int16_t sin_mid = 1984;
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
+
+/*Fixed crap that makes the thing work good*/
+const int32_t elec_conv_ratio_fixed = 7;
+const int32_t gl_prop_delayloop_interval = 10;
+const int32_t gl_prop_delay_const_12b = 3;//(int32_t)(25.f/ gl_prop_delay_const);
+//int32_t align_offset_fixed = (int32_t)(-4.3696599f*4096.f);
+int32_t align_offset_fixed = (int32_t)(2.01f*4096.f);
+int16_t cos_mid = 1985;
+int16_t sin_mid = 1985;
+
+/*Floating crap i need to compile bc. i'm lazy*/
 float align_offset = 0.471103966f;
-int32_t align_offset_fixed = (int32_t)(0.471103966f*4096.f);
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 900.f;
 const float elec_conv_ratio = 7.f;	//14magnets, 7 pole pairs
-const int32_t elec_conv_ratio_fixed = 7;
-const int32_t gl_prop_delay_const_12b = 12;//(int32_t)(25.f/ gl_prop_delay_const);
-int16_t cos_mid = 1985;
-int16_t sin_mid = 1985;
+
 #endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
 float align_offset = 0.216673866f;
@@ -309,13 +316,24 @@ int16_t cos_mid = 1973;
 int16_t sin_mid = 1974;
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
+
+
+/*Fixed crap that makes the thing work good*/
+const int32_t elec_conv_ratio_fixed = 7;
+const int32_t gl_prop_delayloop_interval = 25;
+const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+//int32_t align_offset_fixed = (int32_t)(-4.3696599f*4096.f);
+int32_t align_offset_fixed = (int32_t)(-0.256763965f*4096.f);
+int16_t cos_mid = 1971;
+int16_t sin_mid = 1978;
+
+
 float align_offset = -0.256763965f;
 const float iq_gain = 0.01;
 const float id_gain = 0.01;
 const float gl_prop_delay_const = 900.f;
 const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1971;
-int16_t sin_mid = 1978;
+
 #endif
 #if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
 float align_offset = -0.115011632f;

@@ -1,19 +1,42 @@
 #include "foc_fixed.h"
 #include "mag-encoder.h"
 #include "init.h"
-#include "foc_commutation.h"
+#include "settings.h"
+#include "CAN.h"
 //static const int32_t SQRT_3 = int32(sqrt(3) * 2 ^ n);
 //static const int32_t 	TWO_BY_SQRT_3 = int32((2 / sqrt(3)) * 2 ^ n);
 //static const int32_t ONE_BY_SQRT_3 = int32((1 / sqrt(3)) * 2 ^ n);
 
+/*Some constants for FOC math*/
 #define SQRT_3_12B			7094
 #define TWO_BY_SQRT_3_12B	4730
 #define	ONE_BY_SQRT_3_12B	2365
 
+/*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
+ * NOTE 1: THIS MUST BE A MULTIPLE OF TWO_PI_12b OR THE OUTPUT WILL NOT BE CORRECT
+ * NOTE 2: IF THIS IS EQUAL TO TWO_PI_12b, overflow_count will be equal to ROTATIONS
+ *
+ * (in theory. Testing in matlab has proven confusing).
+ * */
+#define OVERFLOW_WRAP_VAL	1073757392
+
+/*Static globals for current inputs*/
+static int32_t current_input_offset_A = 0;
+static int32_t current_input_offset_B = 0;
+static int32_t current_input_offset_C = 0;
+
+/*Static globals for sinusoidal*/
 static int32_t phase_adv_12b = 0;
-static uint32_t v12_ts = 0;
 static int32_t v_12b = 0;
 static int32_t prev_mtheta_12b = 0;
+uint32_t count = 0;
+
+/*LOG*/
+#define LOG_SIZE 3500
+static volatile int32_t iq_log[LOG_SIZE] = {0};
+static int32_t iq_log_idx = 0;
+static uint32_t current_samp_count = 0;
+static const uint32_t current_interval = 10;
 
 void sinusoidal_fixed(int32_t iq, int32_t id)
 {
@@ -22,22 +45,75 @@ void sinusoidal_fixed(int32_t iq, int32_t id)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
+	if(current_samp_count > current_interval)
+	{
+		int32_t iq_meas, id_meas;
+		get_current(sin_val, cos_val, &iq_meas, &id_meas);
+
+		if(iq_log_idx < LOG_SIZE)
+			iq_log[iq_log_idx++] = iq_meas;
+		else
+		{
+			TIMER_UPDATE_DUTY(0,0,0);
+			for(int i = 0; i < LOG_SIZE; i++)
+			{
+				int32_fmt_t fmt;
+				fmt.v = iq_log[i];
+				HAL_UART_Transmit(&huart2,fmt.d,sizeof(int32_t),5);
+				HAL_Delay(1);
+			}
+			while(1)
+			{
+				HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+				HAL_Delay(50);
+			}
+			return;
+		}
+		current_samp_count = 0;
+	}
+	current_samp_count++;
+
+
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(iq,0,sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	uint32_t tick = HAL_GetTick();
-	if(tick >= v12_ts)
-	{
-		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
-		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
-		v12_ts = tick + 5;	//can change this to smaller value if overflow occurs
-		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
-		prev_mtheta_12b = theta_m;
-	}
 
+//	if(count >= gl_prop_delayloop_interval)
+//	{
+//		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+//		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+//		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+//		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+//		prev_mtheta_12b = theta_m;
+//		count = 0;
+//	}
+//	count++;
+
+
+}
+
+void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
+{
+	int32_t ia = (int32_t)hadc1.Instance->JDR1 - current_input_offset_A;
+	int32_t ib = (int32_t)hadc1.Instance->JDR2 - current_input_offset_B;
+	int32_t ic = (int32_t)hadc1.Instance->JDR3 - current_input_offset_C;
+	int32_t ialpha,ibeta;
+	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
+	park_fixed(ialpha,ibeta,sth,cth,iq,id);
+}
+
+void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta)
+{
+	*alpha = ia;
+	*beta = (ONE_BY_SQRT_3_12B*ia + TWO_BY_SQRT_3_12B*ib) >> 12;
+}
+
+void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id)
+{
+	*id = (alpha*cos_theta + beta*sin_theta) >> 12;
+	*iq = (-alpha*sin_theta + beta*cos_theta) >> 12;
 }
 
 /* 
@@ -63,6 +139,7 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
     *ibeta = (id * sth + iq * cth) >> 12;
 }
 
+/*A.K.A. Inverse Clarke*/
 void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int32_t* tB, int32_t* tC)
 {
 	int32_t pwm_half_period = period_cnt;
@@ -180,4 +257,86 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 			break;
 		}
 	};
+}
+
+/*
+ *
+ * */
+void get_current_cal_offsets(void)
+{
+	TIMER_UPDATE_DUTY(0,0,0);
+	current_input_offset_A = 0;
+	current_input_offset_B = 0;
+	current_input_offset_C = 0;
+	int i;
+	int num_samples = 300;
+	for(i=0;i<num_samples;i++)
+	{
+		current_input_offset_A += hadc1.Instance->JDR1;
+		current_input_offset_B += hadc1.Instance->JDR2;
+		current_input_offset_C += hadc1.Instance->JDR3;
+		HAL_Delay(1);
+	}
+	current_input_offset_A /= num_samples;
+	current_input_offset_B /= num_samples;
+	current_input_offset_C /= num_samples;
+}
+
+
+
+
+/*This function may only work if theta is bounded from -pi_12 to pi_12. Which it is, so it's fine
+ * Stores the total elapsed radians, in 1lsb = 1/4096*pi rad
+ *
+ * A vishan running at max speed will overflow this function in about 1600 years
+ *
+ *
+ * */
+int64_t unwrap_64(int32_t theta, int64_t * prev_theta)
+{
+	return 0;
+}
+
+/*
+ * A vishan running at max speed should overflow this function once every ~12 seconds
+ * */
+int32_t unwrap_32(int32_t dif_wrapped, int32_t * prev_theta)
+{
+	//this is meant to be highly optimized, so dif_wrapped will be coming in
+	int32_t unwrapped = *prev_theta + dif_wrapped;
+	*prev_theta = unwrapped;
+	return unwrapped;
+}
+
+/*
+ * A vishan running at max speed will overflow this function in about 400 years, for OVERFLOW_WRAP_VAL = 1073757392
+ * The output of a vishan at max speed for the same overflow val will wrap about every 5.96 seconds
+ *
+ *
+ * Some notes on this.
+ *
+ * 1. This still underperforms compared to a 64bit unwrap with respect to RANGE, simply because 64 bit
+ * integers are ENORMOUS. However, 400 years and 1600 years are both absurdly large values, and this
+ * should theoretically be FASTER than the 64 bit unwrap.
+ *
+ * 2. You can downsample the call to this. You must, however, use only the count and remainder spat out by this function in
+ * a SYNCHRONIZED FASHION, or else you can have large discontinuities in your output that wouldn't otherwise show up. One
+ * possibility is to call it in your velocity estimator.
+ * */
+int32_t unwrap_32_overflow(int32_t dif_wrapped, int32_t * prev_theta, int32_t * overflow_cnt)
+{
+	/*TODO: test this*/
+	int32_t unwrapped = *prev_theta + dif_wrapped;
+	if(unwrapped >= OVERFLOW_WRAP_VAL)
+	{
+		unwrapped = unwrapped - OVERFLOW_WRAP_VAL;
+		*overflow_cnt = *overflow_cnt + 1;
+	}
+	else if(unwrapped <= -OVERFLOW_WRAP_VAL)
+	{
+		unwrapped = unwrapped + OVERFLOW_WRAP_VAL;
+		*overflow_cnt = *overflow_cnt - 1;
+	}
+	*prev_theta = unwrapped;
+	return unwrapped;
 }

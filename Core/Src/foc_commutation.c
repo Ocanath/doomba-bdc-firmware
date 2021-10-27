@@ -36,10 +36,6 @@ const float adc_conv_A = 525.9366f;
 const float adc_conv_B = 340.4033f;
 const float adc_conv_C = 185.8066f;
 
-static float gl_current_input_offset_A;
-static float gl_current_input_offset_B;
-static float gl_current_input_offset_C;
-
 int gl_sector=1;	//for SVM
 
 
@@ -198,27 +194,6 @@ void inverse_park_transform(float i_q, float i_d, float sin_theta, float cos_the
 }
 
 
-
-void get_current_cal_offsets()
-{
-	TIMER_UPDATE_DUTY(0,0,0);
-	gl_current_input_offset_A = 0;
-	gl_current_input_offset_B = 0;
-	gl_current_input_offset_C = 0;
-	int i;
-	const float numSamples = 300.f;
-	for(i=0;i<numSamples;i++)
-	{
-		gl_current_input_offset_A += (float)(hadc1.Instance->JDR1);//dma_adc_raw[ADC_CHAN_CURRENT_A];
-		gl_current_input_offset_B += (float)(hadc1.Instance->JDR2);//dma_adc_raw[ADC_CHAN_CURRENT_B];
-		gl_current_input_offset_C += (float)(hadc1.Instance->JDR3);//dma_adc_raw[ADC_CHAN_CURRENT_C];
-		HAL_Delay(1);
-	}
-	gl_current_input_offset_A /= numSamples;
-	gl_current_input_offset_B /= numSamples;
-	gl_current_input_offset_C /= numSamples;
-}
-
 //float time_seconds()
 //{
 //	return ((float)HAL_GetTick())*.001;
@@ -231,9 +206,9 @@ void get_current_cal_offsets()
  */
 void conv_raw_current(float * i_a, float * i_b, float * i_c)
 {
-	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
-	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)/adc_conv_B;
-	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)/adc_conv_A;
+//	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
+//	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)/adc_conv_B;
+//	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)/adc_conv_A;
 }
 
 float abs_f(float in)

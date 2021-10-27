@@ -153,3 +153,13 @@ int32_t wrap_2pi_12b(int32_t in)
     else 
         return result;
 }
+
+/*64 bit analogue which we need for unwrap_64*/
+int64_t wrap_2pi12b_64(int64_t in)
+{
+	int64_t result = ((in + PI_12B) % TWO_PI_12B) - PI_12B;
+    if (in < -PI_12B) //if( (in + PI_12B) < 0 )
+        return TWO_PI_12B + result;
+    else
+        return result;
+}

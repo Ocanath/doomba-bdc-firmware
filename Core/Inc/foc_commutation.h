@@ -35,7 +35,7 @@ typedef struct vect2
 		TIM1->CR1 &= ~TIM_CR1_UDIS;
 
 
-void get_current_cal_offsets();
+
 void conv_raw_current(float * i_a, float * i_b, float * i_c);
 void convert_phase_voltage(float * va, float * vb, float * vc);
 
