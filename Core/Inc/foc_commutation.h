@@ -76,6 +76,9 @@ extern float gl_prop_delay_const;
 extern float gl_theta_m;
 extern float gl_dq;
 
+extern const float adc_conv_A;
+extern const float adc_conv_B;
+extern const float adc_conv_C;
 
 float abs_f(float in);
 

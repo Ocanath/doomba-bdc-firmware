@@ -3,6 +3,13 @@
 #include "init.h"
 #include "settings.h"
 #include "CAN.h"
+
+
+//DELETE THIS INCLUDE
+#include "foc_commutation.h"
+//
+
+
 //static const int32_t SQRT_3 = int32(sqrt(3) * 2 ^ n);
 //static const int32_t 	TWO_BY_SQRT_3 = int32((2 / sqrt(3)) * 2 ^ n);
 //static const int32_t ONE_BY_SQRT_3 = int32((1 / sqrt(3)) * 2 ^ n);
@@ -83,6 +90,17 @@ int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
 	return u;
 }
 
+
+/*
+ *	convert each phase adc voltage to actual current value
+ */
+void get_current_floats(float * i_a, float * i_b, float * i_c)
+{
+	*i_c = ((float)(hadc1.Instance->JDR3 - current_input_offset_C))/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
+	*i_b = ((float)(hadc1.Instance->JDR2 - current_input_offset_B))/adc_conv_B;
+	*i_a = ((float)(hadc1.Instance->JDR1 - current_input_offset_A))/adc_conv_A;
+}
+
 void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
@@ -90,18 +108,24 @@ void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
-	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-
-	int32_t vq_ref = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
-	int32_t vd_ref = ctl_PI_fixed(id_in, id_meas, &g_iq);
+	//int32_t iq_meas, id_meas;
+	//get_current(sin_val, cos_val, &iq_meas, &id_meas);
+	float ia,ib,ic;
+	get_current_floats(&ia,&ib,&ic);
+	float ialpha,ibeta,iq_m, id_m;
+	clarke_transform(ia,ib,ic,&ialpha,&ibeta);
+	park_transform(ialpha,ibeta, ((float)sin_val)/4096.f, ((float)cos_val)/4096.f, &iq_m, &id_m);
+	int32_t vq = 1000;
+	int32_t vd = 0;
+//	int32_t vq_ref = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
+//	int32_t vd_ref = ctl_PI_fixed(id_in, id_meas, &g_iq);
+////	vd_ref = 0;
+////	vq_ref = 819;
+//	if(vq_ref > 1228)
+//		vq_ref = 1228;
+//	if(vq_ref < -1228)
+//		vq_ref = -1228;
 //	vd_ref = 0;
-//	vq_ref = 819;
-	if(vq_ref > 1228)
-		vq_ref = 1228;
-	if(vq_ref < -1228)
-		vq_ref = -1228;
-	vd_ref = 0;
 /*
 	if(current_samp_count > current_interval)
 	{
@@ -131,7 +155,7 @@ void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_ref, vd_ref, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 

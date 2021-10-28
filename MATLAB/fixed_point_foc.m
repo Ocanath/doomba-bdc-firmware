@@ -3,6 +3,38 @@
 % core data in is 12bit adc. We run on a 32 bit processor, so we will use 
 % 32 bits only operations to avoid implicit casting.
 % 
+t = 0:1e-6:.03;
+f = 90*2*pi;
+theta = t*f;
+mag = 300;
+[a,b] = inverse_park(mag,0,sin(theta),cos(theta));
+[ia,ib,ic] = inverse_clarke(a,b);
+ia = int32(ia);
+ib = int32(ib);
+ic = int32(ic);
+
+[ialpha,ibeta] = clarke_fixed(ia,ib,ic);
+sin_theta = int32(sin(theta+offset)*4096);
+cos_theta = int32(sin(theta+offset)*4096);
+iq = zeros(1,length(theta));
+id = zeros(1,length(theta));
+for i = 1:length(theta)
+    [iq(i),id(i)] = park_fixed(ialpha(i),ibeta(i),sin_theta(i),cos_theta(i));    
+end
+
+
+figure(1)
+clf;
+hold on
+% plot(ia);
+% plot(ib);
+% plot(ic);
+% plot(ialpha);
+% plot(ibeta);
+plot(iq);
+plot(id);
+hold off
+
 
 %% inverse park + SVM check
 % theta = (-pi-1):.001:(pi+1);
