@@ -32,9 +32,9 @@ float phase_advance_angle = 0;
 
 //0.02929394531f;//TODO: use actual current shunt val and retune
 //0.005754743303571;
-const float adc_conv_A = 525.9366f;
-const float adc_conv_B = 340.4033f;
-const float adc_conv_C = 185.8066f;
+const float adc_conv_A = 2*525.9366f;
+const float adc_conv_B = 2*340.4033f;
+const float adc_conv_C = 2*185.8066f;
 
 int gl_sector=1;	//for SVM
 
@@ -211,6 +211,10 @@ void conv_raw_current(float * i_a, float * i_b, float * i_c)
 //	*i_c = ((float)(hadc1.Instance->JDR3) - gl_current_input_offset_C)/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
 //	*i_b = ((float)(hadc1.Instance->JDR2) - gl_current_input_offset_B)/adc_conv_B;
 //	*i_a = ((float)(hadc1.Instance->JDR1) - gl_current_input_offset_A)/adc_conv_A;
+
+//	int32_t ia = (float)(( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A)/adc_conv_A;
+//	int32_t ib = (float)(( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B)/adc_conv_B;
+//	int32_t ic = (float)(( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C)/adc_conv_C;
 }
 
 float abs_f(float in)

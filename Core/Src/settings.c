@@ -329,8 +329,8 @@ int16_t sin_mid = 1978;
 
 
 float align_offset = -0.256763965f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
+const float iq_gain = 0.03f;
+const float id_gain = 0.01f;
 const float gl_prop_delay_const = 900.f;
 const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
 

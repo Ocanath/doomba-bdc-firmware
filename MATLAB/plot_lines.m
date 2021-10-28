@@ -50,7 +50,7 @@ while(ishandle(H))
         end
 
         drawnow limitrate nocallbacks
-
+        
         if(xidx >= buf_width)
             for i = 1:num_lines
                 clearpoints(anim_line(i));
@@ -59,7 +59,13 @@ while(ishandle(H))
             saved_data = linebuf;
             time = timebuf;
             linebuf = zeros(num_lines,buf_width);
+
+%             linebuf(1:end-1) = linebuf(2:end);
+%             addpoints(anim_line(i),1:xidx,linebuf(1:xidx));
+%             xidx = buf_width - 1;
         end
+
+        
 
 %         timebuf(2:end) = timebuf(1:end-1);
 %         timebuf(1) = toc;

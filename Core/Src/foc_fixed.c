@@ -28,9 +28,10 @@
 #define OVERFLOW_WRAP_VAL	1073757392
 
 /*Static globals for current inputs*/
-static int32_t current_input_offset_A = 0;
-static int32_t current_input_offset_B = 0;
-static int32_t current_input_offset_C = 0;
+int32_t current_input_offset_A = 0;
+int32_t current_input_offset_B = 0;
+int32_t current_input_offset_C = 0;
+static int32_t curr_scf[3] = {31900, 49286, 90294}; //conversion constants for current measurements. Divide by 2^24 to obtain the current in amps.
 
 /*Static globals for sinusoidal*/
 static int32_t phase_adv_12b = 0;
@@ -39,40 +40,31 @@ static int32_t prev_mtheta_12b = 0;
 uint32_t count = 0;
 
 /*Structs and variables for FOC controllers*/
-typedef struct fixed_PI_params_t
-{
-	int32_t kp_m;
-	int32_t kp_div;
-	int32_t ki_m;
-	int32_t ki_div;
-	int32_t x;
-	int32_t x_sat;
-}fixed_PI_params_t;
 fixed_PI_params_t g_iq = {
-		.kp_m = 12288,
+		.kp_m = 3 << 12,
 		.kp_div = 10,
-		.ki_m = 4096,
+		.ki_m = 1 << 12,
 		.ki_div = 1000,
 		.x = 0,
-		.x_sat = 2000
+		.x_sat = 3154 << 12
 };
 fixed_PI_params_t g_id = {
-		.kp_m = 3,
-		.kp_div = 100,
-		.ki_m = 3,
-		.ki_div = 100,
+		.kp_m = 3 << 12,
+		.kp_div = 10,
+		.ki_m = 1 << 12,
+		.ki_div = 1000,
 		.x = 0,
-		.x_sat = 819
+		.x_sat = 3154 << 12
 };
-
-
 
 /*LOG*/
 #define LOG_SIZE 3500
-static volatile int32_t iq_log[LOG_SIZE] = {0};
+static volatile float iq_log[LOG_SIZE] = {0};
+//static volatile int32_t id_log[LOG_SIZE] = {0};
+//static volatile int32_t theta_log[LOG_SIZE] = {0};
 static int32_t iq_log_idx = 0;
-static uint32_t current_samp_count = 0;
-static const uint32_t current_interval = 10;
+static int32_t current_samp_count = -100000;
+static const int32_t current_interval = 10;
 
 /*
  * x is state variable for integral delay
@@ -87,18 +79,7 @@ int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
 		p->x = sat;
 	if(p->x < -sat)
 		p->x = -sat;
-	return u;
-}
-
-
-/*
- *	convert each phase adc voltage to actual current value
- */
-void get_current_floats(float * i_a, float * i_b, float * i_c)
-{
-	*i_c = ((float)(hadc1.Instance->JDR3 - current_input_offset_C))/adc_conv_C;	//injected conversions get stored in registers!!! like normal adcs!!! hooray!!!
-	*i_b = ((float)(hadc1.Instance->JDR2 - current_input_offset_B))/adc_conv_B;
-	*i_a = ((float)(hadc1.Instance->JDR1 - current_input_offset_A))/adc_conv_A;
+	return u >> 12;
 }
 
 void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
@@ -108,35 +89,34 @@ void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
-	//int32_t iq_meas, id_meas;
-	//get_current(sin_val, cos_val, &iq_meas, &id_meas);
-	float ia,ib,ic;
-	get_current_floats(&ia,&ib,&ic);
-	float ialpha,ibeta,iq_m, id_m;
-	clarke_transform(ia,ib,ic,&ialpha,&ibeta);
-	park_transform(ialpha,ibeta, ((float)sin_val)/4096.f, ((float)cos_val)/4096.f, &iq_m, &id_m);
-	int32_t vq = 1000;
+	int32_t iq_meas, id_meas;
+	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+
+	int32_t vq = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
+//	int32_t vd = ctl_PI_fixed(id_in, id_meas, &g_iq);
 	int32_t vd = 0;
-//	int32_t vq_ref = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
-//	int32_t vd_ref = ctl_PI_fixed(id_in, id_meas, &g_iq);
-////	vd_ref = 0;
-////	vq_ref = 819;
-//	if(vq_ref > 1228)
-//		vq_ref = 1228;
-//	if(vq_ref < -1228)
-//		vq_ref = -1228;
-//	vd_ref = 0;
+
+	if(vq > 1200)
+		vq = 1200;
+	if(vq < -1200)
+		vq = -1200;
+
 /*
 	if(current_samp_count > current_interval)
 	{
 		if(iq_log_idx < LOG_SIZE)
-			iq_log[iq_log_idx++] = iq_meas;
+		{
+			iq_log[iq_log_idx] = iq_m;
+			iq_log_idx++;
+		}
 		else
 		{
 			TIMER_UPDATE_DUTY(0,0,0);
 			for(int i = 0; i < LOG_SIZE; i++)
 			{
-				int32_fmt_t fmt;
+//				uint32_t ts = HAL_GetTick();
+//				int32_fmt_t fmt;
+				floatsend_t fmt;
 				fmt.v = iq_log[i];
 				HAL_UART_Transmit(&huart2,fmt.d,sizeof(int32_t),5);
 			}
@@ -152,13 +132,10 @@ void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 	current_samp_count++;
 */
 
-
-
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
-
 
 //	if(count >= gl_prop_delayloop_interval)
 //	{
@@ -171,14 +148,16 @@ void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
 //	}
 //	count++;
 
-
 }
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
 {
-	int32_t ia = (int32_t)hadc1.Instance->JDR1 - current_input_offset_A;
-	int32_t ib = (int32_t)hadc1.Instance->JDR2 - current_input_offset_B;
-	int32_t ic = (int32_t)hadc1.Instance->JDR3 - current_input_offset_C;
+	int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+	int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+	int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
+	ia = (ia*curr_scf[0]) >> 13;
+	ib = (ib*curr_scf[1]) >> 13;
+	ic = (ic*curr_scf[2]) >> 13;	//this is now equal to the current in amps * 4096
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
 	park_fixed(ialpha,ibeta,sth,cth,iq,id);
@@ -352,9 +331,9 @@ void get_current_cal_offsets(void)
 	int num_samples = 300;
 	for(i=0;i<num_samples;i++)
 	{
-		current_input_offset_A += hadc1.Instance->JDR1;
-		current_input_offset_B += hadc1.Instance->JDR2;
-		current_input_offset_C += hadc1.Instance->JDR3;
+		current_input_offset_A += (hadc1.Instance->JDR1 << 1) + 1;
+		current_input_offset_B += (hadc1.Instance->JDR2 << 1) + 1;
+		current_input_offset_C += (hadc1.Instance->JDR3 << 1) + 1;
 		HAL_Delay(1);
 	}
 	current_input_offset_A /= num_samples;
