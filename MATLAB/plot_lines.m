@@ -1,63 +1,72 @@
-function saved_data = plot_lines(num_lines, ylowerlim, yupperlim)
+function [saved_data, time] = plot_lines(num_lines, type, baud, buf_width, ylowerlim, yupperlim)
 
-if ~isempty(instrfind)
-    fclose(instrfind);
-    delete(instrfind);
+slist = serialportlist;
+try
+    s = serialport(slist(1), baud);
+catch
+    disp("No serial port found");
 end
 
-port = 'COM7';
-s=serial(port);
-set(s,'BaudRate',921600);
-
-fopen(s);
-
-
-figure(1);
+f = figure(1);
 H = uicontrol();
+H.Position = [0,0,0,0];
 
 for i = 1:num_lines
     anim_line(i) = animatedline;
 end
 
-anim_line(1) = animatedline('Color','b');
+anim_line(1) = animatedline('Color',[.5 0 0] );
 if(num_lines >= 3)
-    anim_line(2) = animatedline('Color',[.3 0 0]);
+    anim_line(2) = animatedline('Color',[0 .5 0]);
+    anim_line(3) = animatedline('Color', [0,0,.5] );
 end
 
 grid on;
 tic;
-buf_width = 6000;
 
 linebuf = zeros(num_lines,buf_width);
+timebuf = zeros(1,buf_width);
 
 ylim([ylowerlim,yupperlim]);
-% xlim([-1,1]);
-xadv = 0;
+xlim([0,buf_width]);
+tic;
+
+xidx = 0;
 while(ishandle(H))
-    %get new value
-    t = toc; %time in seconds
-%     v = sin(t);
-%     fprintf('%f\r\n',t);
+    
+    data = read(s,num_lines,type);
+    
+    if(isempty(data) ~= 1 && size(data,2) == num_lines)
+        set(gcf,'Renderer','OpenGL');
 
-    data = fread(s,num_lines,'single');
+        xidx = xidx + 1;
+        for i = 1:num_lines
+            v = double(data(i));
+            if(ishandle(anim_line(i)))
+                addpoints(anim_line(i), xidx, v);
+                linebuf(i,xidx) = v;
+                timebuf(xidx) = toc;
+            end
+        end
 
-    set(gcf,'Renderer','OpenGL');
-    for i = 1:num_lines
-        
-        %buffer new value. may be built into line structure
-        linebuf(i,2:end) = linebuf(i, 1:end-1);
-        linebuf(i,1) = data(i);
-        
-        clearpoints(anim_line(i));
-        addpoints(anim_line(i), 1:buf_width, linebuf(i,:));
-        
+        drawnow limitrate nocallbacks
+
+        if(xidx >= buf_width)
+            for i = 1:num_lines
+                clearpoints(anim_line(i));
+            end
+            xidx = 0;
+            saved_data = linebuf;
+            time = timebuf;
+            linebuf = zeros(num_lines,buf_width);
+        end
+
+%         timebuf(2:end) = timebuf(1:end-1);
+%         timebuf(1) = toc;
     end
-    drawnow limitrate     
-        
-    pause(0.000000001);
+    
 end
 
-fclose(s);
+clear s;
 
-saved_data = linebuf;
 end
