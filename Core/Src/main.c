@@ -164,10 +164,6 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
-
-
-#define MAX_VQ 3546
-
 	/*This is FOC.*/
 	uint32_t ts = 0;
 	fixed_PI_params_t iq_pi = {
@@ -176,7 +172,7 @@ int main(void)
 			.ki_m = 3 << 12,
 			.ki_div = 77,
 			.x = 0,
-			.x_sat = 3000 << 12
+			.x_sat = 2500 << 12
 	};
 	fixed_PI_params_t id_pi = {
 			.kp_m = 3 << 12,
@@ -184,14 +180,14 @@ int main(void)
 			.ki_m = 5 << 12,
 			.ki_div = 1000,
 			.x = 0,
-			.x_sat = 3000 << 12
+			.x_sat = 2500 << 12
 	};
 	int32_t phase_adv_12b = 0;
 	int32_t v_12b = 0;
 	int32_t prev_mtheta_12b = 0;
 	uint32_t count = 0;
 
-	int32_t iq_targ = -3000;
+	int32_t iq_targ = -4096;
 	int32_t id_targ = 0;
 	while(1)
 	{

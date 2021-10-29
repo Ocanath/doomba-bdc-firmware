@@ -2,6 +2,8 @@
 #define FOC_FIXED_H
 #include "trig_fixed.h"
 
+#define MAX_VQ 3546
+
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
 extern int32_t current_input_offset_C;
