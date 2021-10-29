@@ -84,71 +84,28 @@ int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
 	return u >> 12;
 }
 
-void sinusoidal_fixed(int32_t iq_in, int32_t id_in)
+void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
-	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-
-	int32_t vq = ctl_PI_fixed(iq_in, iq_meas, &g_iq);
-//	int32_t vd = ctl_PI_fixed(id_in, id_meas, &g_iq);
-	int32_t vd = 0;
-
-	if(vq > 1200)
-		vq = 1200;
-	if(vq < -1200)
-		vq = -1200;
-
-/*
-	if(current_samp_count > current_interval)
-	{
-		if(iq_log_idx < LOG_SIZE)
-		{
-			iq_log[iq_log_idx] = iq_m;
-			iq_log_idx++;
-		}
-		else
-		{
-			TIMER_UPDATE_DUTY(0,0,0);
-			for(int i = 0; i < LOG_SIZE; i++)
-			{
-//				uint32_t ts = HAL_GetTick();
-//				int32_fmt_t fmt;
-				floatsend_t fmt;
-				fmt.v = iq_log[i];
-				HAL_UART_Transmit(&huart2,fmt.d,sizeof(int32_t),5);
-			}
-			while(1)
-			{
-				HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
-				HAL_Delay(50);
-			}
-			return;
-		}
-		current_samp_count = 0;
-	}
-	current_samp_count++;
-*/
-
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq_in, vd_in, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-//	if(count >= gl_prop_delayloop_interval)
-//	{
-//		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
-//		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
-//		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-//		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
-//		prev_mtheta_12b = theta_m;
-//		count = 0;
-//	}
-//	count++;
+	if(count >= gl_prop_delayloop_interval)
+	{
+		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		prev_mtheta_12b = theta_m;
+		count = 0;
+	}
+	count++;
 
 }
 

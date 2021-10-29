@@ -1,0 +1,50 @@
+%%
+colors = [
+0x84FF00
+0xFF0AD0
+0xFFA812
+0xBABBFF
+0xFF0000
+0x0040AA
+0xAA4000
+0x00BFFF
+0x0080FF
+0xFF0000
+0xC0C0C0
+0x8000FF
+0xBFFF00
+0x00FFBF
+0x00FFFF
+0xFFFF00
+0x0000FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xFFFF00
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xC8C8FF
+0xFFB6C1
+];
+fprintf('rgb_val gl_grip_color_map[NUM_GRASPS] = {\n');
+for i = 1:length(colors)
+    r = bitand(colors(i),0xFF0000);
+    r = bitshift(r,-16);
+    g = bitand(colors(i),0x00FF00);
+    g = bitshift(g,-8);
+    b = bitand(colors(i),0x0000FF);
+    fprintf("    {0x%X, 0x%X, 0x%X}", r, g, b);
+    if i < length(colors)
+        fprintf(",\n");
+    else
+        fprintf("\n");
+    end
+end
+fprintf("};\n\n");

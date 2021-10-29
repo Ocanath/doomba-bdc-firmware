@@ -42,9 +42,9 @@ hold on
 % plot(IV(5,:));
 % plot(IV(6,:));
 
-plot(va_filt);
-plot(vb_filt);
-plot(vc_filt);
+plot(va);
+plot(vb);
+plot(vc);
 
 
 

@@ -164,19 +164,123 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
-//	int32_t iq = 410;
-//	while(1)
-//	{
-//		sinusoidal_fixed(iq,0);
-//		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
-//		{
-//			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
-//			led_ts = HAL_GetTick() + 200;
-//		}
-//		DWT->CYCCNT = 0;
-//	}
 
+
+
+	/*This is FOC.*/
 	uint32_t ts = 0;
+	fixed_PI_params_t iq_pi = {
+			.kp_m = 3 << 12,
+			.kp_div = 33,
+			.ki_m = 5 << 12,
+			.ki_div = 1000,
+			.x = 0,
+			.x_sat = 700 << 12
+	};
+	fixed_PI_params_t id_pi = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 5 << 12,
+			.ki_div = 1000,
+			.x = 0,
+			.x_sat = 700 << 12
+	};
+	int32_t iq_targ = -4096*2;
+	int32_t id_targ = 0;
+	while(1)
+	{
+		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+		int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed);
+		int32_t sin_val = sin_fixed(theta_elec);
+		int32_t cos_val = cos_fixed(theta_elec);
+
+		int32_t iq_meas, id_meas;
+		get_current(sin_val, cos_val, &iq_meas, &id_meas);
+		iq_meas = -iq_meas;
+		id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+
+		int32_t vq = ctl_PI_fixed(iq_targ, iq_meas, &iq_pi);
+		int32_t vd = ctl_PI_fixed(id_targ, id_meas, &id_pi);
+
+		vq = saturate(vq,3547);
+		vd = saturate(vd,3547);
+
+		int32_t alpha,beta,tA,tB,tC;
+		inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
+		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= ts)
+		{
+			ts = tick + 1;
+
+			int32_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[4*sizeof(int32_t)] = {0};
+			fmt.v = id_meas;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = iq_meas;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = iq_pi.x;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			HAL_UART_Transmit_IT(&huart2,buf,3*sizeof(int32_t));
+		}
+	}
+
+
+
+	while(1)
+	{
+		uint32_t tick = HAL_GetTick();
+		int32_t ft = -tick*20;
+		ft = wrap_2pi_12b(ft);
+		int32_t sin_theta = sin_fixed(ft);
+		int32_t cos_theta = cos_fixed(ft);
+
+		int32_t alpha,beta;
+		int32_t tA,tB,tC;
+		inverse_park_fixed(200,0,sin_theta,cos_theta,&alpha,&beta);
+		svm_fixed(alpha,beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		/*Get current in amps*4096*/
+		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
+		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
+		ib = (ib*60481) >> 13;
+		ic = (ic*149736) >> 13;
+
+		if(tick >= ts)
+		{
+			ts = tick + 1;
+
+			float ia_f = ((float)ia);
+			float ib_f = ((float)ib);
+			float ic_f = ((float)ic);
+			float va_f = ((float)tA);
+			float vb_f = ((float)tB);
+			float vc_f = ((float)tC);
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[6*sizeof(float)] = {0};
+			fmt.v = ia_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ib_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ic_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = va_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vb_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vc_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
+		}
+	}
+
 	fixed_PI_params_t g_f_a = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
