@@ -1,8 +1,167 @@
 %% FOC current analysis
-load('foc_current_data.mat');
+
+figure(1);
+clf;
+hold on
+plot(IV(1,:));
+plot(IV(2,:));
+plot(IV(3,:));
+hold off
+
+va=IV(4,:);
+vb=IV(5,:);
+vc=IV(6,:);
+
+windowSize = 50; 
+b = (1/windowSize)*ones(1,windowSize);
+a = 1;
+
+va_filt = filter(b,a,va);
+vb_filt = filter(b,a,vb);
+vc_filt = filter(b,a,vc);
+
+figure(2)
+clf
+hold on
+% plot(IV(4,:));
+% plot(IV(5,:));
+% plot(IV(6,:));
+
+plot(va_filt);
+plot(vb_filt);
+plot(vc_filt);
+
+
+
+hold off
+
+
+
+%% ANALYSIS ON DATASET WITH POSITIVE AND NEGATIVE STEADY STATE CURRENTS
+%in each test, the voltage was set to 'active = (+/-200)+562', and
+%'non-active = 0+562'. The raw ADC was left shifted + 1, and then div by
+%4096. To obtain the raw ADC value, multiply by 4096, subtract 1, divide by
+%2.
+
+load('foc_steadystate_current_pn_data.mat');
 
 dataset = {data1, data2, data3, data4, data5, data6};
-%%
+means = {zeros(1,3),zeros(1,3),zeros(1,3),zeros(1,3),zeros(1,3),zeros(1,3)};
+weight_a = 1;
+weight_b = 1;
+weight_c = 1;
+% weight_a = 1/normal(1);
+% weight_b = 1/normal(2);
+% weight_c = 1/normal(3);
+for i = 1:size(dataset,2)
+    
+    d = dataset{i};
+    
+    ia = d(1,:)*weight_a;
+    ib = d(2,:)*weight_b;
+    ic = d(3,:)*weight_c;
+    
+    means{i} = [mean(ia),mean(ib),mean(ic)];
+    
+    figure(i)
+    clf
+    hold on
+    plot(ia);
+    plot(ib);
+    plot(ic);
+    plot(ones(1,length(ia))*means{i}(1));
+    plot(ones(1,length(ia))*means{i}(2));
+    plot(ones(1,length(ia))*means{i}(3));
+    hold off
+    legend('ia','ib','ic','meanA','meanB','meanC');
+end
+
+mean_set1= [means{1}; means{2}; means{3}];
+mean_set2 = [means{4}; means{5}; means{6}];
+x = -1:.001:1;
+y=x;
+z=y;
+
+figure(10)
+clf
+hold on
+
+v1 = [mean_set1(1, 1), mean_set1(1, 2), mean_set1(1,3)];
+v2 = [mean_set1(2, 1), mean_set1(2, 2), mean_set1(2,3)];
+normal = cross(v2, v1);
+normal1 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+v1 = [mean_set1(2, 1), mean_set1(2, 2), mean_set1(2,3)];
+v2 = [mean_set1(3, 1), mean_set1(3, 2), mean_set1(3,3)];
+normal = cross(v2, v1);
+normal2 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+v1 = [mean_set1(1, 1), mean_set1(1, 2), mean_set1(1,3)];
+v2 = [mean_set1(3, 1), mean_set1(3, 2), mean_set1(3,3)];
+normal = cross(v2, v1);
+normal3 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+v1 = [mean_set2(1, 1), mean_set2(1, 2), mean_set2(1,3)];
+v2 = [mean_set2(2, 1), mean_set2(2, 2), mean_set2(2,3)];
+normal = cross(v2, v1);
+normal4 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+v1 = [mean_set2(2, 1), mean_set2(2, 2), mean_set2(2,3)];
+v2 = [mean_set2(3, 1), mean_set2(3, 2), mean_set2(3,3)];
+normal = cross(v2, v1);
+normal5 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+v1 = [mean_set2(1, 1), mean_set2(1, 2), mean_set2(1,3)];
+v2 = [mean_set2(3, 1), mean_set2(3, 2), mean_set2(3,3)];
+normal = cross(v2, v1);
+normal6 = normal;
+[xp,yp] = meshgrid(-1:0.1:1);
+zp = -(1/normal(3)) * (normal(1)*xp + normal(2)*yp );
+surf(xp,yp,zp);
+
+% for i = 1:3
+%     plot3(mean_set1(i,1)*x,mean_set1(i,2)*y,mean_set1(i,3)*z);
+% end
+% for i = 1:3
+%     plot3(mean_set2(i,1)*x,mean_set2(i,2)*y,mean_set2(i,3)*z);
+% end
+% for i = 1:3
+%     plot3(mean_set3(i,1)*x,mean_set3(i,2)*y,mean_set3(i,3)*z);
+% end
+hold off
+% for i = 1:length(lines)
+%     v = [x(i), y(i), z(i)]';
+%     lines(:,i) = mean_set1*v;
+% end
+w1 = (1./normal1)*525.9366/(1./normal1(1));
+w2 = (1./normal2)*525.9366/(1./normal2(1));
+w3 = (1./normal3)*525.9366/(1./normal3(1));
+w4 = (1./normal4)*525.9366/(1./normal4(1));
+w5 = (1./normal5)*525.9366/(1./normal5(1));
+w6 = (1./normal6)*525.9366/(1./normal6(1));
+
+M = [w1; w2; w3; w4; w5; w6;];
+mean(M)
+
+%% ANALYSIS ON DATASET WITH SINUSOIDAL 3 PHASE TRACKING AND POSITIVE STEADY STATE CURRENT
+load('foc_current_data.mat');
+dataset = {data1, data2, data3, data4, data5, data6};
+%
 mean_cur = zeros(3,3);
 conv_a = 525.9366;
 conv_b = 340.4033;
@@ -86,8 +245,8 @@ end
 % mean_cur(1, 1)*x + mean_cur(1, 2)*y + mean_cur(1, 3)*z = 0;
 % mean_cur(2, 1)*x + mean_cur(2, 2)*y + mean_cur(2, 3)*z = 0;
 %Vectors
-v1 = [mean_cur(1, 1), mean_cur(1, 2), mean_cur(1,3)];
-v2 = [mean_cur(2, 1), mean_cur(2, 2), mean_cur(2,3)];
+v1 = [mean_set1(1, 1), mean_set1(1, 2), mean_set1(1,3)];
+v2 = [mean_set1(2, 1), mean_set1(2, 2), mean_set1(2,3)];
 
 normal = cross(v1, v2);
 syms x y z

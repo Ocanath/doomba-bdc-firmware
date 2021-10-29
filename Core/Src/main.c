@@ -179,47 +179,51 @@ int main(void)
 	fixed_PI_params_t g_f_b = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
-			.ki_m = 3 << 12,
+			.ki_m = 7 << 12,
 			.ki_div = 1000,
 			.x = 0,
-			.x_sat = 3154 << 12
+			.x_sat = 700 << 12
 	};
 	fixed_PI_params_t g_f_c = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
-			.ki_m = 3 << 12,
+			.ki_m = 7 << 12,
 			.ki_div = 1000,
 			.x = 0,
-			.x_sat = 3154 << 12
+			.x_sat = 700 << 12
 	};
 	int32_t iref_a, iref_b, iref_c;
 	iref_a = 0;
 	iref_b = 0;
 	iref_c = 0;
 	int32_t mag = 410*7;
-	int32_t sat = 300;
+	int32_t sat = 500;
 	while(1)
 	{
 		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
 		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
 		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
 		ia = (ia*31900) >> 13;
-		ib = (ib*49286) >> 13;
-		ic = (ic*90294) >> 13;
+		ib = (ib*60481) >> 13;
+		ic = (ic*149736) >> 13;
+//		ic = -ia - ib;
 
 		int32_t va, vb, vc;
-//		va = ctl_PI_fixed(iref_a, ia, &g_f_a);
-		va = 0;
-//		va = 100;
+		va = ctl_PI_fixed(iref_a, ia, &g_f_a);
+//		va = 0;
+//		va = -100;
 
-//		vb = ctl_PI_fixed(iref_b, ib, &g_f_b);
-		vb = 0;
-//		vb = 100;
+		vb = ctl_PI_fixed(iref_b, ib, &g_f_b);
+//		vb = 0;
+//		vb = -200;
 
-//		vc = ctl_PI_fixed(iref_c, ic, &g_f_c);
+		vc = ctl_PI_fixed(iref_c, ic, &g_f_c);
 //		vc = 0;
-		vc = 100;
-
+//		vc = -200;
+		int32_t vn = (va+vb+vc)/3;
+		va = va - vn;
+		vb = vb - vn;
+		vc = vc - vn;
 		if(va > sat)
 			va = sat;
 		if(va < -sat)
@@ -240,18 +244,21 @@ int main(void)
 		{
 			ts = tick + 1;
 
-			float ia_f = ((float)ia)/4096.f;
-			float ib_f = ((float)ib)/4096.f;
-			float ic_f = ((float)ic)/4096.f;
+			float ia_f = ((float)ia);
+			float ib_f = ((float)ib);
+			float ic_f = ((float)ic);
+			float va_f = ((float)va);
+			float vb_f = ((float)vb);
+			float vc_f = ((float)vc);
 
-			int32_t ft = -tick*10;
+			int32_t ft = -tick*7;
 			iref_a = ( mag*sin_fixed(wrap_2pi_12b(ft)) >> 12);
 			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
 			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
 
 			floatsend_t fmt;
 			int bidx = 0;
-			uint8_t buf[3*sizeof(float)] = {0};
+			uint8_t buf[6*sizeof(float)] = {0};
 
 			fmt.v = ia_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
@@ -262,7 +269,16 @@ int main(void)
 			fmt.v = ic_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 
-			HAL_UART_Transmit_IT(&huart2,buf,3*sizeof(float));
+			fmt.v = va_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			fmt.v = vb_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			fmt.v = vc_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
 		}
 
 	}
