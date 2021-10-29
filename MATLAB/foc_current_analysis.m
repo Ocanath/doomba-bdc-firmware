@@ -1,13 +1,4 @@
 %% FOC current analysis
-
-figure(1);
-clf;
-hold on
-plot(IV(1,:));
-plot(IV(2,:));
-plot(IV(3,:));
-hold off
-
 va=IV(4,:);
 vb=IV(5,:);
 vc=IV(6,:);
@@ -19,6 +10,30 @@ a = 1;
 va_filt = filter(b,a,va);
 vb_filt = filter(b,a,vb);
 vc_filt = filter(b,a,vc);
+
+ia = IV(1,:);
+ib = IV(2,:);
+ic = IV(3,:);
+
+iafilt = filter(b,a,ia);
+ibfilt = filter(b,a,ib);
+icfilt = filter(b,a,ic);
+
+vscf = 10;
+figure(1);
+clf;
+hold on
+% plot(IV(1,:));
+% plot(IV(2,:));
+% plot(IV(3,:));
+plot(iafilt);
+plot(ibfilt);
+plot(icfilt);
+% plot(va_filt*vscf);
+% plot(vb_filt*vscf);
+% plot(vc_filt*vscf);
+plot(iafilt+ibfilt+icfilt);
+hold off
 
 figure(2)
 clf
@@ -42,6 +57,20 @@ hold off
 %'non-active = 0+562'. The raw ADC was left shifted + 1, and then div by
 %4096. To obtain the raw ADC value, multiply by 4096, subtract 1, divide by
 %2.
+
+
+% To get the weights:
+%     1. send a test voltage va=x,vb=0,vc=0
+%     2. obtain the average current over some period of time, once the current is
+%         reached steady state
+%     3. V1 = [i_avg_a, i_avg_b, i_avg_c]
+%     4. Repeat with va = 0, vb = x, vc = 0 to obtain V2
+%     5. [weighta, weightb, weightc] = K*cross(V1,V2). K is the constant that 
+%         makes these weights give a true current measurement
+%     6. repeat these tests for multiple variations of x (sign and value).
+%         You should see consistency across tests. 6 tests was enough
+%         on my single channel FOC v4-r5 boards
+%     7. Take the average weights across all tests
 
 load('foc_steadystate_current_pn_data.mat');
 

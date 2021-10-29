@@ -62,6 +62,15 @@ void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
 	}
 }
 
+int32_t saturate(int32_t v, int32_t sat)
+{
+	if(v > sat)
+		return sat;
+	if(v < -sat)
+		return -sat;
+	return v;
+}
+
 int main(void)
 {
 	HAL_Init();
@@ -171,15 +180,15 @@ int main(void)
 	fixed_PI_params_t g_f_a = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
-			.ki_m = 3 << 12,
+			.ki_m = 1 << 12,
 			.ki_div = 1000,
 			.x = 0,
-			.x_sat = 3154 << 12
+			.x_sat = 700 << 12
 	};
 	fixed_PI_params_t g_f_b = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
-			.ki_m = 7 << 12,
+			.ki_m = 1 << 12,
 			.ki_div = 1000,
 			.x = 0,
 			.x_sat = 700 << 12
@@ -187,7 +196,7 @@ int main(void)
 	fixed_PI_params_t g_f_c = {
 			.kp_m = 3 << 12,
 			.kp_div = 10,
-			.ki_m = 7 << 12,
+			.ki_m = 1 << 12,
 			.ki_div = 1000,
 			.x = 0,
 			.x_sat = 700 << 12
@@ -200,45 +209,34 @@ int main(void)
 	int32_t sat = 500;
 	while(1)
 	{
+		/*Get current in amps*4096*/
 		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
 		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
 		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
-		ia = (ia*31900) >> 13;
+		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
 		ib = (ib*60481) >> 13;
 		ic = (ic*149736) >> 13;
-//		ic = -ia - ib;
 
+		/*Track sinusoidal currents*/
 		int32_t va, vb, vc;
 		va = ctl_PI_fixed(iref_a, ia, &g_f_a);
-//		va = 0;
-//		va = -100;
-
 		vb = ctl_PI_fixed(iref_b, ib, &g_f_b);
-//		vb = 0;
-//		vb = -200;
-
 		vc = ctl_PI_fixed(iref_c, ic, &g_f_c);
-//		vc = 0;
-//		vc = -200;
-		int32_t vn = (va+vb+vc)/3;
+
+		/*Our control efforts are really voltages relative to *each other*. That means we can center them about a neutral reference point without changing their effect
+		 * on the plant*/
+		int32_t vn = (va+vb+vc)/3;	//Create neutral point reference to center our control efforts
 		va = va - vn;
 		vb = vb - vn;
 		vc = vc - vn;
-		if(va > sat)
-			va = sat;
-		if(va < -sat)
-			va = -sat;	//sat v to prevent my motor from smokin
-		if(vb > sat)
-			vb = sat;
-		if(vb < -sat)
-			vb = -sat;	//sat v to prevent my motor from smokin
-		if(vc > sat)
-			vc = sat;
-		if(vc < -sat)
-			vc = -sat;	//sat v to prevent my motor from smokin
 
+		/*saturate control effort*/
+		va = saturate(va,sat);
+		vb = saturate(vb,sat);
+		vc = saturate(vc,sat);
 		TIMER_UPDATE_DUTY(va+562,vb+562,vc+562);
 
+		/*Print off the voltage and current data, and generate new setpoints*/
 		uint32_t tick = HAL_GetTick();
 		if(tick >= ts)
 		{
@@ -250,39 +248,32 @@ int main(void)
 			float va_f = ((float)va);
 			float vb_f = ((float)vb);
 			float vc_f = ((float)vc);
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[6*sizeof(float)] = {0};
+			fmt.v = ia_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ib_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ic_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = va_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vb_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vc_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
 
+			/*Generate setpoints*/
 			int32_t ft = -tick*7;
 			iref_a = ( mag*sin_fixed(wrap_2pi_12b(ft)) >> 12);
 			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
 			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
-
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[6*sizeof(float)] = {0};
-
-			fmt.v = ia_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			fmt.v = ib_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			fmt.v = ic_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			fmt.v = va_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			fmt.v = vb_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			fmt.v = vc_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
 		}
 
 	}
-//	int32_t iq = (int32_t)(.1f*4096.f);
+
 
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
