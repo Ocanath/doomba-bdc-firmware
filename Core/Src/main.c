@@ -158,18 +158,20 @@ int main(void)
 
 	uint32_t ts = 0;
 
+	int32_t tau = 0;
 	/*This is FOC.*/
 	while(1)
 	{
-		int32_t tau = ( (3000*(TWO_PI_12B*200-gl_theta_rem_m)) - (gl_dtheta*50000)) >> 12;
-		tau = saturate(tau,3000);
 
 		foc_fixed(tau, 0);
 
 		uint32_t tick =  HAL_GetTick();
-		if(tick > ts)
+		if(tick >= ts)
 		{
-			ts = tick + 3;
+			ts = tick + 1;
+
+			tau = ( (3000*(TWO_PI_12B*200-gl_theta_rem_m)) - (gl_dtheta*60000)) >> 12;
+			tau = saturate(tau,3000);
 
 			int32_fmt_t fmt;
 			int bidx = 0;
