@@ -62,14 +62,6 @@ void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
 	}
 }
 
-int32_t saturate(int32_t v, int32_t sat)
-{
-	if(v > sat)
-		return sat;
-	if(v < -sat)
-		return -sat;
-	return v;
-}
 
 int main(void)
 {
@@ -164,87 +156,34 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
-	/*This is FOC.*/
 	uint32_t ts = 0;
-	fixed_PI_params_t iq_pi = {
-			.kp_m = 4 << 12,
-			.kp_div = 33,
-			.ki_m = 3 << 12,
-			.ki_div = 77,
-			.x = 0,
-			.x_sat = 2500 << 12
-	};
-	fixed_PI_params_t id_pi = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 5 << 12,
-			.ki_div = 1000,
-			.x = 0,
-			.x_sat = 2500 << 12
-	};
-	int32_t phase_adv_12b = 0;
-	int32_t v_12b = 0;
-	int32_t prev_mtheta_12b = 0;
-	uint32_t count = 0;
 
-	int32_t iq_targ = -4096;
-	int32_t id_targ = 0;
+	/*This is FOC.*/
 	while(1)
 	{
-		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-		int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
-		int32_t sin_val = sin_fixed(theta_elec);
-		int32_t cos_val = cos_fixed(theta_elec);
+		int32_t tau = ( (3000*(TWO_PI_12B*200-gl_theta_rem_m)) - (gl_dtheta*50000)) >> 12;
+		tau = saturate(tau,3000);
 
-		int32_t iq_meas, id_meas;
-		get_current(sin_val, cos_val, &iq_meas, &id_meas);
-		iq_meas = -iq_meas;
-		id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+		foc_fixed(tau, 0);
 
-		int32_t vq = ctl_PI_fixed(iq_targ, iq_meas, &iq_pi);
-		int32_t vd = ctl_PI_fixed(id_targ, id_meas, &id_pi);
-
-		vq = saturate(vq,MAX_VQ);
-		vd = saturate(vd,MAX_VQ);
-
-		int32_t alpha,beta,tA,tB,tC;
-		inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
-		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
-
-		if(count >= gl_prop_delayloop_interval)
-		{
-			/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
-			 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
-			v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-			phase_adv_12b = v_12b/gl_prop_delay_const_12b;
-			prev_mtheta_12b = theta_m;
-			count = 0;
-		}
-		count++;
-
-
-
-
-
-		/*Printing, debugging*/
-		uint32_t tick = HAL_GetTick();
-		if(tick >= ts)
+		uint32_t tick =  HAL_GetTick();
+		if(tick > ts)
 		{
 			ts = tick + 3;
 
 			int32_fmt_t fmt;
 			int bidx = 0;
-			uint8_t buf[4*sizeof(int32_t)] = {0};
-			fmt.v = id_meas;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = iq_meas;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = iq_pi.x;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			HAL_UART_Transmit_IT(&huart2,buf,3*sizeof(int32_t));
-		}
+			uint8_t buf[3*sizeof(int32_t)];
 
+			fmt.v = gl_theta_rem_m;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = gl_theta_rotations;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = gl_iq;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+
+			HAL_UART_Transmit_IT(&huart2, buf, 3*sizeof(int32_t));
+		}
 	}
 
 

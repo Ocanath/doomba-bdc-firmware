@@ -10,14 +10,10 @@
 //
 
 
-//static const int32_t SQRT_3 = int32(sqrt(3) * 2 ^ n);
-//static const int32_t 	TWO_BY_SQRT_3 = int32((2 / sqrt(3)) * 2 ^ n);
-//static const int32_t ONE_BY_SQRT_3 = int32((1 / sqrt(3)) * 2 ^ n);
-
 /*Some constants for FOC math*/
-#define SQRT_3_12B			7094
-#define TWO_BY_SQRT_3_12B	4730
-#define	ONE_BY_SQRT_3_12B	2365
+#define SQRT_3_12B			7094	//(sqrt(3))*2^12
+#define TWO_BY_SQRT_3_12B	4730	//(2/sqrt(3))*2^12
+#define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
 
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
  * NOTE 1: THIS MUST BE A MULTIPLE OF TWO_PI_12b OR THE OUTPUT WILL NOT BE CORRECT
@@ -41,32 +37,35 @@ static int32_t v_12b = 0;
 static int32_t prev_mtheta_12b = 0;
 uint32_t count = 0;
 
+
+/*Shared variables (current, unwrapped theta)*/
+int32_t gl_iq = 0;
+int32_t gl_theta_rem_m = 0;
+int32_t gl_theta_rotations = 0;
+int32_t gl_dtheta = 0;
+
+
+/*Previous Theta*/
+static int32_t prev_theta_m;
+
 /*Structs and variables for FOC controllers*/
-fixed_PI_params_t g_iq = {
-		.kp_m = 3 << 12,
-		.kp_div = 10,
-		.ki_m = 1 << 12,
-		.ki_div = 1000,
+static fixed_PI_params_t iq_pi = {
+		.kp_m = 4 << 12,
+		.kp_div = 33,
+		.ki_m = 3 << 12,
+		.ki_div = 277,
 		.x = 0,
-		.x_sat = 3154 << 12
+		.x_sat = 2500 << 12
 };
-fixed_PI_params_t g_id = {
+static fixed_PI_params_t id_pi = {
 		.kp_m = 3 << 12,
 		.kp_div = 10,
-		.ki_m = 1 << 12,
-		.ki_div = 1000,
+		.ki_m = 3 << 12,
+		.ki_div = 177,
 		.x = 0,
-		.x_sat = 3154 << 12
+		.x_sat = 2500 << 12
 };
 
-/*LOG*/
-#define LOG_SIZE 3500
-static volatile float iq_log[LOG_SIZE] = {0};
-//static volatile int32_t id_log[LOG_SIZE] = {0};
-//static volatile int32_t theta_log[LOG_SIZE] = {0};
-static int32_t iq_log_idx = 0;
-static int32_t current_samp_count = -100000;
-static const int32_t current_interval = 10;
 
 /*
  * x is state variable for integral delay
@@ -84,6 +83,8 @@ int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
 	return u >> 12;
 }
 
+/*
+ * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
@@ -107,6 +108,50 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	}
 	count++;
 
+}
+
+/*
+ * */
+void foc_fixed(int32_t iq_targ, int32_t id_targ)
+{
+	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_fixed(theta_elec);
+	int32_t cos_val = cos_fixed(theta_elec);
+
+	int32_t dif = wrap_2pi_12b(theta_m - prev_theta_m);
+	gl_theta_rem_m = unwrap_32_overflow(dif, &prev_theta_m, &gl_theta_rotations);
+
+	int32_t iq_meas, id_meas;
+	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+	iq_meas = -iq_meas;
+	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+
+	int32_t vq = ctl_PI_fixed(iq_targ, iq_meas, &iq_pi);
+	int32_t vd = ctl_PI_fixed(id_targ, id_meas, &id_pi);
+
+	vq = saturate(vq,MAX_VQ);
+	vd = saturate(vd,MAX_VQ);
+
+	int32_t alpha,beta,tA,tB,tC;
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
+	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	if(count >= gl_prop_delayloop_interval)
+	{
+		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		prev_mtheta_12b = theta_m;
+		count = 0;
+
+		gl_dtheta = v_12b;
+	}
+	count++;
+
+	gl_iq = iq_meas;
 }
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
@@ -300,8 +345,17 @@ void get_current_cal_offsets(void)
 	current_input_offset_C /= num_samples;
 }
 
-
-
+/*
+ * Saturate output
+ * */
+int32_t saturate(int32_t v, int32_t sat)
+{
+	if(v > sat)
+		return sat;
+	if(v < -sat)
+		return -sat;
+	return v;
+}
 
 /*This function may only work if theta is bounded from -pi_12 to pi_12. Which it is, so it's fine
  * Stores the total elapsed radians, in 1lsb = 1/4096*pi rad

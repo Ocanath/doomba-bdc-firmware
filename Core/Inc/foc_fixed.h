@@ -4,9 +4,16 @@
 
 #define MAX_VQ 3546
 
+/*Current input offset*/
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
 extern int32_t current_input_offset_C;
+
+/*Global motor current, to share with the rest of the software*/
+extern int32_t gl_iq;
+extern int32_t gl_theta_rem_m;
+extern int32_t gl_theta_rotations;
+extern int32_t gl_dtheta;
 
 typedef struct fixed_PI_params_t
 {
@@ -33,6 +40,9 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
 void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int32_t* tB, int32_t* tC);
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id);
 void sinusoidal_fixed(int32_t iq, int32_t id);
+void foc_fixed(int32_t iq_targ, int32_t id_targ);
 void get_current_cal_offsets(void);
+int32_t saturate(int32_t v, int32_t sat);
+int32_t unwrap_32_overflow(int32_t dif_wrapped, int32_t * prev_theta, int32_t * overflow_cnt);
 
 #endif // ! FOC_FIXED_H
