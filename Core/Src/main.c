@@ -157,32 +157,54 @@ int main(void)
 	DWT->CTRL |= 1;	//enable it
 
 	uint32_t ts = 0;
-
-	int32_t tau = 0;
+	uint32_t ctl_ts = 0;
 	/*This is FOC.*/
+	int32_t tau = 0;
+	fixed_PI_params_t pos_PI = {
+			.kp_m = 3000,
+			.kp_div = 1,
+			.ki_m = 1,
+			.ki_div = 1000,
+			.x_sat = 1000 << 12,
+			.x = 0
+	};
+	int32_t ref = TWO_PI_12B*200;
+
 	while(1)
 	{
 
 		foc_fixed(tau, 0);
+//		sinusoidal_fixed(MAX_VQ,0);
 
 		uint32_t tick =  HAL_GetTick();
+		if(tick >= ctl_ts)
+		{
+			ctl_ts = tick + 1;
+			tau = ( (3000*(ref-gl_theta_rem_m)) - (gl_dtheta*60000)) >> 12;
+//			tau = ctl_PI_fixed(ref, gl_theta_rem_m, &pos_PI);
+//			tau = (tau*4096 - gl_dtheta*60000) >> 12;
+			tau = saturate(tau,5000);
+//			tau = 4000;
+		}
 		if(tick >= ts)
 		{
-			ts = tick + 1;
-
-			tau = ( (3000*(TWO_PI_12B*200-gl_theta_rem_m)) - (gl_dtheta*60000)) >> 12;
-			tau = saturate(tau,3000);
+			ts = tick + 3;
 
 			int32_fmt_t fmt;
 			int bidx = 0;
 			uint8_t buf[3*sizeof(int32_t)];
 
-			fmt.v = gl_theta_rem_m;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = gl_theta_rotations;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
 			fmt.v = gl_iq;
 			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = debug_id;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = gl_theta_rem_m;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+
+//			fmt.v = iq_pi.x >> 12;
+//			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+//			fmt.v = debug_vq;
+//			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
 
 			HAL_UART_Transmit_IT(&huart2, buf, 3*sizeof(int32_t));
 		}

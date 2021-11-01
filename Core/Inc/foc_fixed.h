@@ -1,8 +1,7 @@
 #ifndef  FOC_FIXED_H
 #define FOC_FIXED_H
 #include "trig_fixed.h"
-
-#define MAX_VQ 3546
+#include "settings.h"
 
 /*Current input offset*/
 extern int32_t current_input_offset_A;
@@ -15,15 +14,9 @@ extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta;
 
-typedef struct fixed_PI_params_t
-{
-	int32_t kp_m;
-	int32_t kp_div;
-	int32_t ki_m;
-	int32_t ki_div;
-	int32_t x;
-	int32_t x_sat;
-}fixed_PI_params_t;
+/*Global DEBUG variables*/
+extern int32_t debug_vq;
+extern int32_t debug_id;
 
 #define TIMER_UPDATE_DUTY(duty1, duty2, duty3) \
 		TIM1->CR1 |= TIM_CR1_UDIS; \

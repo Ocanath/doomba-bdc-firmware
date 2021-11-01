@@ -1,7 +1,6 @@
 #include "foc_fixed.h"
 #include "mag-encoder.h"
 #include "init.h"
-#include "settings.h"
 #include "CAN.h"
 
 
@@ -44,27 +43,12 @@ int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta = 0;
 
+/*Shared DEBUG variables. Sharing is not necessary for complete functionality*/
+int32_t debug_vq = 0;
+int32_t debug_id = 0;
 
 /*Previous Theta*/
 static int32_t prev_theta_m;
-
-/*Structs and variables for FOC controllers*/
-static fixed_PI_params_t iq_pi = {
-		.kp_m = 4 << 12,
-		.kp_div = 33,
-		.ki_m = 3 << 12,
-		.ki_div = 277,
-		.x = 0,
-		.x_sat = 2500 << 12
-};
-static fixed_PI_params_t id_pi = {
-		.kp_m = 3 << 12,
-		.kp_div = 10,
-		.ki_m = 3 << 12,
-		.ki_div = 177,
-		.x = 0,
-		.x_sat = 2500 << 12
-};
 
 
 /*
@@ -92,6 +76,18 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
+	int32_t dif = wrap_2pi_12b(theta_m - prev_theta_m);
+	gl_theta_rem_m = unwrap_32_overflow(dif, &prev_theta_m, &gl_theta_rotations);
+
+	int32_t iq_meas, id_meas;
+	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+	iq_meas = -iq_meas;
+	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+
+	//Debug
+	debug_id = id_meas;
+	//end debug
+
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq_in, vd_in, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
@@ -105,9 +101,12 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
+
+		gl_dtheta = v_12b;
 	}
 	count++;
 
+	gl_iq = iq_meas;
 }
 
 /*
@@ -133,9 +132,14 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
 
+	//DELETE!! THIS IS FOR DEBUGGING PURPOSES ONLY
+	debug_vq = vq;
+	debug_id = id_meas;
+	//end
+
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
-	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
 	if(count >= gl_prop_delayloop_interval)
@@ -203,7 +207,7 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
 }
 
 /*A.K.A. Inverse Clarke*/
-void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int32_t* tB, int32_t* tC)
+void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* p_tA, int32_t* p_tB, int32_t* p_tC)
 {
 	int32_t pwm_half_period = period_cnt;
 	int32_t alpha_sqrt3 = (alpha * SQRT_3_12B) >> 12;
@@ -243,7 +247,7 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 		}
 	}
 	
-	int32_t beta_by_sqrt3, two_by_sqrt3_beta, t1, t2, t3, t4, t5, t6;
+	int32_t beta_by_sqrt3, two_by_sqrt3_beta, t1, t2, t3, t4, t5, t6, tA, tB, tC;
 	switch (sector)
 	{
 		case 1:
@@ -253,9 +257,9 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t1 = ((alpha - beta_by_sqrt3) * pwm_half_period) >> 12;
 			t2 = ((two_by_sqrt3_beta)*pwm_half_period) >> 12;
-			*tA = ((pwm_half_period - t1 - t2) >> 1);
-			*tB = *tA + t1;
-			*tC = *tB + t2;
+			tA = ((pwm_half_period - t1 - t2) >> 1);
+			tB = tA + t1;
+			tC = tB + t2;
 			break;
 		}
 
@@ -265,9 +269,9 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t2 = (((alpha + beta_by_sqrt3) * pwm_half_period) >> 12);
 			t3 = (((-alpha + beta_by_sqrt3) * pwm_half_period) >> 12);
-			*tB = ((pwm_half_period - t2 - t3)>> 1);
-			*tA = *tB + t3;
-			*tC = *tA + t2;
+			tB = ((pwm_half_period - t2 - t3)>> 1);
+			tA = tB + t3;
+			tC = tA + t2;
 			break;
 		}
 		case 3:
@@ -277,9 +281,9 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t3 = (((two_by_sqrt3_beta)*pwm_half_period) >> 12);
 			t4 = (((-alpha - beta_by_sqrt3) * pwm_half_period) >> 12);
-			*tB = ((pwm_half_period - t3 - t4) >> 1);
-			*tC = *tB + t3;
-			*tA = *tC + t4;
+			tB = ((pwm_half_period - t3 - t4) >> 1);
+			tC = tB + t3;
+			tA = tC + t4;
 			break;
 		}
 
@@ -290,9 +294,9 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t4 = (((-alpha + beta_by_sqrt3) * pwm_half_period) >> 12);
 			t5 = (((-two_by_sqrt3_beta) * pwm_half_period) >> 12);
-			*tC = ((pwm_half_period - t4 - t5) >> 1);
-			*tB = *tC + t5;
-			*tA = *tB + t4;
+			tC = ((pwm_half_period - t4 - t5) >> 1);
+			tB = tC + t5;
+			tA = tB + t4;
 			break;
 		}
 		case 5:
@@ -301,9 +305,9 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t5 = (((-alpha - beta_by_sqrt3) * pwm_half_period) >> 12);
 			t6 = (((alpha - beta_by_sqrt3) * pwm_half_period) >> 12);
-			*tC = ((pwm_half_period - t5 - t6) >> 1);
-			*tA = *tC + t5;
-			*tB = *tA + t6;
+			tC = ((pwm_half_period - t5 - t6) >> 1);
+			tA = tC + t5;
+			tB = tA + t6;
 			break;
 		}
 
@@ -314,12 +318,41 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* tA, int
 
 			t6 = (((-two_by_sqrt3_beta) * pwm_half_period) >> 12);
 			t1 = (((alpha + beta_by_sqrt3) * pwm_half_period) >> 12);
-			*tA = ((pwm_half_period - t6 - t1) >> 1);
-			*tC = *tA + t1;
-			*tB = *tC + t6;
+			tA = ((pwm_half_period - t6 - t1) >> 1);
+			tC = tA + t1;
+			tB = tC + t6;
 			break;
 		}
+		default :
+		{
+			tA = 0;
+			tB = 0;
+			tC = 0;
+		}
 	};
+
+	int32_t max_pwm = period_cnt - 5;
+
+	if(tA > max_pwm)
+		*p_tA = max_pwm;
+	else if(tA < 0)
+		*p_tA = 0;
+	else
+		*p_tA = tA;
+
+	if(tB > max_pwm)
+		*p_tB = max_pwm;
+	else if(tB < 0)
+		*p_tB = 0;
+	else
+		*p_tB = tB;
+
+	if(tC > max_pwm)
+		*p_tC = max_pwm;
+	else if(tC < 0)
+		*p_tC = 0;
+	else
+		*p_tC = tC;
 }
 
 /*

@@ -317,7 +317,6 @@ int16_t sin_mid = 1974;
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
 
-
 /*Fixed crap that makes the thing work good*/
 const int32_t elec_conv_ratio_fixed = 7;
 const int32_t gl_prop_delayloop_interval = 25;
@@ -326,8 +325,25 @@ const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const)
 int32_t align_offset_fixed = (int32_t)(-0.256763965f*4096.f);
 int16_t cos_mid = 1971;
 int16_t sin_mid = 1978;
+fixed_PI_params_t iq_pi = {
+		.kp_m = 4 << 12,
+		.kp_div = 33,
+		.ki_m = 3 << 12,
+		.ki_div = 277,
+		.x = 0,
+		.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+};
+fixed_PI_params_t id_pi = {
+		.kp_m = 3 << 12,
+		.kp_div = 10,
+		.ki_m = 1 << 12,
+		.ki_div = 30,
+		.x = 0,
+		.x_sat = MAX_VQ << 12
+};
 
 
+/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
 float align_offset = -0.256763965f;
 const float iq_gain = 0.03f;
 const float id_gain = 0.01f;
