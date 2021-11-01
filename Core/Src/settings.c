@@ -282,20 +282,34 @@ int16_t sin_mid = 1984;
 
 /*Fixed crap that makes the thing work good*/
 const int32_t elec_conv_ratio_fixed = 7;
-const int32_t gl_prop_delayloop_interval = 10;
-const int32_t gl_prop_delay_const_12b = 3;//(int32_t)(25.f/ gl_prop_delay_const);
+const int32_t gl_prop_delayloop_interval = 25;
+const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 //int32_t align_offset_fixed = (int32_t)(-4.3696599f*4096.f);
 int32_t align_offset_fixed = (int32_t)(2.01f*4096.f);
 int16_t cos_mid = 1985;
 int16_t sin_mid = 1985;
-
-/*Floating crap i need to compile bc. i'm lazy*/
-float align_offset = 0.471103966f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
+fixed_PI_params_t iq_pi = {
+		.kp_m = 4 << 12,
+		.kp_div = 33,
+		.ki_m = 3 << 12,
+		.ki_div = 277,
+		.x = 0,
+		.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+};
+fixed_PI_params_t id_pi = {
+		.kp_m = 3 << 12,
+		.kp_div = 10,
+		.ki_m = 1 << 12,
+		.ki_div = 30,
+		.x = 0,
+		.x_sat = MAX_VQ << 12
+};
+/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
+float align_offset = 2.01f;
+const float iq_gain = 0.03f;
+const float id_gain = 0.01f;
 const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//14magnets, 7 pole pairs
-
+const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
 #endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
 float align_offset = 0.216673866f;
@@ -316,7 +330,6 @@ int16_t cos_mid = 1973;
 int16_t sin_mid = 1974;
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
-
 /*Fixed crap that makes the thing work good*/
 const int32_t elec_conv_ratio_fixed = 7;
 const int32_t gl_prop_delayloop_interval = 25;
@@ -341,15 +354,12 @@ fixed_PI_params_t id_pi = {
 		.x = 0,
 		.x_sat = MAX_VQ << 12
 };
-
-
 /*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
 float align_offset = -0.256763965f;
 const float iq_gain = 0.03f;
 const float id_gain = 0.01f;
 const float gl_prop_delay_const = 900.f;
 const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-
 #endif
 #if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
 float align_offset = -0.115011632f;

@@ -153,7 +153,7 @@ int main(void)
 //	DWT->CTRL |= 1;	//enable it
 
 //	get_cursensor_calibrations(200,curr_scf);
-	current_sensors_fitness_test();
+//	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
 	float iqref = 0.f;
