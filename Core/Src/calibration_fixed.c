@@ -9,6 +9,8 @@
 #include "foc_commutation.h"
 #include "settings.h"
 #include "CAN.h"
+#include "m_uart.h"
+
 /*TODO: change doubles to int32's and int64's for lower memory consumption.*/
 
 
@@ -218,7 +220,7 @@ void current_sensors_fitness_test(void)
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 			fmt.v = ia_f+ib_f+ic_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			m_uart_tx_start(&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 
 			/*Generate setpoints*/
 			int32_t ft = -tick*7;
@@ -276,7 +278,7 @@ void get_avg_cur(uint8_t phase, int32_t num_samples, int32_t voltage, double avg
 			fmt.v = (float)(ia+ib+ic);
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 
-			HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			m_uart_tx_start(&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 
 			i++;
 		}

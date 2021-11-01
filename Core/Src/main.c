@@ -8,6 +8,7 @@
 #include "calibration_fixed.h"
 #include "CAN.h"
 #include "foc_fixed.h"
+#include "m_uart.h"
 
 /*
  * V3 R1 uses STM32F302C8T6
@@ -23,6 +24,12 @@
 
 
 #define MAX_CUR 90.0
+
+
+static volatile floatsend_chk_t uart_encoder_data = {0};
+static volatile floatsend_chk_t uart_loaded_buf;
+static int num_uart_bytes = 5;
+
 
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
@@ -42,16 +49,17 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
-
 /**
- * @brief Rx Transfer completed callback.
- * @param huart UART handle.
- * @retval None
- */
-uint8_t gl_uart_cplt_flag = 0;
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+  */
+void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	gl_uart_cplt_flag = 1;
+	for(int i = 0; i < num_uart_bytes; i++)	//only need to load however many bytes we're expecting (not however many we've actually got, although they're the same 99.99% of the time
+		uart_loaded_buf.d[i] = m_huart2.rx_buf[i];
+//	m_uart_tx_start(&m_huart1, (uint8_t*)uart_loaded_buf.buf, num_uart_bytes);
+	if(get_checksum(m_huart2.rx_buf, 4) == m_huart2.rx_buf[4])
+	{
+		uart_encoder_data.v = uart_loaded_buf.v;
+	}
 }
 
 
@@ -127,13 +135,8 @@ int main(void)
 #ifdef TEST_FOC
 	test_foc();
 #endif
-	float iqref = 0.f;
 
 	theta_m_prev = 0;
-
-	floatsend_chk_t uart_encoder_data;
-	for(int i = 0; i < 5; i++)
-		uart_encoder_data.d[i] = 0;
 
 	can_payload_t can_rx_data = {0};
 	can_payload_t can_tx_data = {0};
@@ -145,14 +148,15 @@ int main(void)
 	//	theta_m_prev=theta_enc_prev;
 #endif
 
-	CoreDebug->DEMCR |= 0x01000000;
-	DWT->CYCCNT = 0;
-	DWT->CTRL |= 1;	//enable it
+//	CoreDebug->DEMCR |= 0x01000000;
+//	DWT->CYCCNT = 0;
+//	DWT->CTRL |= 1;	//enable it
 
 //	get_cursensor_calibrations(200,curr_scf);
-//	current_sensors_fitness_test();
+	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
+	float iqref = 0.f;
 	while(1)
 	{
 		/*CAN protocol. */
@@ -179,15 +183,7 @@ int main(void)
 		if(gl_ext_cmd_flags.use_uart_encoder == 0)
 			can_tx_data.f32[0] = gl_theta_m;
 		else
-		{
-			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 5);
-			if(gl_uart_cplt_flag == 1)	//should work
-			{
-				//TODO: add checksum calculation and check
-				can_tx_data.f32[0] = uart_encoder_data.v;
-				gl_uart_cplt_flag=0;
-			}
-		}
+			can_tx_data.f32[0] = uart_encoder_data.v;
 
 
 		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)

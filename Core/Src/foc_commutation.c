@@ -239,17 +239,3 @@ void convert_phase_voltage(float * va, float * vb, float * vc)
 	*vc = (float)t3/1000.0;	//period
 }
 
-static volatile int count = 0;
-/*
-Generic hex checksum calculation.
-TODO: use this in the psyonic API
-*/
-uint8_t get_checksum(uint8_t * arr, int size)
-{
-
-	int8_t checksum = 0;
-	for (int i = 0; i < size; i++)
-		checksum += (int8_t)arr[i];
-	return -checksum;
-}
-
