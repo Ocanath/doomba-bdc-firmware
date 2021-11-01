@@ -3,12 +3,6 @@
 #include "init.h"
 #include "CAN.h"
 
-
-//DELETE THIS INCLUDE
-#include "foc_commutation.h"
-//
-
-
 /*Some constants for FOC math*/
 #define SQRT_3_12B			7094	//(sqrt(3))*2^12
 #define TWO_BY_SQRT_3_12B	4730	//(2/sqrt(3))*2^12
@@ -20,7 +14,6 @@
  *
  * (in theory. Testing in matlab has proven confusing).
  * */
-#define OVERFLOW_WRAP_VAL	1073757392
 
 /*Static globals for current inputs*/
 int32_t current_input_offset_A = 0;
@@ -42,10 +35,6 @@ int32_t gl_iq = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta = 0;
-
-/*Shared DEBUG variables. Sharing is not necessary for complete functionality*/
-int32_t debug_vq = 0;
-int32_t debug_id = 0;
 
 /*Previous Theta*/
 static int32_t prev_theta_m;
@@ -84,9 +73,6 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	iq_meas = -iq_meas;
 	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
-	//Debug
-	debug_id = id_meas;
-	//end debug
 
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq_in, vd_in, sin_val,cos_val,&alpha,&beta);
@@ -132,10 +118,6 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
 
-	//DELETE!! THIS IS FOR DEBUGGING PURPOSES ONLY
-	debug_vq = vq;
-	debug_id = id_meas;
-	//end
 
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);

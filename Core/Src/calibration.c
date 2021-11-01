@@ -7,7 +7,7 @@
 #include "calibration.h"
 #include "mag-encoder.h"
 #include "foc_commutation.h"
-
+#include "foc_fixed.h"
 
 void print_float(float v)
 {
@@ -122,7 +122,9 @@ void auto_calibrate_motor(void)
 		if(passcount > 10)
 			break;	//if you've passed over 10 times, you're done!
 	}
+	align_offset_fixed = (int32_t)(align_offset * 4096.f);
 }
+
 
 
 void test_foc()
@@ -130,7 +132,8 @@ void test_foc()
 
 //	uint32_t reverse_ts = 0;
 //	float iq_ref = 70.f;
-	float vref = .8f;
+//	float vref = .8f;
+	int32_t vref = 3100;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
@@ -139,14 +142,14 @@ void test_foc()
 	while(1)
 	{
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal(vref,0);
+			sinusoidal_fixed(vref,0);
 			//foc(iq_ref,0);//sinusoidal(.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
 
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal(-vref,0);//foc(iq_ref,0);
+			sinusoidal_fixed(-vref,0);//foc(iq_ref,0);
 			//sinusoidal(-.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);

@@ -3,6 +3,8 @@
 #include "trig_fixed.h"
 #include "settings.h"
 
+#define OVERFLOW_WRAP_VAL	1073757392
+
 /*Current input offset*/
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
@@ -14,9 +16,6 @@ extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta;
 
-/*Global DEBUG variables*/
-extern int32_t debug_vq;
-extern int32_t debug_id;
 
 #define TIMER_UPDATE_DUTY(duty1, duty2, duty3) \
 		TIM1->CR1 |= TIM_CR1_UDIS; \

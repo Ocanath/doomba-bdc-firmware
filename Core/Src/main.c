@@ -5,6 +5,7 @@
 #include "mag-encoder.h"
 #include "settings.h"
 #include "calibration.h"
+#include "calibration_fixed.h"
 #include "CAN.h"
 #include "foc_fixed.h"
 
@@ -122,6 +123,7 @@ int main(void)
 #ifdef GET_INIT_OFFSET
 	/*Best Method*/
 	auto_calibrate_motor();
+//	auto_calibrate_fixed();
 #endif
 	//	manual_align_calib();//-0.236198962
 
@@ -156,211 +158,6 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
-	uint32_t ts = 0;
-	uint32_t ctl_ts = 0;
-	/*This is FOC.*/
-	int32_t tau = 0;
-	fixed_PI_params_t pos_PI = {
-			.kp_m = 3000,
-			.kp_div = 1,
-			.ki_m = 1,
-			.ki_div = 1000,
-			.x_sat = 1000 << 12,
-			.x = 0
-	};
-	int32_t ref = TWO_PI_12B*200;
-
-	while(1)
-	{
-
-		foc_fixed(tau, 0);
-//		sinusoidal_fixed(MAX_VQ,0);
-
-		uint32_t tick =  HAL_GetTick();
-		if(tick >= ctl_ts)
-		{
-			ctl_ts = tick + 1;
-			tau = ( (3000*(ref-gl_theta_rem_m)) - (gl_dtheta*60000)) >> 12;
-//			tau = ctl_PI_fixed(ref, gl_theta_rem_m, &pos_PI);
-//			tau = (tau*4096 - gl_dtheta*60000) >> 12;
-			tau = saturate(tau,5000);
-//			tau = 4000;
-		}
-		if(tick >= ts)
-		{
-			ts = tick + 3;
-
-			int32_fmt_t fmt;
-			int bidx = 0;
-			uint8_t buf[3*sizeof(int32_t)];
-
-			fmt.v = gl_iq;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = debug_id;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = gl_theta_rem_m;
-			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-
-//			fmt.v = iq_pi.x >> 12;
-//			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-//			fmt.v = debug_vq;
-//			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-
-			HAL_UART_Transmit_IT(&huart2, buf, 3*sizeof(int32_t));
-		}
-	}
-
-
-
-	while(1)
-	{
-		uint32_t tick = HAL_GetTick();
-		int32_t ft = -tick*20;
-		ft = wrap_2pi_12b(ft);
-		int32_t sin_theta = sin_fixed(ft);
-		int32_t cos_theta = cos_fixed(ft);
-
-		int32_t alpha,beta;
-		int32_t tA,tB,tC;
-		inverse_park_fixed(200,0,sin_theta,cos_theta,&alpha,&beta);
-		svm_fixed(alpha,beta,TIM1->ARR, &tA, &tB, &tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
-
-		/*Get current in amps*4096*/
-		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
-		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
-		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
-		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
-		ib = (ib*60481) >> 13;
-		ic = (ic*149736) >> 13;
-
-		if(tick >= ts)
-		{
-			ts = tick + 1;
-
-			float ia_f = ((float)ia);
-			float ib_f = ((float)ib);
-			float ic_f = ((float)ic);
-			float va_f = ((float)tA);
-			float vb_f = ((float)tB);
-			float vc_f = ((float)tC);
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[6*sizeof(float)] = {0};
-			fmt.v = ia_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ib_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ic_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = va_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vb_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vc_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
-		}
-	}
-
-	fixed_PI_params_t g_f_a = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 1000,
-			.x = 0,
-			.x_sat = 700 << 12
-	};
-	fixed_PI_params_t g_f_b = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 1000,
-			.x = 0,
-			.x_sat = 700 << 12
-	};
-	fixed_PI_params_t g_f_c = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 1000,
-			.x = 0,
-			.x_sat = 700 << 12
-	};
-	int32_t iref_a, iref_b, iref_c;
-	iref_a = 0;
-	iref_b = 0;
-	iref_c = 0;
-	int32_t mag = 410*7;
-	int32_t sat = 500;
-	while(1)
-	{
-		/*Get current in amps*4096*/
-		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
-		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
-		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
-		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
-		ib = (ib*60481) >> 13;
-		ic = (ic*149736) >> 13;
-
-		/*Track sinusoidal currents*/
-		int32_t va, vb, vc;
-		va = ctl_PI_fixed(iref_a, ia, &g_f_a);
-		vb = ctl_PI_fixed(iref_b, ib, &g_f_b);
-		vc = ctl_PI_fixed(iref_c, ic, &g_f_c);
-
-		/*Our control efforts are really voltages relative to *each other*. That means we can center them about a neutral reference point without changing their effect
-		 * on the plant*/
-		int32_t vn = (va+vb+vc)/3;	//Create neutral point reference to center our control efforts
-		va = va - vn;
-		vb = vb - vn;
-		vc = vc - vn;
-
-		/*saturate control effort*/
-		va = saturate(va,sat);
-		vb = saturate(vb,sat);
-		vc = saturate(vc,sat);
-		TIMER_UPDATE_DUTY(va+562,vb+562,vc+562);
-
-		/*Print off the voltage and current data, and generate new setpoints*/
-		uint32_t tick = HAL_GetTick();
-		if(tick >= ts)
-		{
-			ts = tick + 1;
-
-			float ia_f = ((float)ia);
-			float ib_f = ((float)ib);
-			float ic_f = ((float)ic);
-			float va_f = ((float)va);
-			float vb_f = ((float)vb);
-			float vc_f = ((float)vc);
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[6*sizeof(float)] = {0};
-			fmt.v = ia_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ib_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ic_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = va_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vb_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vc_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
-
-			/*Generate setpoints*/
-			int32_t ft = -tick*7;
-			iref_a = ( mag*sin_fixed(wrap_2pi_12b(ft)) >> 12);
-			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
-			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
-		}
-
-	}
-
-
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
@@ -383,7 +180,6 @@ int main(void)
 			iqref = 0.f;
 
 		sinusoidal(iqref, 0);
-
 
 		/*Load CAN message with motor position*/
 		if(gl_ext_cmd_flags.use_uart_encoder == 0)
