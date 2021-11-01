@@ -5,10 +5,11 @@
 
 #define OVERFLOW_WRAP_VAL	1073757392
 
-/*Current input offset*/
+/*Current input offset and current scaling constants*/
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
 extern int32_t current_input_offset_C;
+extern int32_t curr_scf[3];
 
 /*Global motor current, to share with the rest of the software*/
 extern int32_t gl_iq;

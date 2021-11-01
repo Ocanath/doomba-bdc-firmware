@@ -9,6 +9,26 @@
 #define INC_CAN_H_
 #include "init.h"
 
+#define PAYLOAD_SIZE_CAN 8
+//no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
+//ready to receive them
+
+typedef union
+{
+	uint8_t d[PAYLOAD_SIZE_CAN];
+	int32_t i32[PAYLOAD_SIZE_CAN/sizeof(int32_t)];	//all types are even multiples of 8, and sizeof evals at compile time so this is safe
+	uint32_t ui32[PAYLOAD_SIZE_CAN/sizeof(uint32_t)];
+	int16_t i16[PAYLOAD_SIZE_CAN/sizeof(int16_t)];
+	float f32[PAYLOAD_SIZE_CAN/sizeof(float)];
+//	double f64[PAYLOAD_SIZE_CAN/sizeof(double)];	//can include if use. 1 element array thing kind of skeeves me out so im commenting it
+}can_payload_t;
+
+typedef union
+{
+	int16_t v;
+	uint8_t d[sizeof(int16_t)];
+}int16_fmt_t;
+
 typedef union
 {
 	uint32_t v;
@@ -38,6 +58,9 @@ typedef struct ext_cmd_flags_t
 	uint8_t en_blink_led;
 	uint8_t use_uart_encoder;
 }ext_cmd_flags_t;
+
+
+
 extern ext_cmd_flags_t gl_ext_cmd_flags;
 extern const uint16_t ext_cmd_id;
 

@@ -21,7 +21,7 @@ int32_t current_input_offset_B = 0;
 int32_t current_input_offset_C = 0;
 //static int32_t curr_scf[3] = {31900, 49286, 90294}; //conversion constants for current measurements. Divide by 2^24 to obtain the current in amps.
 //static int32_t curr_scf[3] = {31900, 64254, 136527};
-static int32_t curr_scf[3] = {31900, 60481, 149736}; //conversion constants. take true adc-> current constant and multiply by 2^24 to obtain these values
+int32_t curr_scf[3] = {31900, 61860, 151265}; //conversion constants. take true adc-> current constant and multiply by 2^24 to obtain these values
 
 /*Static globals for sinusoidal*/
 static int32_t phase_adv_12b = 0;

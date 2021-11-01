@@ -135,8 +135,8 @@ int main(void)
 	for(int i = 0; i < 5; i++)
 		uart_encoder_data.d[i] = 0;
 
-	floatsend_t can_rx_data;
-	floatsend_t can_tx_data;
+	can_payload_t can_rx_data = {0};
+	can_payload_t can_tx_data = {0};
 
 #ifdef USE_KMZ60_ENCODER
 	force_encoder_region();
@@ -149,6 +149,9 @@ int main(void)
 	DWT->CYCCNT = 0;
 	DWT->CTRL |= 1;	//enable it
 
+//	get_cursensor_calibrations(200,curr_scf);
+//	current_sensors_fitness_test();
+
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
@@ -159,7 +162,7 @@ int main(void)
 			{
 				if(can_rx_header.StdId == MODULE_NUMBER)
 				{
-					iqref = can_rx_data.v;
+					iqref = can_rx_data.f32[0];
 					can_cmd_exp_ts = HAL_GetTick() + 500;
 				}
 				else if (can_rx_header.StdId == ext_cmd_id)
@@ -174,14 +177,14 @@ int main(void)
 
 		/*Load CAN message with motor position*/
 		if(gl_ext_cmd_flags.use_uart_encoder == 0)
-			can_tx_data.v = gl_theta_m;
+			can_tx_data.f32[0] = gl_theta_m;
 		else
 		{
 			HAL_UART_Receive_IT(&huart2, uart_encoder_data.d, 5);
 			if(gl_uart_cplt_flag == 1)	//should work
 			{
 				//TODO: add checksum calculation and check
-				can_tx_data.v = uart_encoder_data.v;
+				can_tx_data.f32[0] = uart_encoder_data.v;
 				gl_uart_cplt_flag=0;
 			}
 		}

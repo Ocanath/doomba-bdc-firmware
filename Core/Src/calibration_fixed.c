@@ -9,8 +9,8 @@
 #include "foc_commutation.h"
 #include "settings.h"
 #include "CAN.h"
+/*TODO: change doubles to int32's and int64's for lower memory consumption.*/
 
-static uint32_t ts = 0;
 
 int64_t abs64(int64_t in)
 {
@@ -129,7 +129,12 @@ void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
 	}
 }
 
-
+/*This function evaluates the fitness of our current sensors by tracking a PI loop
+ * of 3 phase current waveforms. The more linear the speed of the motor, the
+ * better the fitness.
+ *
+ * This function will plot out the results over UART
+ * */
 void current_sensors_fitness_test(void)
 {
 	fixed_PI_params_t g_f_a = {
@@ -162,15 +167,17 @@ void current_sensors_fitness_test(void)
 	iref_c = 0;
 	int32_t mag = 410*7;
 	int32_t sat = 500;
+
+	uint32_t ts = 0;
 	while(1)
 	{
 		/*Get current in amps*4096*/
 		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
 		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
 		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
-		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
-		ib = (ib*60481) >> 13;
-		ic = (ic*149736) >> 13;
+		ia = (ia*curr_scf[0]) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
+		ib = (ib*curr_scf[1]) >> 13;
+		ic = (ic*curr_scf[2]) >> 13;
 
 		/*Track sinusoidal currents*/
 		int32_t va, vb, vc;
@@ -200,25 +207,18 @@ void current_sensors_fitness_test(void)
 			float ia_f = ((float)ia);
 			float ib_f = ((float)ib);
 			float ic_f = ((float)ic);
-			float va_f = ((float)va);
-			float vb_f = ((float)vb);
-			float vc_f = ((float)vc);
 			floatsend_t fmt;
 			int bidx = 0;
-			uint8_t buf[6*sizeof(float)] = {0};
+			uint8_t buf[4*sizeof(float)] = {0};
 			fmt.v = ia_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 			fmt.v = ib_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 			fmt.v = ic_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = va_f;
+			fmt.v = ia_f+ib_f+ic_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vb_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = vc_f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
+			HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 
 			/*Generate setpoints*/
 			int32_t ft = -tick*7;
@@ -226,6 +226,152 @@ void current_sensors_fitness_test(void)
 			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
 			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
 		}
-
 	}
+}
+
+/**/
+void get_avg_cur(uint8_t phase, int32_t num_samples, int32_t voltage, double avg[NUM_CURRENT_SENSORS])
+{
+	int64_t sum_samples[NUM_CURRENT_SENSORS] = {0};
+	int32_t mid = TIM1->ARR/2;
+	int32_t va = 0;
+	int32_t vb = 0;
+	int32_t vc = 0;
+	if(phase == 0)
+		va = voltage;
+	else if(phase == 1)
+		vb = voltage;
+	else if (phase == 2)
+		vc = voltage;
+	else
+		return;
+
+	uint32_t ts = HAL_GetTick() + 200;	//give it some time to hit steady state
+	for(int32_t i = 0; i < num_samples;)
+	{
+		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
+		TIMER_UPDATE_DUTY(va+mid,vb+mid,vc+mid);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= ts)
+		{
+			ts = tick + 1;
+
+			sum_samples[0] += ia;
+			sum_samples[1] += ib;
+			sum_samples[2] += ic;
+			int bidx = 0;
+			floatsend_t fmt;
+			uint8_t buf[4*sizeof(int32_t)] = {0};
+
+			fmt.v = (float)ia;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = (float)ib;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = (float)ic;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			fmt.v = (float)(ia+ib+ic);
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+
+			i++;
+		}
+	}
+	double num_double = (double)num_samples;
+	avg[0] = ((double)sum_samples[0])/num_double;
+	avg[1] = ((double)sum_samples[1])/num_double;
+	avg[2] = ((double)sum_samples[2])/num_double;
+	TIMER_UPDATE_DUTY(mid,mid,mid);
+}
+
+/*
+	Returns vector cross product between 3 vectors A and B. Faster pass by pointer version
+	ITSSS A DOUBLE CROSS
+*/
+void cross_double(double v_a[3], double v_b[3], double ret[3])
+{
+	ret[0] = -v_a[2]*v_b[1] + v_a[1]*v_b[2];
+	ret[1] = v_a[2]*v_b[0] - v_a[0]*v_b[2];
+	ret[2] = -v_a[1]*v_b[0] + v_a[0]*v_b[1];
+}
+
+double abs_double(double in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
+}
+
+/*This function normalizes the current sensor calibration weights
+ * for a given board by running a set of automated tests.
+ *
+ *This computation is performed by setting a nonzero test voltage on one phase,
+ *and leaving the remaining phases as zero voltage. The current waveforms
+ * for each are then averaged across some number of samples. This is repeated
+ * for each phase, and for both signs of the test voltage, running a total of
+ * six tests.
+ *
+ * Once all 6 of our average current 3-vectors are obtained, we then take
+ * the cross products of different combinations of each 3 vector. These
+ * cross products define a plane which is a solution space for our current
+ * sensors, which are physically required by the motor to satisfy the
+ * equation ia+ib+ic=0.
+ *
+ * The normal vector defining this plane consists
+ * of the weights applied to the input adc value which will create a plane
+ * that satisfies the equation ia+ib+ic=0, thus transforming our poorly
+ * normalized current sensor data into correctly scaled current sensor data.
+ *
+ * The output of this function is normal*current_conv*2^24, where we are using 2^24 as a
+ * fixed point conversion factor.
+ * */
+void get_cursensor_calibrations(int32_t test_voltage, int32_t w[NUM_CURRENT_SENSORS])
+{
+	double w1[3], w2[3], w3[3], w4[3], w5[3], w6[3];	//this uses a lot of memory!!!
+	double n_avg[3] = {0.0};
+	double n_cross[3] = {0.0};
+
+	get_avg_cur(0, 3000, test_voltage, w1);
+	get_avg_cur(1, 3000, test_voltage, w2);
+	get_avg_cur(2, 3000, test_voltage, w3);
+
+	get_avg_cur(0, 3000, -test_voltage, w4);
+	get_avg_cur(1, 3000, -test_voltage, w5);
+	get_avg_cur(2, 3000, -test_voltage, w6);
+
+	cross_double(w1,w2,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]);	//1
+	cross_double(w2,w3,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]); //2
+	cross_double(w1,w3,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]); //3
+
+	cross_double(w4,w5,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]); //4
+	cross_double(w5,w6,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]); //5
+	cross_double(w4,w6,n_cross);
+	for(int i = 0; i < 3; i++)
+		n_avg[i] += abs_double(n_cross[i]); //6
+
+
+	for(int i = 0; i < 3; i++)
+		n_avg[i] = n_avg[i] / 6.0;
+	double scf = 525.9366*n_avg[0];
+	for(int i = 0; i < 3; i++)
+	{
+		n_avg[i] = (n_avg[i]*((double)(1<<24)))/scf;
+		w[i] = (int32_t)(n_avg[i]);
+	}
+
 }
