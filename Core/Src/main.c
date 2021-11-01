@@ -54,15 +54,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	gl_uart_cplt_flag = 1;
 }
 
-void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
-{
-	for(int i = 0; i < size_d; i++)
-	{
-		buf[*bidx] = d[i];
-		*bidx = *bidx + 1;
-	}
-}
-
 
 int main(void)
 {

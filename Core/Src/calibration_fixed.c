@@ -7,6 +7,10 @@
 #include "foc_fixed.h"
 #include "init.h"
 #include "foc_commutation.h"
+#include "settings.h"
+#include "CAN.h"
+
+static uint32_t ts = 0;
 
 int64_t abs64(int64_t in)
 {
@@ -113,5 +117,115 @@ void auto_calibrate_fixed(void)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 		if(passcount > 10)
 			break;	//if you've passed over 10 times, you're done!
+	}
+}
+
+void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
+{
+	for(int i = 0; i < size_d; i++)
+	{
+		buf[*bidx] = d[i];
+		*bidx = *bidx + 1;
+	}
+}
+
+
+void current_sensors_fitness_test(void)
+{
+	fixed_PI_params_t g_f_a = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 1000,
+			.x = 0,
+			.x_sat = 700 << 12
+	};
+	fixed_PI_params_t g_f_b = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 1000,
+			.x = 0,
+			.x_sat = 700 << 12
+	};
+	fixed_PI_params_t g_f_c = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 1000,
+			.x = 0,
+			.x_sat = 700 << 12
+	};
+	int32_t iref_a, iref_b, iref_c;
+	iref_a = 0;
+	iref_b = 0;
+	iref_c = 0;
+	int32_t mag = 410*7;
+	int32_t sat = 500;
+	while(1)
+	{
+		/*Get current in amps*4096*/
+		int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+		int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+		int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
+		ia = (ia*31900) >> 13;	//from foc_fixed.c, the current conversion weights obtained with the magic method
+		ib = (ib*60481) >> 13;
+		ic = (ic*149736) >> 13;
+
+		/*Track sinusoidal currents*/
+		int32_t va, vb, vc;
+		va = ctl_PI_fixed(iref_a, ia, &g_f_a);
+		vb = ctl_PI_fixed(iref_b, ib, &g_f_b);
+		vc = ctl_PI_fixed(iref_c, ic, &g_f_c);
+
+		/*Our control efforts are really voltages relative to *each other*. That means we can center them about a neutral reference point without changing their effect
+		 * on the plant*/
+		int32_t vn = (va+vb+vc)/3;	//Create neutral point reference to center our control efforts
+		va = va - vn;
+		vb = vb - vn;
+		vc = vc - vn;
+
+		/*saturate control effort*/
+		va = saturate(va,sat);
+		vb = saturate(vb,sat);
+		vc = saturate(vc,sat);
+		TIMER_UPDATE_DUTY(va+562,vb+562,vc+562);
+
+		/*Print off the voltage and current data, and generate new setpoints*/
+		uint32_t tick = HAL_GetTick();
+		if(tick >= ts)
+		{
+			ts = tick + 1;
+
+			float ia_f = ((float)ia);
+			float ib_f = ((float)ib);
+			float ic_f = ((float)ic);
+			float va_f = ((float)va);
+			float vb_f = ((float)vb);
+			float vc_f = ((float)vc);
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[6*sizeof(float)] = {0};
+			fmt.v = ia_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ib_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ic_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = va_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vb_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = vc_f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			HAL_UART_Transmit_IT(&huart2,buf,6*sizeof(float));
+
+			/*Generate setpoints*/
+			int32_t ft = -tick*7;
+			iref_a = ( mag*sin_fixed(wrap_2pi_12b(ft)) >> 12);
+			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
+			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
+		}
+
 	}
 }
