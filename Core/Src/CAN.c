@@ -27,7 +27,8 @@ uint32_t				can_tx_mailbox;
 
 ext_cmd_flags_t gl_ext_cmd_flags = {
 		.en_blink_led = 1,
-		.use_uart_encoder = 1
+		.use_uart_encoder = 1,
+		.control_mode = FOC_MODE
 };
 
 const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
@@ -37,7 +38,9 @@ enum {
 	LED_OFF =0xFE,
 	LED_BLINK= 0xAA,
 	EN_UART_ENC = 0x34,
-	DIS_UART_ENC = 0x35
+	DIS_UART_ENC = 0x35,
+	SET_FOC_MODE = 0x36,
+	SET_SINUSOIDAL_MODE = 0x37
 };
 
 void CAN_Init(void)
@@ -102,18 +105,17 @@ void CAN_Init(void)
 	can_tx_header.ExtId = 0x00;
 	can_tx_header.RTR = CAN_RTR_DATA;
 	can_tx_header.IDE = CAN_ID_STD;
-	can_tx_header.DLC = sizeof(float);	//4
+	can_tx_header.DLC = sizeof(int32_t) + sizeof(int16_t);	//6
 	can_tx_header.TransmitGlobalTime = DISABLE;
 
 	can_rx_header.StdId = 0x000;	//gets loaded by getmessage
 	can_rx_header.ExtId = 0x00;
 	can_rx_header.IDE = CAN_ID_STD;
 	can_rx_header.RTR = CAN_RTR_DATA;
-	can_rx_header.DLC = sizeof(float);	//4
+	can_rx_header.DLC = sizeof(int16_t);	//2
 	can_rx_header.Timestamp = 0;
 	can_rx_header.FilterMatchIndex = 0;
 }
-
 
 void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(float)])
 {

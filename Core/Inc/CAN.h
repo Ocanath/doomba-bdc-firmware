@@ -13,6 +13,8 @@
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
 //ready to receive them
 
+typedef enum {FOC_MODE, SINUSOIDAL_MODE} control_mode_t;	//foc with velocity?
+
 typedef union
 {
 	uint8_t d[PAYLOAD_SIZE_CAN];
@@ -53,10 +55,12 @@ typedef union floatsend_chk_t
 	uint8_t d[sizeof(float) + 1];
 }floatsend_chk_t;
 
+
 typedef struct ext_cmd_flags_t
 {
 	uint8_t en_blink_led;
 	uint8_t use_uart_encoder;
+	control_mode_t control_mode;
 }ext_cmd_flags_t;
 
 

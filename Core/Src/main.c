@@ -26,10 +26,7 @@
 #define MAX_CUR 90.0
 
 
-static volatile floatsend_chk_t uart_encoder_data = {0};
-static volatile floatsend_chk_t uart_loaded_buf;
-static int num_uart_bytes = 5;
-
+static volatile int16_fmt_t uart_encoder_data = {0};
 
 /*
  * Since I don't have a .README yet... i'll just put the revision notes up here
@@ -53,12 +50,10 @@ void brushed_tau(float tau)
   */
 void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	for(int i = 0; i < num_uart_bytes; i++)	//only need to load however many bytes we're expecting (not however many we've actually got, although they're the same 99.99% of the time
-		uart_loaded_buf.d[i] = m_huart2.rx_buf[i];
-//	m_uart_tx_start(&m_huart1, (uint8_t*)uart_loaded_buf.buf, num_uart_bytes);
-	if(get_checksum(m_huart2.rx_buf, 4) == m_huart2.rx_buf[4])
+	if( get_checksum(m_huart2.rx_buf, sizeof(int16_t)) == m_huart2.rx_buf[sizeof(int16_t)] )
 	{
-		uart_encoder_data.v = uart_loaded_buf.v;
+		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
+			uart_encoder_data.d[i] = m_huart2.rx_buf[i];
 	}
 }
 
@@ -156,7 +151,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
-	int32_t iqref = 0;
+	int16_t input_val = 0;
 	while(1)
 	{
 		/*CAN protocol. */
@@ -166,25 +161,33 @@ int main(void)
 			{
 				if(can_rx_header.StdId == MODULE_NUMBER)
 				{
-					iqref = (int32_t)(can_rx_data.f32[0] * 4096.f);
+					input_val = can_rx_data.i16[0];
 					can_cmd_exp_ts = HAL_GetTick() + 500;
 				}
 				else if (can_rx_header.StdId == ext_cmd_id)
 					handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.d);
+
+				if(gl_ext_cmd_flags.use_uart_encoder == 0)	//Load CAN message with motor position
+				{
+					can_tx_data.i32[0] = gl_theta_rem_m;	//bytes 0-3
+					can_tx_data.i16[3] = (int16_t)gl_iq;				//bytes 4-5
+				}
+				else
+				{
+					can_tx_data.i32[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
+					can_tx_data.i16[3] = (int16_t)gl_iq;
+				}
+
 				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 			}	//NOTE the rx header will contain the message ID
 		}
 		if(HAL_GetTick() > can_cmd_exp_ts)
-			iqref = 0;
+			input_val = 0;
 
-		sinusoidal_fixed(iqref,0);
-
-		/*Load CAN message with motor position*/
-		if(gl_ext_cmd_flags.use_uart_encoder == 0)
-			can_tx_data.f32[0] = ((float)(gl_theta_rotations*overflow_val + gl_theta_rem_m)) / (12867.963509f);
+		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
+			foc_fixed(input_val,0);
 		else
-			can_tx_data.f32[0] = uart_encoder_data.v;
-
+			sinusoidal_fixed(input_val,0);
 
 		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
 		{
