@@ -224,9 +224,9 @@ void current_sensors_fitness_test(void)
 
 			/*Generate setpoints*/
 			int32_t ft = -tick*7;
-			iref_a = ( mag*sin_fixed(wrap_2pi_12b(ft)) >> 12);
-			iref_b = ( mag*sin_fixed(wrap_2pi_12b(ft + 8579)) >> 12);
-			iref_c = ( mag*sin_fixed(wrap_2pi_12b(ft + 17157)) >> 12);
+			iref_a = ( mag*sin_12b(wrap_2pi_12b(ft)) >> 12);
+			iref_b = ( mag*sin_12b(wrap_2pi_12b(ft + 8579)) >> 12);
+			iref_c = ( mag*sin_12b(wrap_2pi_12b(ft + 17157)) >> 12);
 		}
 	}
 }

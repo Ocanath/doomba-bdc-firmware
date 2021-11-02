@@ -66,8 +66,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_fixed(theta_elec);
-	int32_t cos_val = cos_fixed(theta_elec);
+	int32_t sin_val = sin_12b(theta_elec);
+	int32_t cos_val = cos_12b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
@@ -104,8 +104,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_fixed(theta_elec);
-	int32_t cos_val = cos_fixed(theta_elec);
+	int32_t sin_val = sin_12b(theta_elec);
+	int32_t cos_val = cos_12b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 

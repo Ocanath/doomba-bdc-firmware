@@ -9,8 +9,8 @@
 #define TWO_PI_12B              25736	
 
 int32_t atan2_fixed(int32_t y, int32_t x);
-int32_t sin_fixed(int32_t theta);
-int32_t cos_fixed(int32_t theta);
+int32_t sin_12b(int32_t theta);
+int32_t cos_12b(int32_t theta);
 int32_t wrap_2pi_12b(int32_t in);
 
 #endif // ! TRIG_FIXED_H

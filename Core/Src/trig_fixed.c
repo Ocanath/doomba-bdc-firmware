@@ -10,9 +10,9 @@
 
 /*Poly Coefficients used for sin calculation, scaled up by 2^12*/
 static const int32_t sc1 = 117;
-static const int32_t sc2 = -835;
-static const int32_t sc3 = 86;
-static const int32_t sc4 = 4077;
+static const int32_t sc2 = -834;
+static const int32_t sc3 = 85;
+static const int32_t sc4 = 4078;
 static const int32_t sc5 = 1;
 
 /*Poly coefficients, scaled up by 2^12*/
@@ -28,7 +28,7 @@ static const int32_t tc5 = -1*4096;    //2^12, with extra scaling factor applied
     OUTPUT:
         ~sin(theta). range -4096 to 4096
 */
-int32_t sin_fixed(int32_t theta)
+int32_t sin_12b(int32_t theta)
 {
     //Preprocess theta to force it in the range 0-pi/2 for poly calculation
     uint8_t is_neg = 0;
@@ -72,9 +72,9 @@ int32_t sin_fixed(int32_t theta)
     return y;
 }
 
-int32_t cos_fixed(int32_t theta)
+int32_t cos_12b(int32_t theta)
 {
-    return sin_fixed(theta + HALF_PI_12B);
+    return sin_12b(theta + HALF_PI_12B);
 }
 
 
