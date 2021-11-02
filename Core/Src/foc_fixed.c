@@ -9,11 +9,15 @@
 #define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
 
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
- * NOTE 1: THIS MUST BE A MULTIPLE OF TWO_PI_12b OR THE OUTPUT WILL NOT BE CORRECT
- * NOTE 2: IF THIS IS EQUAL TO TWO_PI_12b, overflow_count will be equal to ROTATIONS
  *
- * (in theory. Testing in matlab has proven confusing).
+ * The remainder will range +/-half_overflow_val
+ *
+ * The true output is overflow_val*rot + rem
+ *
+ * half_overflow_val of 41721*PI_12B will net you
  * */
+const int32_t half_overflow_val = PI_12B*41721;	// multiple of PI which is used for unwrapping with overflow.
+const int32_t overflow_val = 2*half_overflow_val;
 
 /*Static globals for current inputs*/
 int32_t current_input_offset_A = 0;
@@ -65,8 +69,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
-	int32_t dif = wrap_2pi_12b(theta_m - prev_theta_m);
-	gl_theta_rem_m = unwrap_32_overflow(dif, &prev_theta_m, &gl_theta_rotations);
+	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas);
@@ -104,8 +107,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t sin_val = sin_fixed(theta_elec);
 	int32_t cos_val = cos_fixed(theta_elec);
 
-	int32_t dif = wrap_2pi_12b(theta_m - prev_theta_m);
-	gl_theta_rem_m = unwrap_32_overflow(dif, &prev_theta_m, &gl_theta_rotations);
+	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
+
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas);
@@ -385,45 +388,67 @@ int64_t unwrap_64(int32_t theta, int64_t * prev_theta)
 }
 
 /*
- * A vishan running at max speed should overflow this function once every ~12 seconds
+ * A vishan running at max speed should overflow this function once every 100 seconds
  * */
 int32_t unwrap_32(int32_t dif_wrapped, int32_t * prev_theta)
 {
-	//this is meant to be highly optimized, so dif_wrapped will be coming in
+	//this is meant to be highly optimized, so dif_wrapped will be coming in pre-computed
 	int32_t unwrapped = *prev_theta + dif_wrapped;
 	*prev_theta = unwrapped;
 	return unwrapped;
 }
 
 /*
- * A vishan running at max speed will overflow this function in about 400 years, for OVERFLOW_WRAP_VAL = 1073757392
- * The output of a vishan at max speed for the same overflow val will wrap about every 5.96 seconds
+ * A vishan running at max speed will overflow this function in 1.244 million years, if
+ * the half overflow value is set to PI_12B*41721 (+/-30 bit range) and the overflow count is used
+ *
+ * A vishan running at max speed will overflow the remainder output of this function in about 25 seconds.
+ * It is therefore acceptable to disregard the overflow count for most motors, and use only the remainder,
+ * if the motor is geared down and the output of the gearbox is range-limited
  *
  *
  * Some notes on this.
  *
- * 1. This still underperforms compared to a 64bit unwrap with respect to RANGE, simply because 64 bit
- * integers are ENORMOUS. However, 400 years and 1600 years are both absurdly large values, and this
- * should theoretically be FASTER than the 64 bit unwrap.
+ * 1. This slightly underperforms compared to a straight up 64bit unwrap wrt. range, but should significantly outperform it wrt. speed
+ * 	It is at best 1-2 cycles ( >= ) more than a 32bit unwrap,
+ * 	and at worst 4-6 cycles more than a 32bit unwrap, and the
+ * 	worst case only occurs every 25 seconds for the fastest
+ * 	motor I currently use.
  *
- * 2. You can downsample the call to this. You must, however, use only the count and remainder spat out by this function in
- * a SYNCHRONIZED FASHION, or else you can have large discontinuities in your output that wouldn't otherwise show up. One
- * possibility is to call it in your velocity estimator.
+ * 2. You should be able to downsample the call to this, as long as the downsample is frequent enough to count rotations.
+ *
+ * The logic behind this strategy warrants some explanation:
+	 * Assumptions:
+	 * 		The input dif_wrapped is bounded by -pi12 to pi12 (required, not enforced in this function)
+	 * 		We must always set overflow wrap val to a multiple of pi12
+	 * 		When it overflows half_overflow, it cannot exceed it by any multiple of PI12 greater than 1
+	 *
+	 * 		Therefore it is always safe to simply check against half overflow, and then subract twice overflow to
+	 * 		wrap the remainder.
+	 *
+ * 		This function must be sampling the encoder signal fast enough that it does not miss full rotations.
+ * 		It should compute fast enough that it can be called once per FOC loop without any degradation in FOC performance
+ *
+ *	ex of use:
+ *		unwrap_32_overflow(theta_m, &prev_theta_m, &rot);
+ * 		int64_t full_angle = overflow_val*rot + rem;
  * */
-int32_t unwrap_32_overflow(int32_t dif_wrapped, int32_t * prev_theta, int32_t * overflow_cnt)
+int32_t unwrap_32_overflow(int32_t theta, int32_t * prev_theta, int32_t * ovfl_cnt)
 {
-	/*TODO: test this*/
+	int32_t dif_wrapped = wrap_2pi_12b(theta - *prev_theta);
 	int32_t unwrapped = *prev_theta + dif_wrapped;
-	if(unwrapped >= OVERFLOW_WRAP_VAL)
+
+	if(unwrapped >= half_overflow_val)
 	{
-		unwrapped = unwrapped - OVERFLOW_WRAP_VAL;
-		*overflow_cnt = *overflow_cnt + 1;
+		unwrapped = unwrapped - overflow_val;
+		*ovfl_cnt = *ovfl_cnt + 1;
 	}
-	else if(unwrapped <= -OVERFLOW_WRAP_VAL)
+	else if(unwrapped <= -half_overflow_val)
 	{
-		unwrapped = unwrapped + OVERFLOW_WRAP_VAL;
-		*overflow_cnt = *overflow_cnt - 1;
+		unwrapped = unwrapped + overflow_val;
+		*ovfl_cnt = *ovfl_cnt - 1;
 	}
+
 	*prev_theta = unwrapped;
 	return unwrapped;
 }

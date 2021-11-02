@@ -3,8 +3,6 @@
 #include "trig_fixed.h"
 #include "settings.h"
 
-#define OVERFLOW_WRAP_VAL	1073757392
-
 /*Current input offset and current scaling constants*/
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
@@ -17,6 +15,9 @@ extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta;
 
+/*Overflow value constants, for unwrap_overflow function*/
+extern const int32_t half_overflow_val;
+extern const int32_t overflow_val;
 
 #define TIMER_UPDATE_DUTY(duty1, duty2, duty3) \
 		TIM1->CR1 |= TIM_CR1_UDIS; \
@@ -36,6 +37,6 @@ void sinusoidal_fixed(int32_t iq, int32_t id);
 void foc_fixed(int32_t iq_targ, int32_t id_targ);
 void get_current_cal_offsets(void);
 int32_t saturate(int32_t v, int32_t sat);
-int32_t unwrap_32_overflow(int32_t dif_wrapped, int32_t * prev_theta, int32_t * overflow_cnt);
+int32_t unwrap_32_overflow(int32_t theta, int32_t * prev_theta, int32_t * rotations);
 
 #endif // ! FOC_FIXED_H

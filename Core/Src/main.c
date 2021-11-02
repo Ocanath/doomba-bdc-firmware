@@ -156,7 +156,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
-	float iqref = 0.f;
+	int32_t iqref = 0;
 	while(1)
 	{
 		/*CAN protocol. */
@@ -166,7 +166,7 @@ int main(void)
 			{
 				if(can_rx_header.StdId == MODULE_NUMBER)
 				{
-					iqref = can_rx_data.f32[0];
+					iqref = (int32_t)(can_rx_data.f32[0] * 4096.f);
 					can_cmd_exp_ts = HAL_GetTick() + 500;
 				}
 				else if (can_rx_header.StdId == ext_cmd_id)
@@ -175,13 +175,13 @@ int main(void)
 			}	//NOTE the rx header will contain the message ID
 		}
 		if(HAL_GetTick() > can_cmd_exp_ts)
-			iqref = 0.f;
+			iqref = 0;
 
-		sinusoidal(iqref, 0);
+		sinusoidal_fixed(iqref,0);
 
 		/*Load CAN message with motor position*/
 		if(gl_ext_cmd_flags.use_uart_encoder == 0)
-			can_tx_data.f32[0] = gl_theta_m;
+			can_tx_data.f32[0] = ((float)(gl_theta_rotations*overflow_val + gl_theta_rem_m)) / (12867.963509f);
 		else
 			can_tx_data.f32[0] = uart_encoder_data.v;
 
