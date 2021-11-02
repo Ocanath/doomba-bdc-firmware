@@ -1,3 +1,36 @@
+%%
+% [datas,time] = plot_lines(2,'int32',921600,5000,-4096,4096);
+
+iq = datas(1,:);
+id = datas(2,:);
+
+figure(1)
+clf
+hold on
+plot(iq);
+plot(id);
+hold off
+
+aiq_foc = abs(iq(1:3000));
+aid_foc = abs(id(1:3000));
+
+aiq_s = abs(iq(3001:end));
+aid_s = abs(id(3001:end));
+
+figure(2)
+clf
+hold on
+plot(aiq_s);
+plot(aid_s);
+plot(aiq_foc);
+plot(aid_foc);
+hold off
+
+iq_redux = mean(aiq_s)/mean(aiq_foc)
+id_redux = mean(aid_s)/mean(aid_foc)
+
+total_redux = (mean(aiq_s) + mean(aid_s))/(mean(aid_foc)+mean(aid_foc))
+
 %% FOC current analysis
 va=IV(4,:);
 vb=IV(5,:);
