@@ -1,4 +1,4 @@
-function [saved_data, time] = plot_lines(num_lines, type, baud, buf_width, ylowerlim, yupperlim)
+function [saved_data, time] = plot_lines(num_lines, type, baud, buf_width, limit_mode, ylowerlim, yupperlim)
 
 slist = serialportlist;
 try
@@ -45,6 +45,15 @@ while(ishandle(H))
             if(ishandle(anim_line(i)))
                 addpoints(anim_line(i), xidx, v);
                 linebuf(i,xidx) = v;
+                if(limit_mode == "auto")
+                    if(v > yupperlim)
+                        yupperlim = v;
+                        ylim([ylowerlim,yupperlim]);
+                    elseif(v < ylowerlim)
+                        ylowerlim = v;
+                        ylim([ylowerlim,yupperlim]);
+                    end
+                end
                 timebuf(xidx) = toc;
             end
         end

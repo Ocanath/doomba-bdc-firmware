@@ -135,4 +135,8 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(int16_t)])
 		flags->use_uart_encoder = 1;
 	else if (d[1] == DIS_UART_ENC)
 		flags->use_uart_encoder = 0;
+	else if (d[1] == SET_FOC_MODE)
+		gl_ext_cmd_flags.control_mode = FOC_MODE;
+	else if (d[1] == SET_SINUSOIDAL_MODE)
+		gl_ext_cmd_flags.control_mode = SINUSOIDAL_MODE;
 }
