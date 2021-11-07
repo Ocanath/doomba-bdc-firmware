@@ -117,22 +117,22 @@ void CAN_Init(void)
 	can_rx_header.FilterMatchIndex = 0;
 }
 
-void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(float)])
+void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(int16_t)])
 {
-	if(d[3] == LED_ON)
+	if(d[1] == LED_ON)
 	{
 		flags->en_blink_led = 0;
 		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	}
-	else if (d[3] == LED_OFF)
+	else if (d[1] == LED_OFF)
 	{
 		flags->en_blink_led = 0;
 		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 	}
-	else if (d[3] == LED_BLINK)
+	else if (d[1] == LED_BLINK)
 		flags->en_blink_led = 1;
-	else if (d[3] == EN_UART_ENC)
+	else if (d[1] == EN_UART_ENC)
 		flags->use_uart_encoder = 1;
-	else if (d[3] == DIS_UART_ENC)
+	else if (d[1] == DIS_UART_ENC)
 		flags->use_uart_encoder = 0;
 }

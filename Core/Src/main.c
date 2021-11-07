@@ -50,10 +50,10 @@ void brushed_tau(float tau)
   */
 void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	if( get_checksum(m_huart2.rx_buf, sizeof(int16_t)) == m_huart2.rx_buf[sizeof(int16_t)] )
+	if( get_checksum(h->rx_buf, sizeof(int16_t)) == h->rx_buf[sizeof(int16_t)] )
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
-			uart_encoder_data.d[i] = m_huart2.rx_buf[i];
+			uart_encoder_data.d[i] = h->rx_buf[i];
 	}
 }
 
@@ -151,7 +151,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
-	int16_t input_val = 0;
+	int32_t input_val = 0;
 	while(1)
 	{
 		/*CAN protocol. */
@@ -161,7 +161,7 @@ int main(void)
 			{
 				if(can_rx_header.StdId == MODULE_NUMBER)
 				{
-					input_val = can_rx_data.i16[0];
+					input_val = (int32_t)can_rx_data.i16[0];
 					can_cmd_exp_ts = HAL_GetTick() + 500;
 				}
 				else if (can_rx_header.StdId == ext_cmd_id)
@@ -174,7 +174,7 @@ int main(void)
 				}
 				else
 				{
-					can_tx_data.i32[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
+					can_tx_data.i32[0] = (int32_t)uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
 					can_tx_data.i16[2] = (int16_t)gl_iq;
 				}
 
