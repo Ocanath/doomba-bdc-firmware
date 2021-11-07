@@ -170,12 +170,12 @@ int main(void)
 				if(gl_ext_cmd_flags.use_uart_encoder == 0)	//Load CAN message with motor position
 				{
 					can_tx_data.i32[0] = gl_theta_rem_m;	//bytes 0-3
-					can_tx_data.i16[3] = (int16_t)gl_iq;				//bytes 4-5
+					can_tx_data.i16[2] = (int16_t)gl_iq;				//bytes 4-5
 				}
 				else
 				{
 					can_tx_data.i32[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
-					can_tx_data.i16[3] = (int16_t)gl_iq;
+					can_tx_data.i16[2] = (int16_t)gl_iq;
 				}
 
 				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
