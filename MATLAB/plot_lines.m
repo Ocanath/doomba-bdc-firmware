@@ -2,7 +2,7 @@ function [saved_data, time] = plot_lines(num_lines, type, baud, buf_width, limit
 
 slist = serialportlist;
 try
-    s = serialport(slist(1), baud);
+    s = serialport(slist(2), baud);
 catch
     disp("No serial port found");
 end
@@ -10,7 +10,7 @@ end
 f = figure(1);
 H = uicontrol();
 H.Position = [0,0,0,0];
-
+pause(.01);
 for i = 1:num_lines
     anim_line(i) = animatedline;
 end
