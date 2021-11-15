@@ -71,7 +71,6 @@ extern float i_d_meas;
 extern uint32_t dq_ts;
 extern float prev_theta_m_dq;
 extern float phase_advance_angle;
-extern float gl_prop_delay_const;
 
 extern float gl_theta_m;
 extern float gl_dq;

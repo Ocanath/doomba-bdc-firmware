@@ -207,175 +207,199 @@ int16_t cos_mid = 1973;
 int16_t sin_mid = 1973;
 #endif
 #if MODULE_NUMBER == 21					//currently in spinner launcher
-float align_offset = 0.0899067894f;
-const float iq_gain = 0.3f;
-const float id_gain = 0.01f;
-float gl_prop_delay_const = 800.f;
-const float elec_conv_ratio = 8.f;	//16 poles, 8 pole pairs, suitable for KMZ60 no-force if u wanna be cheap
-int16_t cos_mid = 1997;
-int16_t sin_mid = 1985;
+	int32_t align_offset_fixed = (int32_t)(0.0899067894f*4096.f);
+	float align_offset = 0.0899067894f;
+	int16_t cos_mid = 1997;
+	int16_t sin_mid = 1985;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 22						//currently in spinner launcher
-float align_offset = -0.877466202f;
-const float iq_gain = 0.3f;
-const float id_gain = 0.01f;
-const float gl_prop_delay_const = 560.f;
-const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 1996;
-int16_t sin_mid = 1974;
+	int32_t align_offset_fixed = (int32_t)(-0.877466202f*4096.f);
+	float align_offset = -0.877466202f;
+	int16_t cos_mid = 1996;
+	int16_t sin_mid = 1974;
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 23						//rando. TLE encoder/v4-r5
-float align_offset = 0.0346194729f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 560.f;
-const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 1985;
-int16_t sin_mid = 1986;
+	int32_t align_offset_fixed = (int32_t)(0.0346194729f*4096.f);
+	float align_offset = 0.0346194729f;
+	int16_t cos_mid = 1985;
+	int16_t sin_mid = 1986;
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
-float align_offset = -0.170561865f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 476;
-const float elec_conv_ratio = 11.f;	//MC4225 has 14 poles, 7 pole pairs, and our encoder returns 2*theta.
-int16_t cos_mid = 1976;
-int16_t sin_mid = 1976;
+	int32_t align_offset_fixed = (int32_t)(-0.170561865f*4096.f);
+	float align_offset = -0.170561865f;
+	int16_t cos_mid = 1976;
+	int16_t sin_mid = 1976;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 25						//rando. TLE encoder/v4-r5
-float align_offset = -0.0f;	//needs algining
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 800.f;	//needs tuning
-const float elec_conv_ratio = 8.f;	//MS motor with 16 poles, with TLE makes 8 pole pairs
-int16_t cos_mid = 1976;
-int16_t sin_mid = 1976;
+	int32_t align_offset_fixed = (int32_t)(-0.0*4096.f);
+	float align_offset = -0.0f;	//needs algining
+	int16_t cos_mid = 1976;
+	int16_t sin_mid = 1976;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 26						//rando. TLE encoder/v4-r5
-float align_offset = -0.0818852335f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 800.f;
-const float elec_conv_ratio = 8.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1988;
-int16_t sin_mid = 1962;
+	int32_t align_offset_fixed = (int32_t)(-0.0818852335f*4096.f);
+	float align_offset = -0.0818852335f;
+	int16_t cos_mid = 1988;
+	int16_t sin_mid = 1962;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 27						//rando. TLE encoder/v4-r5
-float align_offset = -0.170397103f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 476;
-const float elec_conv_ratio = 11.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1977;
-int16_t sin_mid = 1990;
+	int32_t align_offset_fixed = (int32_t)(-0.170397103f*4096.f);
+	float align_offset = -0.170397103f;
+	int16_t cos_mid = 1977;
+	int16_t sin_mid = 1990;
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 28						//rando. TLE encoder/v4-r5
-float align_offset = -0.0786211267f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 476;
-const float elec_conv_ratio = 11.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1993;
-int16_t sin_mid = 1984;
+	int32_t align_offset_fixed = (int32_t)(-0.0786211267f*4096.f);
+	float align_offset = -0.0786211267f;
+	int16_t cos_mid = 1993;
+	int16_t sin_mid = 1984;
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
-
-/*Fixed crap that makes the thing work good*/
-const int32_t elec_conv_ratio_fixed = 7;
-const int32_t gl_prop_delayloop_interval = 25;
-const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
-//int32_t align_offset_fixed = (int32_t)(-4.3696599f*4096.f);
-int32_t align_offset_fixed = (int32_t)(2.01f*4096.f);
-int16_t cos_mid = 1985;
-int16_t sin_mid = 1985;
-fixed_PI_params_t iq_pi = {
-		.kp_m = 4 << 12,
-		.kp_div = 33,
-		.ki_m = 3 << 12,
-		.ki_div = 277,
-		.x = 0,
-		.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
-};
-fixed_PI_params_t id_pi = {
-		.kp_m = 3 << 12,
-		.kp_div = 10,
-		.ki_m = 1 << 12,
-		.ki_div = 30,
-		.x = 0,
-		.x_sat = MAX_VQ << 12
-};
-/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
-float align_offset = 2.01f;
-const float iq_gain = 0.03f;
-const float id_gain = 0.01f;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+	int32_t align_offset_fixed = (int32_t)(2.01f*4096.f);
+	float align_offset = 2.01f;
+	int16_t cos_mid = 1985;
+	int16_t sin_mid = 1985;
+	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
-float align_offset = 0.216673866f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 2000;
-int16_t sin_mid = 1987;
+	int32_t align_offset_fixed = (int32_t)(0.216673866f*4096.f);
+	float align_offset = 0.216673866f;
+	int16_t cos_mid = 2000;
+	int16_t sin_mid = 1987;
+	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 31						//rando. TLE encoder/v4-r5
-float align_offset = 0.393527597f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1973;
-int16_t sin_mid = 1974;
+	int32_t align_offset_fixed = (int32_t)(0.393527597f*4096.f);
+	float align_offset = 0.393527597f;
+	int16_t cos_mid = 1973;
+	int16_t sin_mid = 1974;
+	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
-/*Fixed crap that makes the thing work good*/
-const int32_t elec_conv_ratio_fixed = 7;
-const int32_t gl_prop_delayloop_interval = 25;
-const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
-//int32_t align_offset_fixed = (int32_t)(-4.3696599f*4096.f);
-int32_t align_offset_fixed = (int32_t)(-0.256763965f*4096.f);
-int16_t cos_mid = 1971;
-int16_t sin_mid = 1978;
-fixed_PI_params_t iq_pi = {
-		.kp_m = 4 << 12,
-		.kp_div = 33,
-		.ki_m = 3 << 12,
-		.ki_div = 277,
-		.x = 0,
-		.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
-};
-fixed_PI_params_t id_pi = {
-		.kp_m = 3 << 12,
-		.kp_div = 10,
-		.ki_m = 1 << 12,
-		.ki_div = 30,
-		.x = 0,
-		.x_sat = MAX_VQ << 12
-};
-/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
-float align_offset = -0.256763965f;
-const float iq_gain = 0.03f;
-const float id_gain = 0.01f;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
+	int32_t align_offset_fixed = (int32_t)(-0.256763965f*4096.f);
+	float align_offset = -0.256763965f;
+	int16_t cos_mid = 1971;
+	int16_t sin_mid = 1978;
+	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
-float align_offset = -0.115011632f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1991;
-int16_t sin_mid = 1970;
+	int32_t align_offset_fixed = (int32_t)(-0.115011632f*4096.f);
+	float align_offset = -0.115011632f;
+	int16_t cos_mid = 1991;
+	int16_t sin_mid = 1970;
+	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 34						//rando. TLE encoder/v4-r5
-float align_offset = 0.42705825f;
-const float iq_gain = 0.01;
-const float id_gain = 0.01;
-const float gl_prop_delay_const = 900.f;
-const float elec_conv_ratio = 7.f;	//22 poles + TLE encoder, so 11 pole pairs
-int16_t cos_mid = 1976;
-int16_t sin_mid = 1974;
+	int32_t align_offset_fixed = (int32_t)(0.42705825f*4096.f);
+	float align_offset = 0.42705825f;
+	int16_t cos_mid = 1976;
+	int16_t sin_mid = 1974;
+	#define PROFILE AEROSKY_MC4225
+#endif
+
+
+
+
+
+
+
+
+
+
+
+#if PROFILE == AEROSKY_MC4225
+	/*Fixed crap that makes the thing work good*/
+	/*number of polepairs.*/
+	const int32_t elec_conv_ratio_fixed = 7;
+	/*Phase advancement params*/
+	const int32_t gl_prop_delayloop_interval = 25;
+	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp_m = 4 << 12,
+			.kp_div = 33,
+			.ki_m = 3 << 12,
+			.ki_div = 277,
+			.x = 0,
+			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+	};
+	fixed_PI_params_t id_pi = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 30,
+			.x = 0,
+			.x_sat = MAX_VQ << 12
+	};
+
+	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
+	const float iq_gain = 0.03f;
+	const float id_gain = 0.01f;
+	const float gl_prop_delay_const = 900.f;
+	const float elec_conv_ratio = (float)elec_conv_ratio_fixed;		//7.f;	//22 poles + TLE encoder, so 11 pole pairs
+#endif
+#if PROFILE == MULTISTAR_MS4822
+	/*Fixed crap that makes the thing work good*/
+	/*number of polepairs.*/
+	const int32_t elec_conv_ratio_fixed = 11;
+	/*Phase advancement params*/
+	const int32_t gl_prop_delayloop_interval = 25;
+	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp_m = 4 << 12,
+			.kp_div = 33,
+			.ki_m = 3 << 12,
+			.ki_div = 277,
+			.x = 0,
+			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+	};
+	fixed_PI_params_t id_pi = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 30,
+			.x = 0,
+			.x_sat = MAX_VQ << 12
+	};
+	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
+	const float iq_gain = 0.03f;
+	const float id_gain = 0.01f;
+	const float elec_conv_ratio = (float)elec_conv_ratio_fixed;		//7.f;	//22 poles + TLE encoder, so 11 pole pairs
+	const float gl_prop_delay_const = 476.f;
+#endif
+#if PROFILE == MULTISTAR_MS4225
+	const int32_t elec_conv_ratio_fixed = 8;
+	/*Phase advancement params*/
+	const int32_t gl_prop_delayloop_interval = 25;
+	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp_m = 4 << 12,
+			.kp_div = 33,
+			.ki_m = 3 << 12,
+			.ki_div = 277,
+			.x = 0,
+			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+	};
+	fixed_PI_params_t id_pi = {
+			.kp_m = 3 << 12,
+			.kp_div = 10,
+			.ki_m = 1 << 12,
+			.ki_div = 30,
+			.x = 0,
+			.x_sat = MAX_VQ << 12
+	};
+	const float iq_gain = 0.01;
+	const float id_gain = 0.01;
+	const float elec_conv_ratio = (float)elec_conv_ratio_fixed;		//7.f;	//22 poles + TLE encoder, so 11 pole pairs
+	const float gl_prop_delay_const = 800.f;
 #endif
