@@ -14,6 +14,7 @@ extern int32_t gl_iq;
 extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta;
+extern int32_t gl_dtheta_microseconds;
 
 /*Overflow value constants, for unwrap_overflow function*/
 extern const int32_t half_overflow_val;

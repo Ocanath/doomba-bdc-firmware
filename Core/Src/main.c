@@ -69,6 +69,7 @@ int main(void)
 	CAN_Init();
 	MX_ADC1_Init();
 	MX_TIM1_Init();
+	MX_TIM2_Init();
 	MX_USART2_UART_Init();
 
 	if(sizeof(float) != 4)
@@ -93,6 +94,7 @@ int main(void)
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
 	TIMER_UPDATE_DUTY(0,0,0);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
@@ -174,7 +176,20 @@ int main(void)
 				}
 				else
 				{
-					can_tx_data.i32[0] = (int32_t)uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
+					can_tx_data.i16[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
+
+					/*
+					 * the choice of shift here was to ensure a reasonable highest speed would fit,
+					 * without compromising resolution for lower speeds, while still maintaining a
+					 *  unit-governed (i.e. div by seconds) expression of velocity
+					 *
+					 * This expresses velocity in (2^(12-shift)rad / sec, or 16rad/sec.
+					 * This grows the resolution of the fixed point value. divide by 2^(12-shift)
+					 * to obtain the true value in rad/sec
+					 * */
+					int32_t dtheta_12b_rad_p_sec = ((gl_dtheta*1000000)/gl_dtheta_microseconds) >> 8;
+					can_tx_data.i16[1] = (int16_t)(dtheta_12b_rad_p_sec);	//this should be delivered in units of 4096rad/sec
+
 					can_tx_data.i16[2] = (int16_t)gl_iq;
 				}
 

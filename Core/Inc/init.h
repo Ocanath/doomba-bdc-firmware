@@ -27,6 +27,7 @@ DMA_HandleTypeDef hdma_adc1;
 CAN_HandleTypeDef hcan;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 
@@ -38,6 +39,7 @@ void SystemClock_Config(void);
  void MX_CAN_Init(void);
  void MX_ADC1_Init(void);
  void MX_TIM1_Init(void);
+ void MX_TIM2_Init(void);
  void MX_USART2_UART_Init(void);
 
 //void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);

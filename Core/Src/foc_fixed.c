@@ -40,6 +40,7 @@ int32_t gl_iq = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta = 0;
+int32_t gl_dtheta_microseconds = 0;
 
 /*Previous Theta*/
 static int32_t prev_theta_m;
@@ -93,6 +94,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 		count = 0;
 
 		gl_dtheta = v_12b;
+		gl_dtheta_microseconds = TIM2->CNT;
+		TIM2->CNT = 0;
 	}
 	count++;
 
@@ -138,6 +141,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 		count = 0;
 
 		gl_dtheta = v_12b;
+		gl_dtheta_microseconds = TIM2->CNT;
+		TIM2->CNT = 0;
 	}
 	count++;
 
