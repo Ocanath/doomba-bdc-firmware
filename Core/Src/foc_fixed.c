@@ -7,6 +7,7 @@
 #define SQRT_3_12B			7094	//(sqrt(3))*2^12
 #define TWO_BY_SQRT_3_12B	4730	//(2/sqrt(3))*2^12
 #define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
+#define ONE_THIRD_12B		1365
 
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
  *
@@ -160,6 +161,10 @@ void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t *
 {
 	*alpha = ia;
 	*beta = (ONE_BY_SQRT_3_12B*ia + TWO_BY_SQRT_3_12B*ib) >> 12;
+
+	/*This is the same as the original clarke, EXCEPT that it uses all 3 current measurements. Idk if it will do better or worse*/
+//	*alpha = (ONE_THIRD_12B * (ia*2 - ib - ic) ) >> 12;	//this is the same as (2/3)*(ia - ib/2 - ic/2). We just do some shuffling about of factors of 2
+//	*beta = ((SQRT_3_12B*ib - SQRT_3_12B*ic) >> 12) * ONE_THIRD_12B >> 12;	//
 }
 
 void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id)
