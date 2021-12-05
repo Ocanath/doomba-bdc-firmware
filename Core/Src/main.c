@@ -50,7 +50,10 @@ void brushed_tau(float tau)
   */
 void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	if( get_checksum(h->rx_buf, sizeof(int16_t)) == h->rx_buf[sizeof(int16_t)] )
+	int8_t sum = 0;
+	for(int i = 0; i < h->bytes_received; i++)
+		sum += (int8_t)h->rx_buf[i];
+	if(sum == 0)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];

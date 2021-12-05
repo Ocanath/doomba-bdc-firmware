@@ -207,112 +207,111 @@ int16_t cos_mid = 1973;
 int16_t sin_mid = 1973;
 #endif
 #if MODULE_NUMBER == 21					//currently in spinner launcher
-	int32_t align_offset_fixed = (int32_t)(0.0899067894f*4096.f);
-	float align_offset = 0.0899067894f;
+	#define ALIGN_OFFSET	0.0899067894f
 	int16_t cos_mid = 1997;
 	int16_t sin_mid = 1985;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 22						//currently in spinner launcher
-	int32_t align_offset_fixed = (int32_t)(-0.877466202f*4096.f);
-	float align_offset = -0.877466202f;
+	#define ALIGN_OFFSET	-0.877466202f
 	int16_t cos_mid = 1996;
 	int16_t sin_mid = 1974;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 23						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(0.0346194729f*4096.f);
-	float align_offset = 0.0346194729f;
+	#define ALIGN_OFFSET	0.0346194729f
 	int16_t cos_mid = 1985;
 	int16_t sin_mid = 1986;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.170561865f*4096.f);
-	float align_offset = -0.170561865f;
+	#define ALIGN_OFFSET	-0.170561865f
 	int16_t cos_mid = 1976;
 	int16_t sin_mid = 1976;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 25						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.0*4096.f);
-	float align_offset = -0.0f;	//needs algining
+	#define ALIGN_OFFSET	-0.0f	//needs algining
 	int16_t cos_mid = 1976;
 	int16_t sin_mid = 1976;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 26						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.0818852335f*4096.f);
-	float align_offset = -0.0818852335f;
+	#define ALIGN_OFFSET	-0.0818852335f
 	int16_t cos_mid = 1988;
 	int16_t sin_mid = 1962;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 27						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.170397103f*4096.f);
-	float align_offset = -0.170397103f;
+	#define ALIGN_OFFSET	-0.170397103f
 	int16_t cos_mid = 1977;
 	int16_t sin_mid = 1990;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 28						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.0786211267f*4096.f);
-	float align_offset = -0.0786211267f;
+	#define ALIGN_OFFSET	-0.0786211267f
 	int16_t cos_mid = 1993;
 	int16_t sin_mid = 1984;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
-	int32_t align_offset_fixed = (int32_t)(2.01f*4096.f);
-	float align_offset = 2.01f;
+	#define ALIGN_OFFSET	2.01f
 	int16_t cos_mid = 1985;
 	int16_t sin_mid = 1985;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(0.216673866f*4096.f);
-	float align_offset = 0.216673866f;
+	#define ALIGN_OFFSET 	0.216673866f
 	int16_t cos_mid = 2000;
 	int16_t sin_mid = 1987;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 31						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(0.393527597f*4096.f);
-	float align_offset = 0.393527597f;
+	#define ALIGN_OFFSET	0.393527597f
 	int16_t cos_mid = 1973;
 	int16_t sin_mid = 1974;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.256763965f*4096.f);
-	float align_offset = -0.256763965f;
+	#define ALIGN_OFFSET	-0.256763965f
 	int16_t cos_mid = 1971;
 	int16_t sin_mid = 1978;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(-0.115011632f*4096.f);
-	float align_offset = -0.115011632f;
+	#define ALIGN_OFFSET	-0.115011632f
 	int16_t cos_mid = 1991;
 	int16_t sin_mid = 1970;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 34						//rando. TLE encoder/v4-r5
-	int32_t align_offset_fixed = (int32_t)(0.42705825f*4096.f);
-	float align_offset = 0.42705825f;
+	#define ALIGN_OFFSET	0.42705825f
 	int16_t cos_mid = 1976;
 	int16_t sin_mid = 1974;
 	#define PROFILE AEROSKY_MC4225
 #endif
+#if MODULE_NUMBER == 35						//hex motor (nw needs fixing, not yet calibrated). TLE encoder/v4-r5
+	#define ALIGN_OFFSET 0.21330367f
+	int16_t cos_mid = 1977;
+	int16_t sin_mid = 1983;
+	#define PROFILE MULTISTAR_MS4822
+#endif
+#if MODULE_NUMBER == 36						//hex motor. TLE encoder/v4-r5
+	#define ALIGN_OFFSET -0.0932625011f
+	int16_t cos_mid = 1982;
+	int16_t sin_mid = 1963;
+	#define PROFILE MULTISTAR_MS4822
+#endif
+#if MODULE_NUMBER == 37						//hex motor. TLE encoder/v4-r5
+	#define ALIGN_OFFSET 0.206599116f
+	int16_t cos_mid = 1984;
+	int16_t sin_mid = 1977;
+	#define PROFILE MULTISTAR_MS4225
+#endif
 
-
-
-
-
-
-
-
-
+/*Load align offset globals from the define*/
+float align_offset = ALIGN_OFFSET;
+int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 
 
 #if PROFILE == AEROSKY_MC4225
@@ -351,7 +350,7 @@ int16_t sin_mid = 1973;
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 11;
 	/*Phase advancement params*/
-	const int32_t gl_prop_delayloop_interval = 25;
+	const int32_t gl_prop_delayloop_interval = 35;
 	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
@@ -379,7 +378,7 @@ int16_t sin_mid = 1973;
 #if PROFILE == MULTISTAR_MS4225
 	const int32_t elec_conv_ratio_fixed = 8;
 	/*Phase advancement params*/
-	const int32_t gl_prop_delayloop_interval = 25;
+	const int32_t gl_prop_delayloop_interval = 26;
 	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
