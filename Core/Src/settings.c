@@ -198,13 +198,10 @@ int16_t cos_mid = 2056;
 int16_t sin_mid = 1983;
 #endif
 #if MODULE_NUMBER == 20				//currently in gearbox
-float align_offset = 0.0229281429f;
-const float iq_gain = 0.3f;
-const float id_gain = 0.01f;
-float gl_prop_delay_const = 800.f;
-const float elec_conv_ratio = 8.f;	//16pole, 8pp
+	#define ALIGN_OFFSET	0.0229281429f
 int16_t cos_mid = 1973;
 int16_t sin_mid = 1973;
+#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 21					//currently in spinner launcher
 	#define ALIGN_OFFSET	0.0899067894f
@@ -225,10 +222,10 @@ int16_t sin_mid = 1973;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.170561865f
-	int16_t cos_mid = 1976;
-	int16_t sin_mid = 1976;
-	#define PROFILE MULTISTAR_MS4225
+	#define ALIGN_OFFSET	0.0907510966f
+	int16_t cos_mid = 1986;
+	int16_t sin_mid = 1984;
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 25						//rando. TLE encoder/v4-r5
 	#define ALIGN_OFFSET	-0.0f	//needs algining
@@ -240,7 +237,7 @@ int16_t sin_mid = 1973;
 	#define ALIGN_OFFSET	-0.0818852335f
 	int16_t cos_mid = 1988;
 	int16_t sin_mid = 1962;
-	#define PROFILE MULTISTAR_MS4225
+	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 27						//rando. TLE encoder/v4-r5
 	#define ALIGN_OFFSET	-0.170397103f
@@ -249,7 +246,7 @@ int16_t sin_mid = 1973;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 28						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.0786211267f
+	#define ALIGN_OFFSET	-0.0970252305f
 	int16_t cos_mid = 1993;
 	int16_t sin_mid = 1984;
 	#define PROFILE MULTISTAR_MS4822
@@ -291,10 +288,10 @@ int16_t sin_mid = 1973;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 35						//hex motor (nw needs fixing, not yet calibrated). TLE encoder/v4-r5
-	#define ALIGN_OFFSET 0.21330367f
-	int16_t cos_mid = 1977;
-	int16_t sin_mid = 1983;
-	#define PROFILE MULTISTAR_MS4822
+	#define ALIGN_OFFSET -0.108883113f
+	int16_t cos_mid = 1972;
+	int16_t sin_mid = 1981;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 36						//hex motor. TLE encoder/v4-r5
 	#define ALIGN_OFFSET -0.0932625011f
