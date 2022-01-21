@@ -190,7 +190,7 @@ int main(void)
 					 * This grows the resolution of the fixed point value. divide by 2^(12-shift)
 					 * to obtain the true value in rad/sec
 					 * */
-					int32_t dtheta_fixedpoint_rad_p_sec = ((gl_dtheta*1000000)/gl_dtheta_microseconds) >> 8;	//shift 8 means 16rad/sec
+					int32_t dtheta_fixedpoint_rad_p_sec = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);	//shift 8 means 16rad/sec
 					can_tx_data.i16[1] = (int16_t)(dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
 
 					can_tx_data.i16[2] = (int16_t)gl_iq;

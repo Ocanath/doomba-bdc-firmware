@@ -13,6 +13,8 @@
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
 //ready to receive them
 
+extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
+
 typedef enum {FOC_MODE, SINUSOIDAL_MODE} control_mode_t;	//foc with velocity?
 
 typedef union

@@ -19,6 +19,11 @@
  */
 #include "CAN.h"
 
+#define DEFAULT_V_REPORT_RADIX	4
+
+static int32_t v_radix = DEFAULT_V_REPORT_RADIX;
+int32_t gl_v_uS_conv = 1000000 >> (12 - DEFAULT_V_REPORT_RADIX);
+
 CAN_TxHeaderTypeDef		can_tx_header;
 CAN_RxHeaderTypeDef		can_rx_header;
 uint32_fmt_t 			can_tx_data = {0x55555555};
@@ -40,7 +45,8 @@ enum {
 	EN_UART_ENC = 0x34,
 	DIS_UART_ENC = 0x35,
 	SET_FOC_MODE = 0x36,
-	SET_SINUSOIDAL_MODE = 0x37
+	SET_SINUSOIDAL_MODE = 0x37,
+	CHANGE_V_RADIX = 0x38
 };
 
 void CAN_Init(void)
@@ -139,4 +145,9 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(int16_t)])
 		gl_ext_cmd_flags.control_mode = FOC_MODE;
 	else if (d[1] == SET_SINUSOIDAL_MODE)
 		gl_ext_cmd_flags.control_mode = SINUSOIDAL_MODE;
+	else if (d[1] == CHANGE_V_RADIX)
+	{
+		v_radix = d[2];
+		gl_v_uS_conv = 1000000 >> (12 - v_radix);
+	}
 }
