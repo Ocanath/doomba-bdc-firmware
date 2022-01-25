@@ -362,7 +362,7 @@ void get_cursensor_calibrations(int32_t test_voltage, int32_t w[NUM_CURRENT_SENS
 
 	for(int i = 0; i < 3; i++)
 		n_avg[i] = n_avg[i] / 6.0;
-	double scf = 525.9366*n_avg[0];
+	double scf = 525.9366*n_avg[0];	//1/(525.9366) is the NOMINAL current conversion constant for THIS HARDWARE (adc -> amps)
 	for(int i = 0; i < 3; i++)
 	{
 		n_avg[i] = (n_avg[i]*((double)(1<<24)))/scf;
