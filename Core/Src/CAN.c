@@ -20,9 +20,11 @@
 #include "CAN.h"
 
 #define DEFAULT_V_REPORT_RADIX	4
+#define DEFAULT_IQ_RSHIFT		3	//estimated max value of iq is in the ~17bit domain. shift 3 to get it between 14-15bit
 
 static int32_t v_radix = DEFAULT_V_REPORT_RADIX;
 int32_t gl_v_uS_conv = 1000000 >> (12 - DEFAULT_V_REPORT_RADIX);
+int32_t gl_iq_rshift = DEFAULT_IQ_RSHIFT;
 
 CAN_TxHeaderTypeDef		can_tx_header;
 CAN_RxHeaderTypeDef		can_rx_header;
@@ -46,7 +48,8 @@ enum {
 	DIS_UART_ENC = 0x35,
 	SET_FOC_MODE = 0x36,
 	SET_SINUSOIDAL_MODE = 0x37,
-	CHANGE_V_RADIX = 0x38
+	CHANGE_V_RADIX = 0x38,
+	CHANGE_IQ_RSHIFT = 0x39
 };
 
 void CAN_Init(void)
@@ -149,5 +152,9 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(int16_t)])
 	{
 		v_radix = d[2];
 		gl_v_uS_conv = 1000000 >> (12 - v_radix);
+	}
+	else if (d[1] == CHANGE_IQ_RSHIFT)
+	{
+		gl_iq_rshift = d[2];
 	}
 }

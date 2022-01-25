@@ -14,6 +14,7 @@
 //ready to receive them
 
 extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
+extern int32_t gl_iq_rshift;
 
 typedef enum {FOC_MODE, SINUSOIDAL_MODE} control_mode_t;	//foc with velocity?
 

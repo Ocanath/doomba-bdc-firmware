@@ -175,7 +175,7 @@ int main(void)
 				if(gl_ext_cmd_flags.use_uart_encoder == 0)	//Load CAN message with motor position
 				{
 					can_tx_data.i32[0] = gl_theta_rem_m;	//bytes 0-3
-					can_tx_data.i16[2] = (int16_t)gl_iq;				//bytes 4-5
+					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);				//bytes 4-5
 				}
 				else
 				{
@@ -193,7 +193,7 @@ int main(void)
 					int32_t dtheta_fixedpoint_rad_p_sec = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);	//shift 8 means 16rad/sec
 					can_tx_data.i16[1] = (int16_t)(dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
 
-					can_tx_data.i16[2] = (int16_t)gl_iq;
+					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
 				}
 
 				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
