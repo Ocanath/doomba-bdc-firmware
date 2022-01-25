@@ -28,15 +28,20 @@
 
 #define MAX_VQ 3546	// (sqrt(3)/2) * 4096
 
+typedef struct i32_t
+{
+	int32_t i32;
+	int32_t radix;	//'decimal' point. true value is i32/2^radix
+}i32_t;
+
 typedef struct fixed_PI_params_t
 {
-	int32_t kp_m;
-	int32_t kp_div;
-	int32_t ki_m;
-	int32_t ki_div;
+	i32_t kp;
+	i32_t ki;
 	int32_t x;
 	int32_t x_sat;
 }fixed_PI_params_t;
+
 extern const int32_t elec_conv_ratio_fixed;
 extern const int32_t gl_prop_delay_const_12b;
 extern const int32_t gl_prop_delayloop_interval;

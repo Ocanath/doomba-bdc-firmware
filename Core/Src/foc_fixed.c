@@ -49,11 +49,10 @@ static int32_t prev_theta_m;
 /*
  * x is state variable for integral delay
  */
-int32_t ctl_PI_fixed(int32_t i_q_ref, int32_t i_q_meas, fixed_PI_params_t * p)
+int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
 {
-	int32_t err = i_q_ref - i_q_meas;
-	int32_t u = p->x + (p->kp_m*err)/p->kp_div; //multiplying then dividing by scaled gains has the effect of leftshifting 12, then rightshifting 12
-	p->x = p->x + (p->ki_m*err)/p->ki_div;
+	int32_t u = p->x + ((p->kp.i32*error) >> p->kp.radix); //multiplying then dividing by scaled gains has the effect of leftshifting 12, then rightshifting 12
+	p->x = p->x + ((p->ki.i32*error) >> p->ki.radix);
 	int32_t sat = p->x_sat;
 	if(p->x > sat)
 		p->x = sat;
@@ -119,8 +118,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	iq_meas = -iq_meas;
 	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
-	int32_t vq = ctl_PI_fixed(iq_targ, iq_meas, &iq_pi);
-	int32_t vd = ctl_PI_fixed(id_targ, id_meas, &id_pi);
+	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &iq_pi);
+	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &id_pi);
 
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);

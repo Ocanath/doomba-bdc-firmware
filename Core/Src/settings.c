@@ -320,18 +320,14 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
-			.kp_m = 4 << 12,
-			.kp_div = 33,
-			.ki_m = 3 << 12,
-			.ki_div = 277,
+			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
 			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
 	};
 	fixed_PI_params_t id_pi = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 30,
+			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
+			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
 			.x_sat = MAX_VQ << 12
 	};
@@ -351,18 +347,14 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
-			.kp_m = 4 << 12,
-			.kp_div = 33,
-			.ki_m = 3 << 12,
-			.ki_div = 277,
+			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
 			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
 	};
 	fixed_PI_params_t id_pi = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 30,
+			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
+			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
 			.x_sat = MAX_VQ << 12
 	};
@@ -379,18 +371,14 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
-			.kp_m = 4 << 12,
-			.kp_div = 33,
-			.ki_m = 3 << 12,
-			.ki_div = 277,
+			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
 			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
 	};
 	fixed_PI_params_t id_pi = {
-			.kp_m = 3 << 12,
-			.kp_div = 10,
-			.ki_m = 1 << 12,
-			.ki_div = 30,
+			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
+			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
 			.x_sat = MAX_VQ << 12
 	};
