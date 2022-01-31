@@ -25,10 +25,10 @@ int64_t abs64(int64_t in)
 int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist)
 {
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
-		sinusoidal_fixed(v, 0);	//todo: replace this with a voltage control mode call
+		sinusoidal_fixed(v);	//todo: replace this with a voltage control mode call
 	int64_t run_start = gl_theta_rotations*PI_12B + gl_theta_rem_m;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
-		sinusoidal_fixed(v, 0);
+		sinusoidal_fixed(v);
 	int64_t run_end = gl_theta_rotations*TWO_PI_12B + gl_theta_rem_m;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
@@ -176,9 +176,9 @@ void current_sensors_fitness_test(void)
 
 		/*Track sinusoidal currents*/
 		int32_t va, vb, vc;
-		va = ctl_PI_fixed(iref_a - ia, &g_f_a);
-		vb = ctl_PI_fixed(iref_b - ib, &g_f_b);
-		vc = ctl_PI_fixed(iref_c - ic, &g_f_c);
+		va = ctl_PI_fixed(iref_a - ia, &g_f_a, 12);
+		vb = ctl_PI_fixed(iref_b - ib, &g_f_b, 12);
+		vc = ctl_PI_fixed(iref_c - ic, &g_f_c, 12);
 
 		/*Our control efforts are really voltages relative to *each other*. That means we can center them about a neutral reference point without changing their effect
 		 * on the plant*/

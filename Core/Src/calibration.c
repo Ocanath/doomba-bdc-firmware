@@ -142,14 +142,14 @@ void test_foc()
 	while(1)
 	{
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal_fixed(vref,0);
+			sinusoidal_fixed(vref);
 			//foc(iq_ref,0);//sinusoidal(.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
 
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal_fixed(-vref,0);//foc(iq_ref,0);
+			sinusoidal_fixed(-vref);//foc(iq_ref,0);
 			//sinusoidal(-.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);

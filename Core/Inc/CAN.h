@@ -16,7 +16,7 @@
 extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
 extern int32_t gl_iq_rshift;
 
-typedef enum {FOC_MODE, SINUSOIDAL_MODE} control_mode_t;	//foc with velocity?
+typedef enum {FOC_MODE, SINUSOIDAL_MODE, POS_IQ, POS_VQ} control_mode_t;	//foc with velocity?
 
 typedef union
 {
@@ -66,7 +66,15 @@ typedef struct ext_cmd_flags_t
 	control_mode_t control_mode;
 }ext_cmd_flags_t;
 
+typedef struct pctl_params_t
+{
+	fixed_PI_params_t kpki;
+	i32_t kd;
+	int32_t out_sat;
+}pctl_params_t;
 
+extern pctl_params_t mctl_iq;
+extern pctl_params_t mctl_vq;
 
 extern ext_cmd_flags_t gl_ext_cmd_flags;
 extern const uint16_t ext_cmd_id;
@@ -76,7 +84,7 @@ extern CAN_RxHeaderTypeDef   can_rx_header;
 extern uint32_t			can_tx_mailbox;
 
 void CAN_Init(void);
-void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(float)]);
+void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d);
 
 
 #endif /* INC_CAN_H_ */

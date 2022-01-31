@@ -38,18 +38,66 @@ ext_cmd_flags_t gl_ext_cmd_flags = {
 		.control_mode = FOC_MODE
 };
 
+/*Initialize params for position control using FOC as 0*/
+pctl_params_t mctl_iq = {
+		.kpki =
+		{
+			.kp = {.i32 = 0, .radix = 0},
+			.ki = {.i32 = 0, .radix = 0},
+			.x = 0,
+			.x_sat = 0
+		},
+		.kd = {.i32 = 0, .radix = 0},
+		.out_sat = 0
+};
+/*Initialize params for position control using sinusoidal as 0*/
+pctl_params_t mctl_vq = {
+		.kpki =
+		{
+			.kp = {.i32 = 0, .radix = 0},
+			.ki = {.i32 = 0, .radix = 0},
+			.x = 0,
+			.x_sat = 0
+		},
+		.kd = {.i32 = 0, .radix = 0},
+		.out_sat = 0
+};
+
 const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
 
 enum {
 	LED_ON = 0xDE,
 	LED_OFF =0xFE,
 	LED_BLINK= 0xAA,
+
 	EN_UART_ENC = 0x34,
 	DIS_UART_ENC = 0x35,
-	SET_FOC_MODE = 0x36,
-	SET_SINUSOIDAL_MODE = 0x37,
-	CHANGE_V_RADIX = 0x38,
-	CHANGE_IQ_RSHIFT = 0x39
+
+	SET_FOC_MODE = 0x36,	//configure to foc mode. need to do once and it takes
+	SET_SINUSOIDAL_MODE = 0x37,	//configure to velocity mode. send once and it takes
+	CHANGE_V_RADIX = 0x38,	//radix for velocity expression setting
+	CHANGE_IQ_RSHIFT = 0x39,	//rightshift for iq expression setting
+
+	SET_PCTL_IQ_MODE = 0x40,	//configure to position control using FOC mode. send once and it takes. Needs all position settings written to do anything (stable)
+	CHANGE_PCTL_IQ_KP_VALUE = 0x41,
+	CHANGE_PCTL_IQ_KP_RADIX = 0x42,
+	CHANGE_PCTL_IQ_KI_VALUE = 0x43,
+	CHANGE_PCTL_IQ_KI_RADIX = 0x44,
+	CHANGE_PCTL_IQ_KD_VALUE = 0x45,
+	CHANGE_PCTL_IQ_KD_RADIX = 0x46,
+	CHANGE_PCTL_IQ_XSAT = 0x47,
+	CHANGE_PCTL_IQ_OUTSAT = 0x48,
+
+
+	SET_PCTL_VQ_MODE = 0x49,	//configure to position control using sinusoidal mode. send once and it takes. Needs all position settings written to do anything (stable)
+	CHANGE_PCTL_VQ_KP_VALUE = 0x4A,
+	CHANGE_PCTL_VQ_KP_RADIX = 0x4B,
+	CHANGE_PCTL_VQ_KI_VALUE = 0x4C,
+	CHANGE_PCTL_VQ_KI_RADIX = 0x4D,
+	CHANGE_PCTL_VQ_KD_VALUE = 0x4E,
+	CHANGE_PCTL_VQ_KD_RADIX = 0x4F,
+	CHANGE_PCTL_VQ_XSAT = 0x50,
+	CHANGE_PCTL_VQ_OUTSAT = 0x51,
 };
 
 void CAN_Init(void)
@@ -126,35 +174,115 @@ void CAN_Init(void)
 	can_rx_header.FilterMatchIndex = 0;
 }
 
-void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t d[sizeof(int16_t)])
+void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 {
-	if(d[1] == LED_ON)
+	uint8_t cmd = d[0];
+
+	/*Hard load fmt. only valid for certain commands, but it's not expensive to load it into
+	 * our type pun structure every time, and makes this marginally easier to read*/
+	int32_fmt_t fmt;
+	for(int i = 0; i < sizeof(uint32_t); i++)
 	{
-		flags->en_blink_led = 0;
-		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+		fmt.d[i] = d[i+1];	//load the remainder of the message as the word
 	}
-	else if (d[1] == LED_OFF)
+
+	switch(cmd)	//NOTE! changed from d[1]! this breaks old misc communication strat!
 	{
-		flags->en_blink_led = 0;
-		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-	}
-	else if (d[1] == LED_BLINK)
-		flags->en_blink_led = 1;
-	else if (d[1] == EN_UART_ENC)
-		flags->use_uart_encoder = 1;
-	else if (d[1] == DIS_UART_ENC)
-		flags->use_uart_encoder = 0;
-	else if (d[1] == SET_FOC_MODE)
-		gl_ext_cmd_flags.control_mode = FOC_MODE;
-	else if (d[1] == SET_SINUSOIDAL_MODE)
-		gl_ext_cmd_flags.control_mode = SINUSOIDAL_MODE;
-	else if (d[1] == CHANGE_V_RADIX)
-	{
-		v_radix = d[2];
-		gl_v_uS_conv = 1000000 >> (12 - v_radix);
-	}
-	else if (d[1] == CHANGE_IQ_RSHIFT)
-	{
-		gl_iq_rshift = d[2];
+		case LED_ON:
+		{
+			flags->en_blink_led = 0;
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+			break;
+		}
+		case LED_OFF:
+		{
+			flags->en_blink_led = 0;
+			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			break;
+		}
+		case LED_BLINK:
+			flags->en_blink_led = 1;
+			break;
+		case EN_UART_ENC:
+			flags->use_uart_encoder = 1;
+			break;
+		case DIS_UART_ENC:
+			flags->use_uart_encoder = 0;
+			break;
+		case SET_FOC_MODE:
+			gl_ext_cmd_flags.control_mode = FOC_MODE;
+			break;
+		case SET_SINUSOIDAL_MODE:
+			gl_ext_cmd_flags.control_mode = SINUSOIDAL_MODE;
+			break;
+		case CHANGE_V_RADIX:
+		{
+			v_radix = d[1];
+			gl_v_uS_conv = 1000000 >> (12 - v_radix);
+			break;
+		}
+		case CHANGE_IQ_RSHIFT:
+		{
+			gl_iq_rshift = d[1];
+			break;
+		}
+
+		/*THIS SECTION IS FOR IQ POS CONTROL MODE*/
+		case SET_PCTL_IQ_MODE:
+			gl_ext_cmd_flags.control_mode = POS_IQ;
+			break;
+		case CHANGE_PCTL_IQ_KP_VALUE:
+			mctl_iq.kpki.kp.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_IQ_KP_RADIX:
+			mctl_iq.kpki.kp.radix = d[1];
+			break;
+		case CHANGE_PCTL_IQ_KI_VALUE:
+			mctl_iq.kpki.ki.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_IQ_KI_RADIX:
+			mctl_iq.kpki.ki.radix = d[1];
+			break;
+		case CHANGE_PCTL_IQ_KD_VALUE:
+			mctl_iq.kd.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_IQ_KD_RADIX:
+			mctl_iq.kd.radix = d[1];
+			break;
+		case CHANGE_PCTL_IQ_XSAT:
+			mctl_iq.kpki.x_sat = fmt.v;
+			break;
+		case CHANGE_PCTL_IQ_OUTSAT:
+			mctl_iq.out_sat = fmt.v;
+			break;
+
+		/*THIS SECTION IS FOR VQ POS CONTROL MODE*/
+		case SET_PCTL_VQ_MODE:
+			gl_ext_cmd_flags.control_mode = POS_VQ;
+			break;
+		case CHANGE_PCTL_VQ_KP_VALUE:
+			mctl_vq.kpki.kp.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_VQ_KP_RADIX:
+			mctl_vq.kpki.kp.radix = fmt.v;
+			break;
+		case CHANGE_PCTL_VQ_KI_VALUE:
+			mctl_vq.kpki.ki.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_VQ_KI_RADIX:
+			mctl_vq.kpki.ki.radix = d[1];
+			break;
+		case CHANGE_PCTL_VQ_KD_VALUE:
+			mctl_vq.kd.i32 = fmt.v;
+			break;
+		case CHANGE_PCTL_VQ_KD_RADIX:
+			mctl_vq.kd.radix = d[1];
+			break;
+		case CHANGE_PCTL_VQ_XSAT:
+			mctl_vq.kpki.x_sat = fmt.v;
+			break;
+		case CHANGE_PCTL_VQ_OUTSAT:
+			mctl_vq.out_sat = fmt.v;
+			break;
 	}
 }

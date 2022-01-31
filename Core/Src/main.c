@@ -159,7 +159,7 @@ int main(void)
 	int32_t input_val = 0;
 	while(1)
 	{
-		/*CAN protocol. */
+		/*CAN protocol. Get an input arg*/
 		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
 		{
 			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
@@ -202,11 +202,35 @@ int main(void)
 		if(HAL_GetTick() > can_cmd_exp_ts)
 			input_val = 0;
 
-		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
-			foc_fixed(input_val,0);
-		else
-			sinusoidal_fixed(input_val,0);
 
+		/*This actually runs foc. Each section is a wrapper for foc or sinusoidal*/
+		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
+		{
+			foc_fixed(input_val,0);
+		}
+		else if(gl_ext_cmd_flags.control_mode == POS_IQ)
+		{
+			int32_t q = (int32_t)uart_encoder_data.v;
+			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
+
+			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki, 0 );
+			iq -= (dq*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
+			foc_fixed(iq, 0);
+		}
+		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
+		{
+			int32_t q = (int32_t)uart_encoder_data.v;
+			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
+
+			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki, 0 );
+			vq -= (dq*mctl_iq.kd.i32) >> mctl_vq.kd.radix;
+			sinusoidal_fixed(vq);
+		}
+		else
+			sinusoidal_fixed(input_val);
+
+
+		/*Blink the led if enabled*/
 		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
 		{
 			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);

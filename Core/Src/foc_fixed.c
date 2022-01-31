@@ -49,7 +49,7 @@ static int32_t prev_theta_m;
 /*
  * x is state variable for integral delay
  */
-int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
+int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p, int32_t post_rshift)
 {
 	int32_t u = p->x + ((p->kp.i32*error) >> p->kp.radix); //multiplying then dividing by scaled gains has the effect of leftshifting 12, then rightshifting 12
 	p->x = p->x + ((p->ki.i32*error) >> p->ki.radix);
@@ -58,12 +58,12 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
 		p->x = sat;
 	if(p->x < -sat)
 		p->x = -sat;
-	return u >> 12;
+	return u >> post_rshift;
 }
 
 /*
  * */
-void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
+void sinusoidal_fixed(int32_t vq_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
@@ -77,9 +77,10 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	iq_meas = -iq_meas;
 	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
+	int32_t vd = ctl_PI_fixed(0 - id_meas, &id_pi, 12);
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_in, vd_in, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
@@ -118,8 +119,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	iq_meas = -iq_meas;
 	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
-	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &iq_pi);
-	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &id_pi);
+	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &iq_pi, 12);
+	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &id_pi, 12);
 
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
