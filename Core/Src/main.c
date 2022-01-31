@@ -206,7 +206,8 @@ int main(void)
 		/*This actually runs foc. Each section is a wrapper for foc or sinusoidal*/
 		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
 		{
-			foc_fixed(input_val,0);
+			int32_t tau = input_val * (1 << gl_iq_rshift);	//scale up to match scale we use to transmit/report iq
+			foc_fixed(tau, 0);
 		}
 		else if(gl_ext_cmd_flags.control_mode == POS_IQ)
 		{
