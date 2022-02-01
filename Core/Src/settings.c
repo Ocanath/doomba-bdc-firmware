@@ -323,13 +323,15 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
 			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
-			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.x_sat = MAX_VQ << 12,		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.out_rshift = 12
 	};
 	fixed_PI_params_t id_pi = {
 			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
 			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
-			.x_sat = MAX_VQ << 12
+			.x_sat = MAX_VQ << 12,
+			.out_rshift = 12
 	};
 
 	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
@@ -350,13 +352,15 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
 			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
-			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.x_sat = MAX_VQ << 12,		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.out_rshift = 12
 	};
 	fixed_PI_params_t id_pi = {
 			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
 			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
-			.x_sat = MAX_VQ << 12
+			.x_sat = MAX_VQ << 12,
+			.out_rshift = 12
 	};
 	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
 	const float iq_gain = 0.03f;
@@ -374,13 +378,15 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
 			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
 			.x = 0,
-			.x_sat = MAX_VQ << 12		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.x_sat = MAX_VQ << 12,		//value << 12, where value is the vq value your power delivery system/motor can handle indefinitely at stall
+			.out_rshift = 12
 	};
 	fixed_PI_params_t id_pi = {
 			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
 			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
 			.x = 0,
-			.x_sat = MAX_VQ << 12
+			.x_sat = MAX_VQ << 12,
+			.out_rshift = 12
 	};
 	const float iq_gain = 0.01;
 	const float id_gain = 0.01;

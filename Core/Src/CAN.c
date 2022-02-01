@@ -45,10 +45,11 @@ pctl_params_t mctl_iq = {
 			.kp = {.i32 = 0, .radix = 0},
 			.ki = {.i32 = 0, .radix = 0},
 			.x = 0,
-			.x_sat = 0
+			.x_sat = 0,
+			.out_rshift = 0
 		},
 		.kd = {.i32 = 0, .radix = 0},
-		.out_sat = 0
+		.out_sat = 0,
 };
 /*Initialize params for position control using sinusoidal as 0*/
 pctl_params_t mctl_vq = {
@@ -57,10 +58,11 @@ pctl_params_t mctl_vq = {
 			.kp = {.i32 = 0, .radix = 0},
 			.ki = {.i32 = 0, .radix = 0},
 			.x = 0,
-			.x_sat = 0
+			.x_sat = 0,
+			.out_rshift = 0
 		},
 		.kd = {.i32 = 0, .radix = 0},
-		.out_sat = 0
+		.out_sat = 0,
 };
 
 const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
@@ -87,17 +89,19 @@ enum {
 	CHANGE_PCTL_IQ_KD_RADIX = 0x46,
 	CHANGE_PCTL_IQ_XSAT = 0x47,
 	CHANGE_PCTL_IQ_OUTSAT = 0x48,
+	CHANGE_PCTL_IQ_OUT_RSHIFT = 0x49,
 
 
-	SET_PCTL_VQ_MODE = 0x49,	//configure to position control using sinusoidal mode. send once and it takes. Needs all position settings written to do anything (stable)
-	CHANGE_PCTL_VQ_KP_VALUE = 0x4A,
-	CHANGE_PCTL_VQ_KP_RADIX = 0x4B,
-	CHANGE_PCTL_VQ_KI_VALUE = 0x4C,
-	CHANGE_PCTL_VQ_KI_RADIX = 0x4D,
-	CHANGE_PCTL_VQ_KD_VALUE = 0x4E,
-	CHANGE_PCTL_VQ_KD_RADIX = 0x4F,
-	CHANGE_PCTL_VQ_XSAT = 0x50,
-	CHANGE_PCTL_VQ_OUTSAT = 0x51,
+	SET_PCTL_VQ_MODE = 0x4A,	//configure to position control using sinusoidal mode. send once and it takes. Needs all position settings written to do anything (stable)
+	CHANGE_PCTL_VQ_KP_VALUE = 0x4B,
+	CHANGE_PCTL_VQ_KP_RADIX = 0x4C,
+	CHANGE_PCTL_VQ_KI_VALUE = 0x4D,
+	CHANGE_PCTL_VQ_KI_RADIX = 0x4E,
+	CHANGE_PCTL_VQ_KD_VALUE = 0x4F,
+	CHANGE_PCTL_VQ_KD_RADIX = 0x50,
+	CHANGE_PCTL_VQ_XSAT = 0x51,
+	CHANGE_PCTL_VQ_OUTSAT = 0x52,
+	CHANGE_PCTL_VQ_OUT_RSHIFT = 0x53
 };
 
 void CAN_Init(void)
@@ -255,6 +259,9 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 		case CHANGE_PCTL_IQ_OUTSAT:
 			mctl_iq.out_sat = fmt.v;
 			break;
+		case CHANGE_PCTL_IQ_OUT_RSHIFT:
+			mctl_iq.kpki.out_rshift = d[1];
+			break;
 
 		/*THIS SECTION IS FOR VQ POS CONTROL MODE*/
 		case SET_PCTL_VQ_MODE:
@@ -284,5 +291,9 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 		case CHANGE_PCTL_VQ_OUTSAT:
 			mctl_vq.out_sat = fmt.v;
 			break;
+		case CHANGE_PCTL_VQ_OUT_RSHIFT:
+			mctl_vq.kpki.out_rshift = d[1];
+			break;
+
 	}
 }

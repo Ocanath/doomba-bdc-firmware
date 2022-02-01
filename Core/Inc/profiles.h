@@ -40,6 +40,7 @@ typedef struct fixed_PI_params_t
 	i32_t ki;
 	int32_t x;
 	int32_t x_sat;
+	uint8_t out_rshift;
 }fixed_PI_params_t;
 
 extern const int32_t elec_conv_ratio_fixed;

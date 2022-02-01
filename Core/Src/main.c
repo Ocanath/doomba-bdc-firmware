@@ -214,7 +214,7 @@ int main(void)
 			int32_t q = (int32_t)uart_encoder_data.v;
 			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
 
-			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki, 0 );
+			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
 			iq -= (dq*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
 			foc_fixed(iq, 0);
 		}
@@ -223,7 +223,7 @@ int main(void)
 			int32_t q = (int32_t)uart_encoder_data.v;
 			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
 
-			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki, 0 );
+			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki);
 			vq -= (dq*mctl_iq.kd.i32) >> mctl_vq.kd.radix;
 			sinusoidal_fixed(vq);
 		}
