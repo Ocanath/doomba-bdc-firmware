@@ -143,20 +143,20 @@ void current_sensors_fitness_test(void)
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)
 			.x = 0,
-			.x_sat = 700 << 12,
+			.x_sat = 700,
 			.out_rshift = 12
 	};
 	fixed_PI_params_t g_f_b = {
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)			.x = 0,
-			.x_sat = 700 << 12,
+			.x_sat = 700,
 			.out_rshift = 12
 	};
 	fixed_PI_params_t g_f_c = {
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)			.x = 0,
 			.x = 0,
-			.x_sat = 700 << 12,
+			.x_sat = 700,
 			.out_rshift = 12
 	};
 	int32_t iref_a, iref_b, iref_c;

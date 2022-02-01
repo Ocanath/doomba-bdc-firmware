@@ -80,14 +80,15 @@ void get_dtheta(void)
  */
 int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
 {
-	int32_t u = p->x + ((p->kp.i32*error) >> p->kp.radix); //multiplying then dividing by scaled gains has the effect of leftshifting 12, then rightshifting 12
-	p->x = p->x + ((p->ki.i32*error) >> p->ki.radix);
+	//NOTE: out_rshift applied TWICE, to avoid x overflow, while maintaining thesame radix when adding x and effort to get u.
+	int32_t u = p->x + (((p->kp.i32*error) >> p->kp.radix) >> p->out_rshift);
+	p->x = p->x + (((p->ki.i32*error) >> p->ki.radix) >> p->out_rshift);
 	int32_t sat = p->x_sat;
 	if(p->x > sat)
 		p->x = sat;
 	if(p->x < -sat)
 		p->x = -sat;
-	return u >> p->out_rshift;
+	return u;
 }
 
 /*
