@@ -13,8 +13,7 @@ extern int32_t curr_scf[3];
 extern int32_t gl_iq;
 extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
-extern int32_t gl_dtheta;
-extern int32_t gl_dtheta_microseconds;
+extern int32_t gl_dtheta_fixedpoint_rad_p_sec;
 
 /*Overflow value constants, for unwrap_overflow function*/
 extern const int32_t half_overflow_val;
@@ -39,5 +38,6 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ);
 void get_current_cal_offsets(void);
 int32_t saturate(int32_t v, int32_t sat);
 int32_t unwrap_32_overflow(int32_t theta, int32_t * prev_theta, int32_t * rotations);
+void get_dtheta(void);
 
 #endif // ! FOC_FIXED_H

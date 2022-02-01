@@ -9,6 +9,9 @@
 #define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
 #define ONE_THIRD_12B		1365
 
+/*Define for low-noise velocity estimator, used exposed over CAN and used as a damping term*/
+#define VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US	1000
+
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
  *
  * The remainder will range +/-half_overflow_val
@@ -39,12 +42,38 @@ uint32_t count = 0;
 int32_t gl_iq = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
-int32_t gl_dtheta = 0;
-int32_t gl_dtheta_microseconds = 0;
+int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
+static int32_t dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 
-/*Previous Theta*/
+/*Previous Theta for position estimator.*/
 static int32_t prev_theta_m;
 
+/*This function estimates velocity. It executes
+ * synchronously with the estimation of rotor angles,
+ * periodically with counter logic. The periodicity
+ * is not guaranteed; i.e. it is pre-empted by
+ * the execution of the main loop. This means the
+ * period is *at minimum* the period specified.
+ *
+ * The rationale here is that it's more important
+ * to be accurate about time elapsed than to enforce
+ * 0 jitter in the estimation period. So we have
+ * a jittery estimator period, that is synchronous
+ * with rotor position calculation, and a precise
+ * value for elapsed time in ms.*/
+void get_dtheta(void)
+{
+	int32_t cnt = TIM2->CNT;
+	if(cnt >= VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US)
+	{
+
+		int32_t dtheta = gl_theta_rem_m - dtheta_prev_theta;
+		dtheta_prev_theta = gl_theta_rem_m;
+		cnt = TIM2->CNT;	//read one final time for best accuracy
+		TIM2->CNT = 0;
+		gl_dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / cnt);
+	}
+}
 
 /*
  * x is state variable for integral delay
@@ -92,10 +121,6 @@ void sinusoidal_fixed(int32_t vq_in)
 		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
-
-		gl_dtheta = v_12b;
-		gl_dtheta_microseconds = TIM2->CNT;
-		TIM2->CNT = 0;
 	}
 	count++;
 
@@ -139,10 +164,6 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
-
-		gl_dtheta = v_12b;
-		gl_dtheta_microseconds = TIM2->CNT;
-		TIM2->CNT = 0;
 	}
 	count++;
 

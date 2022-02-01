@@ -190,9 +190,8 @@ int main(void)
 					 * This grows the resolution of the fixed point value. divide by 2^(12-shift)
 					 * to obtain the true value in rad/sec
 					 * */
-					int32_t dtheta_fixedpoint_rad_p_sec = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);	//shift 8 means 16rad/sec
-					can_tx_data.i16[1] = (int16_t)(dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
 
+					can_tx_data.i16[1] = (int16_t)(gl_dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
 					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
 				}
 
@@ -212,24 +211,24 @@ int main(void)
 		else if(gl_ext_cmd_flags.control_mode == POS_IQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
-			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
+
 
 			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
-			iq -= (dq*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
+			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
 			foc_fixed(iq, 0);
 		}
 		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
-			int32_t dq = ((gl_dtheta*gl_v_uS_conv)/gl_dtheta_microseconds);
 
 			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki);
-			vq -= (dq*mctl_iq.kd.i32) >> mctl_vq.kd.radix;
+			vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_vq.kd.radix;
 			sinusoidal_fixed(vq);
 		}
 		else
 			sinusoidal_fixed(input_val);
 
+		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
 
 		/*Blink the led if enabled*/
 		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
