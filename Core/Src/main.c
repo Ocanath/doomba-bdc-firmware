@@ -215,6 +215,8 @@ int main(void)
 
 			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
 			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
+			iq = iq * (1 << gl_iq_rshift);
+			iq = saturate(iq, mctl_iq.out_sat);
 			foc_fixed(iq, 0);
 		}
 		else if (gl_ext_cmd_flags.control_mode == POS_VQ)

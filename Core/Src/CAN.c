@@ -257,7 +257,7 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 			mctl_iq.kpki.x_sat = fmt.v;
 			break;
 		case CHANGE_PCTL_IQ_OUTSAT:
-			mctl_iq.out_sat = fmt.v;
+			mctl_iq.out_sat = ((uint32_t)fmt.v) << gl_iq_rshift;
 			break;
 		case CHANGE_PCTL_IQ_OUT_RSHIFT:
 			mctl_iq.kpki.out_rshift = d[1];
