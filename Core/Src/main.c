@@ -46,6 +46,9 @@ void brushed_tau(float tau)
 	TIMER_UPDATE_DUTY(500+offset,500,500+offset);
 }
 
+int32_t input_val = 0;
+static volatile int32_t vq_pctl = 0;
+static volatile int32_t iq_pctl = 0;
 /**
   */
 void m_uart_rx_cplt_callback(uart_it_t * h)
@@ -57,6 +60,26 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];
+		if(gl_ext_cmd_flags.control_mode == POS_IQ)
+		{
+			int32_t q = (int32_t)uart_encoder_data.v;
+
+			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
+			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
+			iq = iq * (1 << gl_iq_rshift);
+			iq = saturate(iq, mctl_iq.out_sat);
+			iq_pctl = iq;
+		}
+		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
+		{
+			int32_t q = (int32_t)uart_encoder_data.v;
+
+			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki);
+			vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_vq.kd.i32) >> mctl_vq.kd.radix;
+			vq = saturate(vq, mctl_vq.out_sat);
+			vq_pctl = vq;
+		}
+
 	}
 }
 
@@ -156,7 +179,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
-	int32_t input_val = 0;
+
 	while(1)
 	{
 		/*CAN protocol. Get an input arg*/
@@ -210,22 +233,11 @@ int main(void)
 		}
 		else if(gl_ext_cmd_flags.control_mode == POS_IQ)
 		{
-			int32_t q = (int32_t)uart_encoder_data.v;
-
-
-			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
-			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
-			iq = iq * (1 << gl_iq_rshift);
-			iq = saturate(iq, mctl_iq.out_sat);
-			foc_fixed(iq, 0);
+			foc_fixed(iq_pctl, 0);
 		}
 		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
 		{
-			int32_t q = (int32_t)uart_encoder_data.v;
-
-			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki);
-			vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_vq.kd.radix;
-			sinusoidal_fixed(vq);
+			sinusoidal_fixed(vq_pctl);
 		}
 		else
 			sinusoidal_fixed(input_val);
