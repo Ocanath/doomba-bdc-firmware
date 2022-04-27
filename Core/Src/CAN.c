@@ -28,8 +28,9 @@ int32_t gl_iq_rshift = DEFAULT_IQ_RSHIFT;
 
 CAN_TxHeaderTypeDef		can_tx_header;
 CAN_RxHeaderTypeDef		can_rx_header;
-uint32_fmt_t 			can_tx_data = {0x55555555};
-uint32_fmt_t 			can_rx_data = {0};
+can_payload_t 			can_tx_data = {0};
+can_payload_t 			can_rx_data = {0};
+
 uint32_t				can_tx_mailbox;
 
 ext_cmd_flags_t gl_ext_cmd_flags = {

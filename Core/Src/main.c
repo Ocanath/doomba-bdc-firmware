@@ -191,33 +191,36 @@ int main(void)
 				{
 					input_val = (int32_t)can_rx_data.i16[0];
 					can_cmd_exp_ts = HAL_GetTick() + 500;
+
+					if(gl_ext_cmd_flags.use_uart_encoder == 0)	//Load CAN message with motor position
+					{
+						can_tx_data.i32[0] = gl_theta_rem_m;	//bytes 0-3
+						can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);				//bytes 4-5
+					}
+					else
+					{
+						can_tx_data.i16[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
+
+						/*
+						 * the choice of shift here was to ensure a reasonable highest speed would fit,
+						 * without compromising resolution for lower speeds, while still maintaining a
+						 *  unit-governed (i.e. div by seconds) expression of velocity
+						 *
+						 * This expresses velocity in (2^(12-shift)rad / sec, or 16rad/sec.
+						 * This grows the resolution of the fixed point value. divide by 2^(12-shift)
+						 * to obtain the true value in rad/sec
+						 * */
+
+						can_tx_data.i16[1] = (int16_t)(gl_dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
+						can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
+					}
 				}
 				else if (can_rx_header.StdId == ext_cmd_id)
+				{
 					handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.d);
-
-				if(gl_ext_cmd_flags.use_uart_encoder == 0)	//Load CAN message with motor position
-				{
-					can_tx_data.i32[0] = gl_theta_rem_m;	//bytes 0-3
-					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);				//bytes 4-5
+					for(int i = 0; i < sizeof(can_payload_t); i++)
+						can_tx_data.d[i] = can_rx_data.d[i];	//acknowledge with the same message
 				}
-				else
-				{
-					can_tx_data.i16[0] = uart_encoder_data.v;	//this is wasteful of 2 bytes. Consider reducing for higher bandwidth CAN
-
-					/*
-					 * the choice of shift here was to ensure a reasonable highest speed would fit,
-					 * without compromising resolution for lower speeds, while still maintaining a
-					 *  unit-governed (i.e. div by seconds) expression of velocity
-					 *
-					 * This expresses velocity in (2^(12-shift)rad / sec, or 16rad/sec.
-					 * This grows the resolution of the fixed point value. divide by 2^(12-shift)
-					 * to obtain the true value in rad/sec
-					 * */
-
-					can_tx_data.i16[1] = (int16_t)(gl_dtheta_fixedpoint_rad_p_sec);	//delivered in units of 2^(12-shift)rad/sec.
-					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
-				}
-
 				HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 			}	//NOTE the rx header will contain the message ID
 		}
