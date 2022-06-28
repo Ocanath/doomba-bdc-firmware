@@ -83,6 +83,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
+void test_current_sensor(void);
 
 int main(void)
 {
@@ -256,3 +257,91 @@ int main(void)
 	}
 
 }
+
+
+
+
+
+
+
+
+void test_current_sensor(void)
+{
+	uint32_t uart_tx_ts = 0;
+	int32_t vq = 1000;
+	while(1)
+	{
+		uint32_t tick = HAL_GetTick();
+		int32_t theta = (int32_t)(tick*5);
+
+
+		if(tick < 6000)
+			vq = 1000;
+		else
+			vq = 50;
+//		theta = 120*PI_12B/180;
+
+		theta = wrap_2pi_12b(theta);
+		int32_t sth = sin_12b(theta);
+		int32_t cth = cos_12b(theta);
+		int32_t alpha, beta, tA, tB, tC;
+		inverse_park_fixed(vq, 0, sth, cth, &alpha, &beta);
+		svm_fixed(alpha, beta, COMM_PWM_PERIOD, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+//		sinusoidal_fixed(vq,0);
+
+
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int16_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int16_t)] = {0};
+
+//			int32_t iA = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+//			int32_t iB = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+//			int32_t iC = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
+//			iA = (iA*curr_scf[0])/637100;
+//			iB = (iB*curr_scf[1])/637100;
+//			iC = (iC*curr_scf[2])/637100;	//this is now equal to the current in amps * 4096
+			int32_t iA = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
+			int32_t iB = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+			int32_t iC = -(iA + iB);
+
+			int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+			int32_t theta_elec = wrap_2pi_12b(theta_m);
+			int32_t sin_val = sin_12b(theta_elec);
+			int32_t cos_val = cos_12b(theta_elec);
+			int32_t iq_meas, id_meas;
+			get_current(sin_val, cos_val, &iq_meas, &id_meas);
+
+//			fmt.v = tA;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//			fmt.v = tB;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//			fmt.v = tC;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+			fmt.v = iA;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = iB;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = iC;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = iA + iB + iC;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+//			fmt.v = iq_meas;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//			fmt.v = id_meas;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, 4*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+	}
+}
+
+

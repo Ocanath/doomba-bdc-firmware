@@ -378,7 +378,7 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* p_tA, i
  * */
 void get_current_cal_offsets(void)
 {
-	TIMER_UPDATE_DUTY(0,0,0);
+	TIMER_UPDATE_DUTY(500,500,500);
 	current_input_offset_A = 0;
 	current_input_offset_B = 0;
 	current_input_offset_C = 0;
