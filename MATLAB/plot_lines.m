@@ -2,7 +2,7 @@ function [saved_data, time] = plot_lines(num_lines, type, baud, buf_width, limit
 
 slist = serialportlist;
 try
-    s = serialport(slist(2), baud);
+    s = serialport(slist(1), baud);
 catch
     disp("No serial port found");
 end

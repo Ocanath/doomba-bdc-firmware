@@ -386,14 +386,14 @@ void get_current_cal_offsets(void)
 	int num_samples = 300;
 	for(i=0;i<num_samples;i++)
 	{
-		current_input_offset_A += (hadc1.Instance->JDR1 << 1) + 1;
-		current_input_offset_B += (hadc1.Instance->JDR2 << 1) + 1;
-		current_input_offset_C += (hadc1.Instance->JDR3 << 1) + 1;
+		int32_t ia = dma_adc_raw[0];
+		int32_t ib = dma_adc_raw[1];
+		current_input_offset_A += ia;
+		current_input_offset_B += ib;
 		HAL_Delay(1);
 	}
 	current_input_offset_A /= num_samples;
 	current_input_offset_B /= num_samples;
-	current_input_offset_C /= num_samples;
 }
 
 /*

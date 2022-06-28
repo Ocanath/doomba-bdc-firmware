@@ -180,6 +180,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
+	test_current_sensor();
 
 	while(1)
 	{
@@ -278,7 +279,7 @@ void test_current_sensor(void)
 		if(tick < 6000)
 			vq = 1000;
 		else
-			vq = 50;
+			vq = 300;
 //		theta = 120*PI_12B/180;
 
 		theta = wrap_2pi_12b(theta);
@@ -307,8 +308,8 @@ void test_current_sensor(void)
 //			iA = (iA*curr_scf[0])/637100;
 //			iB = (iB*curr_scf[1])/637100;
 //			iC = (iC*curr_scf[2])/637100;	//this is now equal to the current in amps * 4096
-			int32_t iA = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
-			int32_t iB = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
+			int32_t iA = dma_adc_raw[0] - current_input_offset_A;
+			int32_t iB = dma_adc_raw[1] - current_input_offset_B;
 			int32_t iC = -(iA + iB);
 
 			int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
@@ -331,7 +332,7 @@ void test_current_sensor(void)
 			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
 			fmt.v = iC;
 			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = iA + iB + iC;
+			fmt.v = wrap_2pi_12b(theta_rel_fixed());
 			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
 
 //			fmt.v = iq_meas;
