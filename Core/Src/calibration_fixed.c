@@ -40,6 +40,46 @@ int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist)
 		return -run_speed;
 }
 
+/*Working!!!*/
+int32_t get_elec_conversion_ratio(void)
+{
+	int32_t theta = 0;
+	int32_t theta_elec = wrap_2pi_12b(theta);
+	int32_t sth = sin_12b(theta_elec);
+	int32_t cth = cos_12b(theta_elec);
+	int32_t alpha,beta,tA,tB,tC;
+	inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+	HAL_Delay(100);
+
+	int32_t theta_m_start = theta_rel_fixed();
+	uint8_t one_m_rev = 0;
+	int32_t prev_theta_m = 0;
+
+	uint32_t start_tick = HAL_GetTick();
+	while(one_m_rev == 0)
+	{
+		theta = (HAL_GetTick() - start_tick) * 50;
+
+		theta_elec = wrap_2pi_12b(theta);
+		sth = sin_12b(theta_elec);
+		cth = cos_12b(theta_elec);
+		inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		int32_t theta_m = theta_rel_fixed() - theta_m_start;	//atan2, apply align offset
+		gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
+
+		if(gl_theta_rem_m >= TWO_PI_12B+10)
+		{
+			one_m_rev = 1;
+		}
+	}
+	return theta/TWO_PI_12B;
+}
+
 
 //void auto_calibrate_fixed(void)
 //{

@@ -305,19 +305,55 @@ int16_t sin_mid = 1973;
 	int16_t sin_mid = 1977;
 	#define PROFILE MULTISTAR_MS4225
 #endif
+#if MODULE_NUMBER == 38
+	#define ALIGN_OFFSET -0.0273829233f
+	int16_t cos_mid = 1985;
+	int16_t sin_mid = 1957;
+	#define PROFILE AEROSKY_MC4114
+#endif
 
 /*Load align offset globals from the define*/
 float align_offset = ALIGN_OFFSET;
 int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 
 
+
+#if PROFILE == AEROSKY_MC4114
+	/*Fixed crap that makes the thing work good*/
+	/*number of polepairs.*/
+	const int32_t elec_conv_ratio_fixed = 11;
+	/*Phase advancement params*/
+	int32_t gl_prop_delayloop_interval = 0x7FFFFFFF;
+	int32_t gl_prop_delay_const_12b = 0x7FFFFFFF;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 12
+	};
+	fixed_PI_params_t id_pi = {
+			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
+			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 12
+	};
+
+	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
+	const float iq_gain = 0.03f;
+	const float id_gain = 0.01f;
+	const float gl_prop_delay_const = 900.f;
+	const float elec_conv_ratio = (float)elec_conv_ratio_fixed;		//7.f;	//22 poles + TLE encoder, so 11 pole pairs
+#endif
 #if PROFILE == AEROSKY_MC4225
 	/*Fixed crap that makes the thing work good*/
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 7;
 	/*Phase advancement params*/
-	const int32_t gl_prop_delayloop_interval = 25;
-	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 25;
+	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
@@ -345,8 +381,8 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 11;
 	/*Phase advancement params*/
-	const int32_t gl_prop_delayloop_interval = 35;
-	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 35;
+	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
@@ -371,8 +407,8 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 #if PROFILE == MULTISTAR_MS4225
 	const int32_t elec_conv_ratio_fixed = 8;
 	/*Phase advancement params*/
-	const int32_t gl_prop_delayloop_interval = 26;
-	const int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 26;
+	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)

@@ -67,16 +67,16 @@ void obtain_encoder_midpoints()
  * Record the beginning and end of the run after SS speed is hit
  * return the average speed
 */
-float run_v(float v, uint32_t run_time, float * run_distance)
+float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 {
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
-		sinusoidal(v, 0);	//todo: replace this with a voltage control mode call
+		sinusoidal_fixed(vq);	//todo: replace this with a voltage control mode call
 
-	float run_start = gl_theta_m;
+	float run_start = ((float)gl_theta_rem_m) / 4096.f;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
-		sinusoidal(v, 0);
-	float run_end = gl_theta_m;
-	TIMER_UPDATE_DUTY(0,0,0);
+		sinusoidal_fixed(vq);
+	float run_end = ((float)gl_theta_rem_m) / 4096.f;
+	TIMER_UPDATE_DUTY(500,500,500);
 	HAL_Delay(50);
 	*run_distance = run_end - run_start;
 	float run_time_f = ((float)run_time);
@@ -89,15 +89,20 @@ float run_v(float v, uint32_t run_time, float * run_distance)
  */
 void auto_calibrate_motor(void)
 {
+	int32_t bkp_interval = gl_prop_delayloop_interval;	//backup before clobber
+	int32_t bkp_div = gl_prop_delay_const_12b;
+	gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
+	gl_prop_delay_const_12b = 0x7FFFFFFF;
+
 	TIMER_UPDATE_DUTY(0,0,0);
 //	align_offset = -PI/elec_conv_ratio;
 	int passcount = 0;
 	while(1)
 	{
-		float v = .5f;	//voltage percent out of sqrt(3)/2 (applied to supply voltage)
+		int32_t vq = 2048;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)
 		float run_dist_1,run_dist_2;
-		float run1_speed = run_v(v,400, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
-		float run2_speed = run_v(-v,400, &run_dist_2);
+		float run1_speed = run_v(vq,400, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
+		float run2_speed = run_v(-vq,400, &run_dist_2);
 
 		float sign = 0.f;
 		if(run_dist_1 > 0.f && run_dist_2 < 0.f)
@@ -123,6 +128,9 @@ void auto_calibrate_motor(void)
 			break;	//if you've passed over 10 times, you're done!
 	}
 	align_offset_fixed = (int32_t)(align_offset * 4096.f);
+
+	gl_prop_delayloop_interval = bkp_interval;
+	gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit
 }
 
 
@@ -133,7 +141,7 @@ void test_foc()
 //	uint32_t reverse_ts = 0;
 //	float iq_ref = 70.f;
 //	float vref = .8f;
-	int32_t vref = 3100;
+	int32_t vref = 1000;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);

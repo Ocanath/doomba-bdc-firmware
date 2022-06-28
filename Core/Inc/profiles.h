@@ -12,7 +12,7 @@
 #define AEROSKY_MC4225 		0
 #define MULTISTAR_MS4822 	1
 #define	MULTISTAR_MS4225	2
-
+#define AEROSKY_MC4114		3
 
 /*Is the external 16Mhz oscillator populated? (Note: all hw should have this populated...)*/
 #define EXTERNAL_OSCILLATOR
@@ -44,8 +44,8 @@ typedef struct fixed_PI_params_t
 }fixed_PI_params_t;
 
 extern const int32_t elec_conv_ratio_fixed;
-extern const int32_t gl_prop_delay_const_12b;
-extern const int32_t gl_prop_delayloop_interval;
+extern int32_t gl_prop_delay_const_12b;
+extern int32_t gl_prop_delayloop_interval;
 extern fixed_PI_params_t iq_pi;
 extern fixed_PI_params_t id_pi;
 extern int32_t align_offset_fixed;

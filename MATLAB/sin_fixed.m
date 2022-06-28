@@ -18,7 +18,7 @@ function y = sin_fixed(theta)
     is_neg = 0;
     if(theta > HALF_PI && theta <= PI)	% if positive and in quadrant II, put in quadrant I (same)
 		theta = PI - theta;
-    elseif (theta >= PI && theta < THREE_BY_TWO_PI)
+    elseif (theta >= PI && theta <= THREE_BY_TWO_PI)
         is_neg = 1;
         theta = theta - PI;
     elseif (theta > THREE_BY_TWO_PI && theta < TWO_PI)
