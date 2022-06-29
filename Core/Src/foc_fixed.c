@@ -174,12 +174,10 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
 {
-	int32_t ia = (int32_t)( (hadc1.Instance->JDR1 << 1) + 1) - current_input_offset_A;
-	int32_t ib = (int32_t)( (hadc1.Instance->JDR2 << 1) + 1) - current_input_offset_B;
-	int32_t ic = (int32_t)( (hadc1.Instance->JDR3 << 1) + 1) - current_input_offset_C;
-	ia = (ia*curr_scf[0]) >> 13;
-	ib = (ib*curr_scf[1]) >> 13;
-	ic = (ic*curr_scf[2]) >> 13;	//this is now equal to the current in amps * 4096
+	int32_t ia = dma_adc_raw[0] - current_input_offset_A;
+	int32_t ib = dma_adc_raw[1] - current_input_offset_B;
+	int32_t ic = -(ia + ib);
+
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
 	park_fixed(ialpha,ibeta,sth,cth,iq,id);

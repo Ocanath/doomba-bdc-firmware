@@ -8,6 +8,9 @@
 #include "mag-encoder.h"
 #include "foc_commutation.h"
 #include "foc_fixed.h"
+#include "CAN.h"
+#include "calibration_fixed.h"
+#include "m_uart.h"
 
 void print_float(float v)
 {
@@ -66,22 +69,39 @@ void obtain_encoder_midpoints()
  * Ramp up until steady state speed is high
  * Record the beginning and end of the run after SS speed is hit
  * return the average speed
-*/
+ */
 float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 {
-	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
-		sinusoidal_fixed(vq);	//todo: replace this with a voltage control mode call
+	/*Interesting discovery:
+	 * Phase advancement prevents this from working basically entirely. It causes
+	 * the controller to converge on weird local minima.
+	 *
+	 * Removing it leads to very improved stability of this technique. This should not come as a much of a surprise,
+	 * considering the fact that it is adding a first-order bias (since the advancement term is a function of
+	 * the motor speed) to the controller, which is likely big enough that the simple 'P'
+	 * dynamics is not sufficient to stabilize.
+	 * */
+	int32_t bkp_interval = gl_prop_delayloop_interval;	//backup before clobber
+	int32_t bkp_div = gl_prop_delay_const_12b;
+	gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
+	gl_prop_delay_const_12b = 0x7FFFFFFF;
 
-	float run_start = ((float)gl_theta_rem_m) / 4096.f;
-	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
+
+	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
 		sinusoidal_fixed(vq);
-	float run_end = ((float)gl_theta_rem_m) / 4096.f;
-	TIMER_UPDATE_DUTY(500,500,500);
+	float run_start = ((float)gl_theta_rem_m)/4096.f;
+	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)
+		sinusoidal_fixed(vq);
+	float run_end = ((float)gl_theta_rem_m)/4096.f;
+	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
-	*run_distance = run_end - run_start;
-	float run_time_f = ((float)run_time);
-	float run_speed = *run_distance/run_time_f;
-	return abs_f( run_speed ); //proportional to percent error when you replace TAU with V as in voltage
+	*run_distance = run_end-run_start;
+	float run_time_f = (float)run_time;//stay in ms, to keep our gain small and avoid floating point errors
+
+	gl_prop_delayloop_interval = bkp_interval;
+	gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
+
+	return abs_f(*run_distance/run_time_f);
 }
 
 /*
@@ -89,13 +109,9 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
  */
 void auto_calibrate_motor(void)
 {
-	int32_t bkp_interval = gl_prop_delayloop_interval;	//backup before clobber
-	int32_t bkp_div = gl_prop_delay_const_12b;
-	gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
-	gl_prop_delay_const_12b = 0x7FFFFFFF;
 
 	TIMER_UPDATE_DUTY(0,0,0);
-//	align_offset = -PI/elec_conv_ratio;
+	//	align_offset = -PI/elec_conv_ratio;
 	int passcount = 0;
 	while(1)
 	{
@@ -117,7 +133,10 @@ void auto_calibrate_motor(void)
 		double u = err/7.0;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		if(abs_f(u) < 0.0001f)	//if the run speed difference is very small, it's a passable align offset
+		align_offset_fixed = (int32_t)(align_offset*4096.f);
+
+
+		if(abs_f(u) < 0.00005f)	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
@@ -126,11 +145,28 @@ void auto_calibrate_motor(void)
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
 		if(passcount > 10)
 			break;	//if you've passed over 10 times, you're done!
+
+
+
+		{
+
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(float)] = {0};
+
+			fmt.v = (float)u;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = (float)align_offset_fixed;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, 2*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+
+		TIMER_UPDATE_DUTY(0,0,0);
+		HAL_Delay(1);
 	}
 	align_offset_fixed = (int32_t)(align_offset * 4096.f);
 
-	gl_prop_delayloop_interval = bkp_interval;
-	gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit
 }
 
 
@@ -138,9 +174,9 @@ void auto_calibrate_motor(void)
 void test_foc()
 {
 
-//	uint32_t reverse_ts = 0;
-//	float iq_ref = 70.f;
-//	float vref = .8f;
+	//	uint32_t reverse_ts = 0;
+	//	float iq_ref = 70.f;
+	//	float vref = .8f;
 	int32_t vref = 1000;
 	for(int i = 0; i < 20; i ++)
 	{
@@ -151,14 +187,14 @@ void test_foc()
 	{
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
 			sinusoidal_fixed(vref);
-			//foc(iq_ref,0);//sinusoidal(.8f,0);
+		//foc(iq_ref,0);//sinusoidal(.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
 
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
 			sinusoidal_fixed(-vref);//foc(iq_ref,0);
-			//sinusoidal(-.8f,0);
+		//sinusoidal(-.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
@@ -177,7 +213,7 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 	while(1)
 	{
 		theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
-//		i2c_tx_data.v = theta_m;
+		//		i2c_tx_data.v = theta_m;
 		foc(tau,0);
 
 		float diff = theta_m - pos_prev;
@@ -210,19 +246,19 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 		else if (pass_count <= -pass_count_thresh)
 			return VERIFY_FAILED;
 
-//		int rc = handle_i2c(&hi2c1);
-//		if(hi2c1.ErrorCode != 0 || rc != 0)
-//		{
-//			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
-//			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
-//			I2C1_Reset();
-//			gl_i2c_mode = I2C_MODE_WAIT;
-//		}
+		//		int rc = handle_i2c(&hi2c1);
+		//		if(hi2c1.ErrorCode != 0 || rc != 0)
+		//		{
+		//			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
+		//			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
+		//			I2C1_Reset();
+		//			gl_i2c_mode = I2C_MODE_WAIT;
+		//		}
 	}
 
 }
 
-void force_encoder_region()
+void force_encoder_region(void)
 {
 	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
 	uint8_t retc = VERIFY_FAILED;

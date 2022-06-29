@@ -180,7 +180,7 @@ int main(void)
 //	current_sensors_fitness_test();
 
 	uint32_t can_cmd_exp_ts = 0;
-	test_current_sensor();
+//	test_current_sensor();
 
 	while(1)
 	{

@@ -121,7 +121,7 @@ int32_t get_elec_conversion_ratio(void)
  */
 void auto_calibrate_fixed(void)
 {
-	TIMER_UPDATE_DUTY(0,0,0);
+	TIMER_UPDATE_DUTY(500,500,500);
 //	align_offset = -PI/elec_conv_ratio;
 	int passcount = 0;
 	while(1)
