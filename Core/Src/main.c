@@ -60,7 +60,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];
-		if(gl_ext_cmd_flags.control_mode == POS_IQ)
+		if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -70,7 +70,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			iq = saturate(iq, mctl_iq.out_sat);
 			iq_pctl = iq;
 		}
-		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
+		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -236,11 +236,11 @@ int main(void)
 			int32_t tau = input_val * (1 << gl_iq_rshift);	//scale up to match scale we use to transmit/report iq
 			foc_fixed(tau, 0);
 		}
-		else if(gl_ext_cmd_flags.control_mode == POS_IQ)
+		else if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
 		{
 			foc_fixed(iq_pctl, 0);
 		}
-		else if (gl_ext_cmd_flags.control_mode == POS_VQ)
+		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
 		{
 			sinusoidal_fixed(vq_pctl);
 		}
