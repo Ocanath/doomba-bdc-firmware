@@ -13,6 +13,65 @@
 
 /*TODO: change doubles to int32's and int64's for lower memory consumption.*/
 
+/*Human plot analysis (atm) for determining the best align offset thru a linear sweep of all align offsets.
+ *
+ * Provides, at minimum, a reference point for the superior auto/gradient descent method which doesn't cause it to fall
+ * into a local minima.
+ *
+ * */
+void dowse_for_align_offset(void)
+{
+	int32_t max_abs_dq = 0;
+	volatile int32_t aoff_of_dqmax = 0;
+	uint32_t start_tick = HAL_GetTick();
+	uint32_t uart_tx_ts = 0;
+	int32_t prev_gl_theta_rem_m = 0;
+	int32_t dif = 0;
+	int32_t avg_v_ts = 0;
+	while(1)
+	{
+		uint32_t tick = (HAL_GetTick()-start_tick);
+
+		uint32_t tbasis = tick/15;
+		align_offset_fixed = wrap_2pi_12b(tbasis);
+
+		sinusoidal_fixed(500);
+		get_dtheta();
+
+		int32_t avq = abs_i32(gl_dtheta_fixedpoint_rad_p_sec);
+		if(avq > max_abs_dq)
+		{
+			max_abs_dq = avq;
+			aoff_of_dqmax = align_offset_fixed;
+		}
+
+		if(tick >= avg_v_ts)
+		{
+			avg_v_ts = tick + 50;
+			dif = (gl_theta_rem_m - prev_gl_theta_rem_m);
+			prev_gl_theta_rem_m = gl_theta_rem_m;
+		}
+
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int32_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int32_t)] = {0};
+
+			fmt.v = dif;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+			fmt.v = align_offset_fixed;
+			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
+//			fmt.v = align_offset_fixed;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, 2*sizeof(int32_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+	}
+	TIMER_UPDATE_DUTY(500,500,500);
+}
 
 int64_t abs64(int64_t in)
 {

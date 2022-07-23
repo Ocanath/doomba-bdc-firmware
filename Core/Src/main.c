@@ -83,6 +83,14 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
+int32_t abs_i32(int32_t in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
+}
+
 void test_current_sensor(void);
 
 int main(void)
@@ -154,11 +162,35 @@ int main(void)
 	//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
 	//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
 
-	TIMER_UPDATE_DUTY(0,0,0);
+	TIMER_UPDATE_DUTY(500,500,500);
 
 #ifdef TEST_FOC
 	test_foc();
 #endif
+
+//	uint32_t uart_tx_ts = 0;
+//	mctl_iq.kpki.kp.i32 = 100;
+//	mctl_iq.kpki.kp.radix = 7;
+//	mctl_iq.out_sat = 500;
+//	while(1)
+//	{
+//		sinusoidal_fixed(2048);
+//		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
+//		uint32_t tick = HAL_GetTick();
+//		if(tick >= uart_tx_ts)
+//		{
+//			uart_tx_ts = tick + 10;
+//
+//			int16_fmt_t fmt;
+//			int bidx = 0;
+//			uint8_t buf[8*sizeof(int16_t)] = {0};
+//
+//			fmt.v = gl_dtheta_fixedpoint_rad_p_sec/16;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//
+//			m_uart_tx_start(&m_huart2, buf, 1*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+//		}
+//	}
 
 	theta_m_prev = 0;
 
@@ -276,10 +308,10 @@ void test_current_sensor(void)
 		int32_t theta = (int32_t)(tick*5);
 
 
-		if(tick < 6000)
+//		if(tick < 6000)
 			vq = 1000;
-		else
-			vq = 300;
+//		else
+//			vq = 300;
 //		theta = 120*PI_12B/180;
 
 		theta = wrap_2pi_12b(theta);

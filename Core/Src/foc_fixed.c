@@ -46,7 +46,7 @@ int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
 static int32_t dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 
 /*Previous Theta for position estimator.*/
-static int32_t prev_theta_m;
+static int32_t prev_theta_m=0;
 
 /*This function estimates velocity. It executes
  * synchronously with the estimation of rotor angles,

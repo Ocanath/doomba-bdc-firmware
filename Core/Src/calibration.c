@@ -119,6 +119,7 @@ void auto_calibrate_motor(void)
 		float run_dist_1,run_dist_2;
 		float run1_speed = run_v(vq,400, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
 		float run2_speed = run_v(-vq,400, &run_dist_2);
+		TIMER_UPDATE_DUTY(500,500,500);
 
 		float sign = 0.f;
 		if(run_dist_1 > 0.f && run_dist_2 < 0.f)
@@ -136,7 +137,7 @@ void auto_calibrate_motor(void)
 		align_offset_fixed = (int32_t)(align_offset*4096.f);
 
 
-		if(abs_f(u) < 0.00005f)	//if the run speed difference is very small, it's a passable align offset
+		if(abs_f(u) < 0.00005f && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;
 			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
@@ -177,7 +178,7 @@ void test_foc()
 	//	uint32_t reverse_ts = 0;
 	//	float iq_ref = 70.f;
 	//	float vref = .8f;
-	int32_t vref = 1000;
+	int32_t vref = MAX_VQ;
 	for(int i = 0; i < 20; i ++)
 	{
 		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);

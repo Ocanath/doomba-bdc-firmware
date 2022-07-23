@@ -36,7 +36,7 @@ uint32_t				can_tx_mailbox;
 ext_cmd_flags_t gl_ext_cmd_flags = {
 		.en_blink_led = 1,
 		.use_uart_encoder = 1,
-		.control_mode = FOC_MODE
+		.control_mode = SINUSOIDAL_MODE
 };
 
 /*Initialize params for position control using FOC as 0*/
