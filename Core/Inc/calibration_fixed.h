@@ -14,5 +14,7 @@ int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist);
 void auto_calibrate_fixed(void);
 void current_sensors_fitness_test(void);
 void get_cursensor_calibrations(int32_t test_voltage, int32_t w[NUM_CURRENT_SENSORS]);
+void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx);
+int32_t abs_i32(int32_t in);
 
 #endif /* INC_CALIBRATION_FIXED_H_ */

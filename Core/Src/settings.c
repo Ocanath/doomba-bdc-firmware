@@ -329,8 +329,8 @@ int32_t align_offset_fixed = (int32_t)(ALIGN_OFFSET*4096.f);
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 11;
 	/*Phase advancement params*/
-	int32_t gl_prop_delayloop_interval = 0x7FFFFFFF;
-	int32_t gl_prop_delay_const_12b = 0x7FFFFFFF;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 35;
+	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
 			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)

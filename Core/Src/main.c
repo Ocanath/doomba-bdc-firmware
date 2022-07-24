@@ -83,14 +83,6 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
-int32_t abs_i32(int32_t in)
-{
-	if(in < 0)
-		return -in;
-	else
-		return in;
-}
-
 void test_current_sensor(void);
 
 int main(void)

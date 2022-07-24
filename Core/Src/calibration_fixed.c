@@ -10,6 +10,8 @@
 #include "settings.h"
 #include "CAN.h"
 #include "m_uart.h"
+#include "calibration_fixed.h"
+
 
 /*TODO: change doubles to int32's and int64's for lower memory consumption.*/
 
@@ -71,6 +73,15 @@ void dowse_for_align_offset(void)
 		}
 	}
 	TIMER_UPDATE_DUTY(500,500,500);
+}
+
+
+int32_t abs_i32(int32_t in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
 }
 
 int64_t abs64(int64_t in)
