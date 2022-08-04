@@ -25,8 +25,10 @@ const float rad_to_deg;
 
 extern float theta_m_prev;
 
-extern int16_t cos_mid;
-extern int16_t sin_mid;
+
+
+//extern int16_t cos_mid;
+//extern int16_t sin_mid;
 
 float theta_abs_rad();
 float theta_rel_rad();
@@ -42,5 +44,6 @@ float sin_fast(float theta);
 float cos_fast(float theta);
 float fmod_2pi(float in);
 float unwrap(float theta, float * prev_theta);
+void eval_encoder_params(void);
 
 #endif /* MAG_ENCODER_H_ */

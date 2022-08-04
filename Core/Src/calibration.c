@@ -37,17 +37,21 @@ void obtain_encoder_midpoints()
 	uint16_t s_min = 4096;
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
+	uint32_t uart_tx_ts = 0;
 	while(time_seconds() - t_start < 15)
 	{
-		if(dma_adc_raw[ADC_SIN_CHAN] > s_max)
-			s_max = dma_adc_raw[ADC_SIN_CHAN];
-		if(dma_adc_raw[ADC_SIN_CHAN] < s_min)
-			s_min = dma_adc_raw[ADC_SIN_CHAN];
+		uint16_t adc_sin = dma_adc_raw[ADC_SIN_CHAN];
+		uint16_t adc_cos = dma_adc_raw[ADC_COS_CHAN];
 
-		if(dma_adc_raw[ADC_COS_CHAN] > c_max)
-			c_max = dma_adc_raw[ADC_COS_CHAN];
-		if(dma_adc_raw[ADC_COS_CHAN] < c_min)
-			c_min = dma_adc_raw[ADC_COS_CHAN];
+		if(adc_sin > s_max)
+			s_max = adc_sin;
+		if(adc_sin < s_min)
+			s_min = adc_sin;
+
+		if(adc_cos > c_max)
+			c_max = adc_cos;
+		if(adc_cos < c_min)
+			c_min = adc_cos;
 
 
 		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
@@ -59,10 +63,43 @@ void obtain_encoder_midpoints()
 		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int16_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int16_t)] = {0};
+
+			fmt.v = adc_sin;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = adc_cos;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = s_max;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = s_min;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = c_max;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = c_min;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+
+			m_uart_tx_start(&m_huart2, buf, 6*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
 	}
 	TIMER_UPDATE_DUTY(0,0,0);
-	sin_mid = (s_max + s_min)/2;
-	cos_mid = (c_max + c_min)/2;
+	//sin_mid = (s_max + s_min)/2;
+	//cos_mid = (c_max + c_min)/2;
+	gl_sin_max = s_max;
+	gl_sin_min = s_min;
+	gl_cos_max = c_max;
+	gl_cos_min = c_min;
+	eval_encoder_params();
 }
 
 /*

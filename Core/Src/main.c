@@ -107,6 +107,7 @@ int main(void)
 			HAL_Delay(1000);
 		}
 	}
+	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)dma_adc_raw, NUM_ADC);	//start dma conversions before the trigger for them (i.e. timer1 triggerout)
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
@@ -149,7 +150,6 @@ int main(void)
 //	auto_calibrate_fixed();
 #endif
 	//	manual_align_calib();//-0.236198962
-
 	//	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
 	//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
 	//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);

@@ -69,6 +69,11 @@ pctl_params_t mctl_vq = {
 const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
 
 enum {
+
+	CALC_ALIGN_OFFSET = 0x1,
+	CALC_ENC_MIDPOINTS = 0x2,
+
+
 	LED_ON = 0xDE,
 	LED_OFF =0xFE,
 	LED_BLINK= 0xAA,

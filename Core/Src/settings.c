@@ -306,15 +306,19 @@ int16_t sin_mid = 1973;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 38
-	#define ALIGN_OFFSET	1.1229248f
-	int16_t cos_mid = 2002;
-	int16_t sin_mid = 1989;
+	#define ALIGN_OFFSET	0.907458484f
+	int16_t gl_cos_min = 612;
+	int16_t gl_cos_max = 3388;
+	int16_t gl_sin_min = 601;
+	int16_t gl_sin_max = 3373;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
-	#define ALIGN_OFFSET	-0.203024179f
-	int16_t cos_mid = 1942;
-	int16_t sin_mid = 1919;
+	#define ALIGN_OFFSET	1.12354243f
+	int16_t gl_cos_min = 605;
+	int16_t gl_cos_max = 3371;
+	int16_t gl_sin_min = 626;
+	int16_t gl_sin_max = 3374;
 	#define PROFILE AEROSKY_MC4114
 #endif
 

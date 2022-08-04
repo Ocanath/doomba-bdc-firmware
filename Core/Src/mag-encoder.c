@@ -8,6 +8,13 @@
 #include "settings.h"
 #include "trig_fixed.h"
 
+int16_t sin_mid = 2048;
+int16_t cos_mid = 2048;
+int16_t mul_cos = 1;
+int16_t div_cos = 1;
+int16_t mul_sin = 1;
+int16_t div_sin = 1;
+
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
 
@@ -108,10 +115,32 @@ float theta_rel_rad()
 	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
 }
 
+/*use the global encoder max and min params to claculate gains
+ * and midpoints for commutation encoder.*/
+void eval_encoder_params(void)
+{
+	sin_mid = (gl_sin_max+gl_sin_min)/2;
+	cos_mid = (gl_cos_max+gl_cos_min)/2;
+	int16_t sTg = (gl_sin_max - gl_sin_min);
+	int16_t cTg = (gl_cos_max - gl_cos_min);
+	if(sTg > cTg)
+	{
+		mul_cos = sTg;
+		div_cos = cTg;
+	}
+	else if (cTg > sTg)
+	{
+		mul_sin = cTg;
+		div_sin = sTg;
+	}
+}
+
 int32_t theta_rel_fixed(void)
 {
 	int32_t sinVal = (int32_t)(dma_adc_raw[ADC_SIN_CHAN]-sin_mid);
 	int32_t cosVal = (int32_t)(dma_adc_raw[ADC_COS_CHAN]-cos_mid);
+	sinVal = (sinVal*mul_sin)/div_sin;
+	cosVal = (cosVal*mul_cos)/div_cos;
 	return atan2_fixed(sinVal,cosVal) - align_offset_fixed;
 }
 

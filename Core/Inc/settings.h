@@ -17,16 +17,19 @@
 
 //#define FLIP_TAU
 
-//#define GET_INIT_OFFSET
-//#define GET_ENCODER_MIDPOINT
-//#define TEST_FOC
+#define GET_INIT_OFFSET
+#define GET_ENCODER_MIDPOINT
+#define TEST_FOC
 
 //#define GIMBAL_MOTOR
 
+extern int16_t gl_cos_min;
+extern int16_t gl_cos_max;
+extern int16_t gl_sin_min;
+extern int16_t gl_sin_max;
 
 extern float enc_mid_voltage_amp;
 //uint32_t i2c_address;
 extern uint32_t ser_num;
-
 
 #endif /* SETTINGS_H_ */

@@ -16,5 +16,6 @@ void current_sensors_fitness_test(void);
 void get_cursensor_calibrations(int32_t test_voltage, int32_t w[NUM_CURRENT_SENSORS]);
 void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx);
 int32_t abs_i32(int32_t in);
+void dowse_for_align_offset(void);
 
 #endif /* INC_CALIBRATION_FIXED_H_ */
