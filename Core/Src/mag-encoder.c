@@ -8,12 +8,14 @@
 #include "settings.h"
 #include "trig_fixed.h"
 
-int16_t sin_mid = 2048;
-int16_t cos_mid = 2048;
-int16_t mul_cos = 1;
-int16_t div_cos = 1;
-int16_t mul_sin = 1;
-int16_t div_sin = 1;
+int32_t sin_mid = 2048;
+int32_t cos_mid = 2048;
+int32_t mul_cos = 1;
+int32_t div_cos = 1;
+int32_t mul_sin = 1;
+int32_t div_sin = 1;
+int32_t oerr_total_nsin = 0;
+int32_t oerr_total_ncos = 1;
 
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
@@ -121,26 +123,21 @@ void eval_encoder_params(void)
 {
 	sin_mid = (gl_sin_max+gl_sin_min)/2;
 	cos_mid = (gl_cos_max+gl_cos_min)/2;
-	int16_t sTg = (gl_sin_max - gl_sin_min);
-	int16_t cTg = (gl_cos_max - gl_cos_min);
-	if(sTg > cTg)
-	{
-		mul_cos = sTg;
-		div_cos = cTg;
-	}
-	else if (cTg > sTg)
-	{
-		mul_sin = cTg;
-		div_sin = sTg;
-	}
+	mul_cos = (1<<12);
+	div_cos = (gl_cos_max - gl_cos_min)/2;
+	mul_sin = (1<<12);
+	div_sin = (gl_sin_max - gl_sin_min)/2;
+	oerr_total_nsin = sin_12b(-gl_oerr_total);
+	oerr_total_ncos = cos_12b(-gl_oerr_total);
 }
 
 int32_t theta_rel_fixed(void)
 {
-	int32_t sinVal = (int32_t)(dma_adc_raw[ADC_SIN_CHAN]-sin_mid);
-	int32_t cosVal = (int32_t)(dma_adc_raw[ADC_COS_CHAN]-cos_mid);
+	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
 	sinVal = (sinVal*mul_sin)/div_sin;
 	cosVal = (cosVal*mul_cos)/div_cos;
+	sinVal = (sinVal - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
 	return atan2_fixed(sinVal,cosVal) - align_offset_fixed;
 }
 

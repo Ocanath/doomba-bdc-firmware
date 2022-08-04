@@ -23,10 +23,12 @@
 
 //#define GIMBAL_MOTOR
 
-extern int16_t gl_cos_min;
-extern int16_t gl_cos_max;
-extern int16_t gl_sin_min;
-extern int16_t gl_sin_max;
+extern int32_t gl_cos_min;
+extern int32_t gl_cos_max;
+extern int32_t gl_sin_min;
+extern int32_t gl_sin_max;
+extern int32_t gl_oerr_total;
+extern int32_t gl_oerr_x;
 
 extern float enc_mid_voltage_amp;
 //uint32_t i2c_address;
