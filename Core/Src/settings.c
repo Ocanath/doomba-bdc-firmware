@@ -311,6 +311,7 @@ int16_t sin_mid = 1973;
 	int32_t gl_cos_max = 3388;
 	int32_t gl_sin_min = 601;
 	int32_t gl_sin_max = 3373;
+	int32_t gl_oerr_total = 0;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39

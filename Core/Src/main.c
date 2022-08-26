@@ -83,14 +83,29 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
-void openloop_pctl(int32_t ang)
+
+/*open loop track an electrical angle. Helper/prog on a robust coarse align offset
+ * check
+ *
+ * Why this works:
+ *
+ * When the motor open loop settles on a position, it SETTLES ON MAX ID position (ie
+ * locks to the rotor position which is pi/2 radians away from the position which causes
+ * the rotor to commute with maximum torque).
+ *
+ * This function tracks a desired ELECTRICAL angle given an align offset.
+ *
+ *
+ * */
+int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 {
 	float theta_e = 0;
 	uint32_t uart_tx_ts = 0;
-	while(1)
+	int16_t passcount = 0;
+	while(HAL_GetTick() < exp_ts)
 	{
 		elock_angle(200, (int32_t)(theta_e*4096.f));
-		int32_t theta_m = theta_rel_fixed();
+		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
 		float effort = error/500.f;
@@ -100,115 +115,65 @@ void openloop_pctl(int32_t ang)
 			effort = -.001f;
 		theta_e += effort;
 
+		int32_t aoff_error_coarse = wrap_2pi_12b((int32_t)(theta_e*4096.f));
+		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
+
 		uint32_t tick = HAL_GetTick();
 		if(tick >= uart_tx_ts)
 		{
 			uart_tx_ts = tick + 10;
 
-			int16_fmt_t fmt;
+//			int16_fmt_t fmt;
+			floatsend_t fmt;
 			int bidx = 0;
-			uint8_t buf[8*sizeof(int16_t)] = {0};
+			uint8_t buf[8*sizeof(float)] = {0};
 
-			fmt.v = (int16_t)theta_m;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = (int16_t)ang;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//			fmt.v = (int16_t)aoff_error_coarse;
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+//			fmt.v = (int16_t)wrap_2pi_12b(theta_m*elec_conv_ratio_fixed);
+//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = effort;
+			buffer_data(fmt.d,sizeof(float),buf,&bidx);
 
 			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+
+
+			if(effort > -5e-5f && effort < 5e-5f)
+			{
+				passcount++;
+			}
+			else
+			{
+				passcount = 0;
+			}
+			if(passcount > 100)
+			{
+				return aoff_error_coarse;
+			}
 		}
 	}
+	return 0;//never happens
+}
+
+/*open loop track a mechanical angle. Helper/prog on a robust coarse align offset
+ * check*/
+void openloop_mang_pctl(int32_t ang, float * theta_e)
+{
+	elock_angle(200, (int32_t)(*theta_e*4096.f));
+	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
+
+	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
+	float effort = error/500.f;
+	if(effort > .001f)
+		effort = .001f;
+	if(effort < -.001f)
+		effort = -.001f;
+	*theta_e += effort;
 }
 
 void estimate_orthogonality_error(void)
 {
-	int32_t vq = 300;
-	int32_t run_samps = 12000;
 
-	/*Initial rotor lock*/
-	int32_t theta_e = 0;
-	elock_angle(vq,theta_e);
-	HAL_Delay(300);
-
-
-	uint32_t uart_tx_ts = 0;
-	while(1)
-	{
-		for(int i = 0; i < run_samps; i++)
-		{
-			int64_t tmp = (int64_t)(HALF_PI_12B * elec_conv_ratio_fixed);
-			tmp = tmp * (int64_t)i;
-			tmp = tmp / (int64_t)run_samps;
-			theta_e = (int32_t)tmp;
-			elock_angle(vq, theta_e);
-			HAL_Delay(1);
-
-
-			uint32_t tick = HAL_GetTick();
-			if(tick >= uart_tx_ts)
-			{
-				uart_tx_ts = tick + 10;
-
-				int16_fmt_t fmt;
-				int bidx = 0;
-				uint8_t buf[8*sizeof(int16_t)] = {0};
-
-				int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-				int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-				sinVal = (sinVal*mul_sin)/div_sin;
-				cosVal = (cosVal*mul_cos)/div_cos;
-				int32_t angle = atan2_fixed(sinVal,cosVal);
-
-				fmt.v = (int16_t)angle;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-				fmt.v = (int16_t)sinVal;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-				fmt.v = (int16_t)cosVal;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-
-				m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
-			}
-
-		}
-
-		for(int i = run_samps-1; i >= 0; i--)
-		{
-			int64_t tmp = HALF_PI_12B * elec_conv_ratio_fixed;
-			tmp = tmp * (int64_t)i;
-			tmp = tmp / (int64_t)run_samps;
-			theta_e = (int32_t)tmp;
-			elock_angle(vq, theta_e);
-			HAL_Delay(1);
-
-
-
-
-			uint32_t tick = HAL_GetTick();
-			if(tick >= uart_tx_ts)
-			{
-				uart_tx_ts = tick + 10;
-
-				int16_fmt_t fmt;
-				int bidx = 0;
-				uint8_t buf[8*sizeof(int16_t)] = {0};
-
-				int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-				int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-				sinVal = (sinVal*mul_sin)/div_sin;
-				cosVal = (cosVal*mul_cos)/div_cos;
-				int32_t angle = atan2_fixed(sinVal,cosVal);
-
-				fmt.v = (int16_t)angle;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-				fmt.v = (int16_t)sinVal;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-				fmt.v = (int16_t)cosVal;
-				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-
-				m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
-			}
-
-		}
-	}
 }
 
 void show_locksweep_dif(void)
@@ -344,13 +309,17 @@ int main(void)
 //		}
 //	}
 
-
-	volatile int32_t res = get_rotorlock_offsetdeviation(500, TWO_PI_12B, 500, 300);
-	if(res < 100 && res > -100)
-		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	//show_locksweep_dif();
-	openloop_pctl(0);
-	estimate_orthogonality_error();
+	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
+	TIMER_UPDATE_DUTY(500,500,500);
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN, 1);
+	while(1)
+	{
+		if(error < 714 && error > -714)	//714 is 10 degrees
+		{
+			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+			HAL_Delay(333);
+		}
+	}
 
 
 

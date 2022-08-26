@@ -42,6 +42,7 @@ float theta_rel_rad();
 float theta_abs_deg();
 float theta_rel_deg();
 int32_t theta_rel_fixed(void);
+int32_t theta_abs_fixed(void);
 
 /*
  * fast trig functions

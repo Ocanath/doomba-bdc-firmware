@@ -8,8 +8,10 @@ es = 1*pi/180;
 
 %Generate reference (true mechanical) and phase-error 'unit' vector list
 t = -pi-1:1/1000:pi+1;
-vref = [cos(t)',sin(t)'];
-verr = [cos(t+ec)', sin(t+es)'];
+vref = [cos(t)',sin(t)'];   %true mechanical vectors
+verr = [cos(t+ec)', sin(t+es)'];    %erroneous vectors
+
+
 
 [~, idx45] =  min(abs(atan2(verr(:,2),verr(:,1))-45*pi/180));
 [~, idx135] = min(abs(atan2(verr(:,2),verr(:,1))-135*pi/180));
