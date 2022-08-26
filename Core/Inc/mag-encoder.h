@@ -25,7 +25,14 @@ const float rad_to_deg;
 
 extern float theta_m_prev;
 
-
+extern int32_t sin_mid;
+extern int32_t cos_mid;
+extern int32_t mul_cos;
+extern int32_t div_cos;
+extern int32_t mul_sin;
+extern int32_t div_sin;
+extern int32_t oerr_total_nsin;
+extern int32_t oerr_total_ncos;
 
 //extern int16_t cos_mid;
 //extern int16_t sin_mid;

@@ -24,7 +24,7 @@
 void dowse_for_align_offset(void)
 {
 	int32_t max_abs_dq = 0;
-	volatile int32_t aoff_of_dqmax = 0;
+//	volatile int32_t aoff_of_dqmax = 0;
 	uint32_t start_tick = HAL_GetTick();
 	uint32_t uart_tx_ts = 0;
 	int32_t prev_gl_theta_rem_m = 0;
@@ -44,7 +44,7 @@ void dowse_for_align_offset(void)
 		if(avq > max_abs_dq)
 		{
 			max_abs_dq = avq;
-			aoff_of_dqmax = align_offset_fixed;
+//			aoff_of_dqmax = align_offset_fixed;
 		}
 
 		if(tick >= avg_v_ts)

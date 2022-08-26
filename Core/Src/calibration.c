@@ -141,6 +141,49 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	return abs_f(*run_distance/run_time_f);
 }
 
+
+/*Open loop commute/lock motor to a specific electrical angle
+ * with specified vq intensity.
+ *
+ * Returns the amplitude, offset, and orthogonality error compensated angle.
+ *
+ * Helper function for computing encoder parameters (ignoring return value), or performing
+ * coarse estimate of comm. offset for calibration and quick calibration
+ * validation
+ * */
+int32_t elock_angle(int32_t vq, int32_t theta)
+{
+	theta = wrap_2pi_12b(theta);
+	int32_t sth = sin_12b(theta);
+	int32_t cth = cos_12b(theta);
+	int32_t alpha,beta, ta,tb,tc;
+	inverse_park_fixed(vq, 0, sth, cth, &alpha,&beta);
+	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
+	TIMER_UPDATE_DUTY(ta,tb,tc);
+	return wrap_2pi_12b(theta_rel_fixed() * elec_conv_ratio_fixed);
+}
+
+/*
+ * Lock rotor to a specified electrical position, wait for it to settle,
+ *  and return the measured encoder angle
+ * */
+int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_settling_time_ms, int num_samples)
+{
+	elock_angle(vq, theta);	//initial angle lock
+	HAL_Delay(init_settling_time_ms);	//settling time to prevent rotor oscillations
+
+	int64_t sum = 0;
+	for(int i = 0; i < num_samples; i++)
+	{
+		sum += (int64_t)(elock_angle(vq,theta));
+		HAL_Delay(1);
+	}
+	sum = sum/((int64_t)num_samples);
+	return (int32_t)sum;
+}
+
+
+
 /*
  *Automatically find the encoder offset
  */
@@ -150,6 +193,12 @@ void auto_calibrate_motor(void)
 	TIMER_UPDATE_DUTY(0,0,0);
 	//	align_offset = -PI/elec_conv_ratio;
 	int passcount = 0;
+
+	/*open loop lock angle for a coarse estimate of the align offset*/
+	align_offset = 0;	//first, zero out align offset for relative accuracy of this method
+	int32_t lock_angle = 0;	//experiment with nonzero lock angles?
+	align_offset = (float)(get_rotorlock_offsetdeviation(500, lock_angle, 500, 300) - lock_angle)/4096.f;
+
 	while(1)
 	{
 		int32_t vq = 2048;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)

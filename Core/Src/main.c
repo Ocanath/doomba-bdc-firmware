@@ -64,7 +64,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
-			int32_t iq = ctl_PI_fixed( (input_val - q), &mctl_iq.kpki);
+			int32_t iq = ctl_PI_fixed( wrap_2pi_12b(input_val - q), &mctl_iq.kpki);
 			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
 			iq = iq * (1 << gl_iq_rshift);
 			iq = saturate(iq, mctl_iq.out_sat);
@@ -74,7 +74,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
-			int32_t vq = ctl_PI_fixed( (input_val - q), &mctl_vq.kpki);
+			int32_t vq = ctl_PI_fixed( wrap_2pi_12b(input_val - q), &mctl_vq.kpki);
 			vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_vq.kd.i32) >> mctl_vq.kd.radix;
 			vq = saturate(vq, mctl_vq.out_sat);
 			vq_pctl = vq;
@@ -82,6 +82,166 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 	}
 }
+
+void openloop_pctl(int32_t ang)
+{
+	float theta_e = 0;
+	uint32_t uart_tx_ts = 0;
+	while(1)
+	{
+		elock_angle(200, (int32_t)(theta_e*4096.f));
+		int32_t theta_m = theta_rel_fixed();
+
+		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
+		float effort = error/500.f;
+		if(effort > .001f)
+			effort = .001f;
+		if(effort < -.001f)
+			effort = -.001f;
+		theta_e += effort;
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int16_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int16_t)] = {0};
+
+			fmt.v = (int16_t)theta_m;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = (int16_t)ang;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+	}
+}
+
+void estimate_orthogonality_error(void)
+{
+	int32_t vq = 300;
+	int32_t run_samps = 12000;
+
+	/*Initial rotor lock*/
+	int32_t theta_e = 0;
+	elock_angle(vq,theta_e);
+	HAL_Delay(300);
+
+
+	uint32_t uart_tx_ts = 0;
+	while(1)
+	{
+		for(int i = 0; i < run_samps; i++)
+		{
+			int64_t tmp = (int64_t)(HALF_PI_12B * elec_conv_ratio_fixed);
+			tmp = tmp * (int64_t)i;
+			tmp = tmp / (int64_t)run_samps;
+			theta_e = (int32_t)tmp;
+			elock_angle(vq, theta_e);
+			HAL_Delay(1);
+
+
+			uint32_t tick = HAL_GetTick();
+			if(tick >= uart_tx_ts)
+			{
+				uart_tx_ts = tick + 10;
+
+				int16_fmt_t fmt;
+				int bidx = 0;
+				uint8_t buf[8*sizeof(int16_t)] = {0};
+
+				int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+				int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
+				sinVal = (sinVal*mul_sin)/div_sin;
+				cosVal = (cosVal*mul_cos)/div_cos;
+				int32_t angle = atan2_fixed(sinVal,cosVal);
+
+				fmt.v = (int16_t)angle;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+				fmt.v = (int16_t)sinVal;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+				fmt.v = (int16_t)cosVal;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+				m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			}
+
+		}
+
+		for(int i = run_samps-1; i >= 0; i--)
+		{
+			int64_t tmp = HALF_PI_12B * elec_conv_ratio_fixed;
+			tmp = tmp * (int64_t)i;
+			tmp = tmp / (int64_t)run_samps;
+			theta_e = (int32_t)tmp;
+			elock_angle(vq, theta_e);
+			HAL_Delay(1);
+
+
+
+
+			uint32_t tick = HAL_GetTick();
+			if(tick >= uart_tx_ts)
+			{
+				uart_tx_ts = tick + 10;
+
+				int16_fmt_t fmt;
+				int bidx = 0;
+				uint8_t buf[8*sizeof(int16_t)] = {0};
+
+				int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+				int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
+				sinVal = (sinVal*mul_sin)/div_sin;
+				cosVal = (cosVal*mul_cos)/div_cos;
+				int32_t angle = atan2_fixed(sinVal,cosVal);
+
+				fmt.v = (int16_t)angle;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+				fmt.v = (int16_t)sinVal;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+				fmt.v = (int16_t)cosVal;
+				buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+				m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			}
+
+		}
+	}
+}
+
+void show_locksweep_dif(void)
+{
+	uint32_t uart_tx_ts = 0;
+	while(1)
+	{
+		int32_t theta = -( (TWO_PI_12B/10) * HAL_GetTick()) /1000;
+		int32_t encoder_angle = elock_angle(500, theta);
+		int32_t diff = wrap_2pi_12b(theta-encoder_angle);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int16_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int16_t)] = {0};
+
+			fmt.v = theta;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = encoder_angle;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = diff;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+
+	}
+}
+
 
 void test_current_sensor(void);
 
@@ -183,6 +343,16 @@ int main(void)
 //			m_uart_tx_start(&m_huart2, buf, 1*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 //		}
 //	}
+
+
+	volatile int32_t res = get_rotorlock_offsetdeviation(500, TWO_PI_12B, 500, 300);
+	if(res < 100 && res > -100)
+		HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	//show_locksweep_dif();
+	openloop_pctl(0);
+	estimate_orthogonality_error();
+
+
 
 	theta_m_prev = 0;
 
