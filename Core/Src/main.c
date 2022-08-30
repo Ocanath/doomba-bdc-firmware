@@ -299,7 +299,7 @@ int main(void)
 		if(error < 714 && error > -714)	//714 is 10 degrees
 		{
 			//indicate pass
-			sinusoidal_fixed(100);
+			sinusoidal_fixed(1000);
 		}
 	}
 	TIMER_UPDATE_DUTY(500,500,500);
