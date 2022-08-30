@@ -12,6 +12,8 @@ int32_t atan2_fixed(int32_t y, int32_t x);
 int32_t sin_12b(int32_t theta);
 int32_t cos_12b(int32_t theta);
 int32_t wrap_2pi_12b(int32_t in);
+int32_t sqrt_i32(int32_t v);
+int64_t sqrt_i64(int64_t v);
 
 #endif // ! TRIG_FIXED_H
 

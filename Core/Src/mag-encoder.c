@@ -154,6 +154,20 @@ int32_t theta_abs_fixed(void)
 	return atan2_fixed(sinVal,cosVal);
 }
 
+/*
+ * Expose sin and cos min-maxed-offsetted to rest of the sw, WITHOUT
+ * ORTHO COMP! (important for *calculating* the ortho comp)
+ * */
+void get_sc_no_ortho_comp(int32_t * c, int32_t * s)
+{
+	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
+	sinVal = (sinVal*mul_sin)/div_sin;
+	cosVal = (cosVal*mul_cos)/div_cos;
+	*c = cosVal;
+	*s = sinVal;
+}
+
 const float rad_to_deg = 180.0/PI;
 float theta_abs_deg()
 {

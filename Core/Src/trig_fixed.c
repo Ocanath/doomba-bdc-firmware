@@ -165,3 +165,47 @@ int64_t wrap_2pi12b_64(int64_t in)
     else
         return result;
 }
+
+// sqrt_i32 computes the squrare root of a 32bit integer and returns
+// a 32bit integer value. It requires that v is positive.
+int32_t sqrt_i32(int32_t v)
+{
+	uint32_t b = 1 << 30, q = 0, r = v;
+	while (b > r)
+		b >>= 2;
+	while (b > 0)
+	{
+		uint32_t t = q + b;
+		q >>= 1;
+		if (r >= t)
+		{
+			r -= t;
+			q += b;
+		}
+		b >>= 2;
+	}
+	return q;
+}
+
+
+// sqrt_i64 computes the squrare root of a 64bit integer and returns
+// a 64bit integer value. It requires that v is positive.
+int64_t sqrt_i64(int64_t v)
+{
+	uint64_t b = ((uint64_t)1) << 62, q = 0, r = v;
+	while (b > r)
+		b >>= 2;
+	while (b > 0)
+	{
+		uint64_t t = q + b;
+		q >>= 1;
+		if (r >= t)
+		{
+			r -= t;
+			q += b;
+		}
+		b >>= 2;
+	}
+	return q;
+}
+

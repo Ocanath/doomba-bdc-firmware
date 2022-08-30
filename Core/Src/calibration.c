@@ -182,7 +182,61 @@ int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_s
 	return (int32_t)sum;
 }
 
+/*open loop track an electrical angle. Helper/prog on a robust coarse align offset
+ * check
+ *
+ * Why this works:
+ *
+ * When the motor open loop settles on a position, it SETTLES ON MAX ID position (ie
+ * locks to the rotor position which is pi/2 radians away from the position which causes
+ * the rotor to commute with maximum torque).
+ *
+ * This function tracks a desired ELECTRICAL angle given an align offset.
+ *
+ *
+ * */
+int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
+{
+	float theta_e = 0;
+	uint32_t uart_tx_ts = 0;
+	int16_t passcount = 0;
+	while(HAL_GetTick() < exp_ts)
+	{
+		elock_angle(400, (int32_t)(theta_e*4096.f));
+		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
 
+		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
+		float effort = error/500.f;
+		if(effort > .001f)
+			effort = .001f;
+		if(effort < -.001f)
+			effort = -.001f;
+		theta_e += effort;
+
+		int32_t aoff_error_coarse = wrap_2pi_12b((int32_t)(theta_e*4096.f));
+		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			if(effort > -4e-5f && effort < 4e-5f)
+			{
+				passcount++;
+			}
+			else
+			{
+				passcount = 0;
+			}
+			if(passcount > 100)
+			{
+				return aoff_error_coarse;
+			}
+		}
+	}
+	return 0;//never happens
+}
 
 /*
  *Automatically find the encoder offset
@@ -196,8 +250,12 @@ void auto_calibrate_motor(void)
 
 	/*open loop lock angle for a coarse estimate of the align offset*/
 	align_offset = 0;	//first, zero out align offset for relative accuracy of this method
+	align_offset_fixed = 0;	//important: must clear for rotorlock to return correct value
 	int32_t lock_angle = 0;	//experiment with nonzero lock angles?
-	align_offset = (float)(get_rotorlock_offsetdeviation(500, lock_angle, 500, 300) - lock_angle)/4096.f;
+	int32_t res = get_rotorlock_offsetdeviation(500, lock_angle, 500, 300);
+	res = wrap_2pi_12b(res - lock_angle);
+	res = wrap_2pi_12b(res + HALF_PI_12B);
+	align_offset = ((float)res)/4096.f;
 
 	while(1)
 	{

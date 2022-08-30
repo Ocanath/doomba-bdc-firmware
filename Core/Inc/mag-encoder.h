@@ -43,6 +43,7 @@ float theta_abs_deg();
 float theta_rel_deg();
 int32_t theta_rel_fixed(void);
 int32_t theta_abs_fixed(void);
+void get_sc_no_ortho_comp(int32_t * c, int32_t * s);
 
 /*
  * fast trig functions
