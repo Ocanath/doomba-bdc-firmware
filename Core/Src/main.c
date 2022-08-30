@@ -241,7 +241,6 @@ int main(void)
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
-	eval_encoder_params();
 	gl_oerr_total = estimate_orthogonality_error();
 	eval_encoder_params();
 #endif
@@ -250,15 +249,18 @@ int main(void)
 	auto_calibrate_motor();
 //	auto_calibrate_fixed();
 #endif
-	//	manual_align_calib();//-0.236198962
-	//	align_offset = sweep_align(-PI/elec_conv_ratio,0, 0.1f, 15.0f, 300);
-	//	align_offset = sweep_align(align_offset-.3f,align_offset+0.3f, 0.001f, 30.0f, 400);
-	//	align_offset = sweep_align(-0.671f, -0.668f, 0.0001f, 40.0f, 500);
-
 	TIMER_UPDATE_DUTY(500,500,500);
-
 #ifdef TEST_FOC
-	test_foc();
+	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
+	TIMER_UPDATE_DUTY(500,500,500);
+	for(uint32_t end_ts = HAL_GetTick() + 5000; HAL_GetTick() < end_ts;)
+	{
+		if(error < 714 && error > -714)	//714 is 10 degrees
+		{
+			//indicate pass
+			test_foc();
+		}
+	}
 #endif
 
 //	uint32_t uart_tx_ts = 0;
@@ -284,26 +286,6 @@ int main(void)
 //			m_uart_tx_start(&m_huart2, buf, 1*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 //		}
 //	}
-
-	obtain_encoder_midpoints();
-	eval_encoder_params();
-	gl_oerr_total = estimate_orthogonality_error();
-	eval_encoder_params();
-
-	auto_calibrate_motor();
-
-	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
-	TIMER_UPDATE_DUTY(500,500,500);
-	for(uint32_t end_ts = HAL_GetTick() + 5000; HAL_GetTick() < end_ts;)
-	{
-		if(error < 714 && error > -714)	//714 is 10 degrees
-		{
-			//indicate pass
-			sinusoidal_fixed(1000);
-		}
-	}
-	TIMER_UPDATE_DUTY(500,500,500);
-
 
 	theta_m_prev = 0;
 

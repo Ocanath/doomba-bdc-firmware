@@ -3,10 +3,10 @@
 %bit but it clearly works
 
 %First establish the phase errors for the sin-cos terms
-% ec = 5*pi/180;    %
-% es = -5*pi/180;
-ec = 152/4096;
-es = 0;
+ec = 5*pi/180;    %
+es = -5*pi/180;
+% ec = 152/4096;
+% es = 0;
 
 %Generate reference (true mechanical) and phase-error 'unit' vector list
 t = -pi-1:1/1000:pi+1;
@@ -75,6 +75,7 @@ plot(cos(angref))
 plot(sin(angref))
 % plot(
 hold off
+legend('err cos','err sin', 'true cos', 'true sin');
 
 figure(5)
 clf
@@ -85,6 +86,7 @@ plot(mod(angcorrected - ec + pi, 2*pi)-pi)
 % wc = mod(angcorrected - epsilon + pi, 2*pi)-pi;
 % plot(wc)
 hold off
+legend('ref','err','corrected','location','southeast');
 
 %%
 

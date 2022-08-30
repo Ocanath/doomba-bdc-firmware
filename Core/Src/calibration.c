@@ -12,16 +12,60 @@
 #include "calibration_fixed.h"
 #include "m_uart.h"
 
+
 void print_float(float v)
 {
 	uint8_t * ptr = (uint8_t * )(&v);
-	HAL_UART_Transmit(&huart2, ptr, 4, 10);
+	m_uart_tx_start(&m_huart2, ptr, sizeof(float));
+	while(m_huart2.bytes_to_send != 0);
 }
+
+/*cheap helper function to avoid needing to use sprintf...*/
+int32_t int_to_str(int32_t arg, uint8_t* buf, int16_t buf_len)
+{
+	uint8_t flag = 0;
+	if (arg < 0)
+	{
+		flag = 1;
+		arg = -arg;
+	}
+
+	int32_t argcpy = arg;
+	int32_t val_len = (flag == 0) ? 0 : 1;
+	while (argcpy != 0)
+	{
+		argcpy /= 10;
+		val_len++;
+	}
+	if (val_len > buf_len)
+		return -1;
+
+	int16_t i = val_len - 1;
+	while (arg != 0)
+	{
+		if (i < 0 || i >= buf_len)
+		{
+			return -1;
+		}
+		buf[i--] = (arg % 10) + '0';
+		arg /= 10;
+	}
+	if (flag && i >= 0 && i < buf_len)
+	{
+		buf[i--] = '-';
+	}
+	if (i == -1)		//gets subtracted on last character load
+		return val_len;
+	else
+		return -1;
+}
+
 void print_str(const char * str)
 {
 	int strlen;
 	for(strlen=0;str[strlen] != 0; strlen++);
-	HAL_UART_Transmit(&huart2, (uint8_t*)str, strlen, 10);
+	m_uart_tx_start(&m_huart2, (uint8_t*)str, strlen);
+	while(m_huart2.bytes_to_send != 0);
 }
 
 static float time_seconds()
@@ -256,6 +300,7 @@ void auto_calibrate_motor(void)
 	res = wrap_2pi_12b(res - lock_angle);
 	res = wrap_2pi_12b(res + HALF_PI_12B);
 	align_offset = ((float)res)/4096.f;
+	align_offset_fixed = (int32_t)(align_offset*4096.f);
 
 	while(1)
 	{
