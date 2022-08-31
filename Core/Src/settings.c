@@ -306,12 +306,12 @@ int16_t sin_mid = 1973;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 38
-	#define ALIGN_OFFSET 3230
-	int32_t gl_cos_min = 594;
-	int32_t gl_cos_max = 3408;
-	int32_t gl_sin_min = 583;
-	int32_t gl_sin_max = 3395;
-	int32_t gl_oerr_total = 154;
+	#define ALIGN_OFFSET -3230
+	int32_t gl_cos_min = 595;
+	int32_t gl_cos_max = 3404;
+	int32_t gl_sin_min = 585;
+	int32_t gl_sin_max = 3391;
+	int32_t gl_oerr_total = 152;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
@@ -326,7 +326,7 @@ int16_t sin_mid = 1973;
 #endif
 
 /*Load align offset globals from the define*/
-float align_offset = (float)(ALIGN_OFFSET)/4096.f;
+float align_offset = ((float)(ALIGN_OFFSET))/4096.f;
 int32_t align_offset_fixed = ALIGN_OFFSET;
 
 

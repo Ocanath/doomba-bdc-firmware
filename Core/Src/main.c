@@ -262,6 +262,7 @@ int main(void)
 		}
 	}
 #endif
+	print_calibration_parameters();
 
 //	uint32_t uart_tx_ts = 0;
 //	mctl_iq.kpki.kp.i32 = 100;

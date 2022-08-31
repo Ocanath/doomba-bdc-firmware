@@ -68,6 +68,46 @@ void print_str(const char * str)
 	while(m_huart2.bytes_to_send != 0);
 }
 
+void print_int_as_str(int32_t in)
+{
+	uint8_t istr[12] = {0};	//only 11 characters are needed actually
+	int_to_str(in, istr, 12);
+	print_str((const char *)istr);
+}
+
+void print_calibration_parameters(void)
+{
+	print_str("\033[2J");
+
+	print_str("MODULE_NUMBER is: ");
+	print_int_as_str((int32_t)MODULE_NUMBER);
+	print_str("\r\n\r\n");
+
+	print_str("#define ALIGN_OFFSET ");
+	print_int_as_str(align_offset_fixed);
+	print_str("\r\n");
+
+	print_str("int32_t gl_cos_min = ");
+	print_int_as_str(gl_cos_min);
+	print_str(";\r\n");
+
+	print_str("int32_t gl_cos_max = ");
+	print_int_as_str(gl_cos_max);
+	print_str(";\r\n");
+
+	print_str("int32_t gl_sin_min = ");
+	print_int_as_str(gl_sin_min);
+	print_str(";\r\n");
+
+	print_str("int32_t gl_sin_max = ");
+	print_int_as_str(gl_sin_max);
+	print_str(";\r\n");
+
+	print_str("int32_t gl_oerr_total = ");
+	print_int_as_str(gl_oerr_total);
+	print_str(";\r\n");
+}
+
 static float time_seconds()
 {
 	return ((float)HAL_GetTick())*.001f;
