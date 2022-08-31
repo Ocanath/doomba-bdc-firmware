@@ -335,22 +335,22 @@ int32_t align_offset_fixed = ALIGN_OFFSET;
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 11;
 	/*Phase advancement params*/
-	int32_t gl_prop_delayloop_interval = 35;
-	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 0x7FFFFF;
+	int32_t gl_prop_delay_const_12b = 0x7FFFFFFF;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
-			.kp = {.i32 = 15887, .radix = 5},		//(4 << 12, 33)
-			.ki = {.i32 = 11356, .radix = 8},	// 3 << 12, 277
+			.kp = {.i32 = 5218, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 6498, .radix = 9},	// 3 << 12, 277
 			.x = 0,
 			.x_sat = MAX_VQ,
-			.out_rshift = 12
+			.out_rshift = 10
 	};
 	fixed_PI_params_t id_pi = {
-			.kp = {.i32 = 9830,  .radix = 3},	//(3 << 12, 10)
-			.ki = {.i32 = 4369,	.radix = 5},	//(1 << 12, 30)
+			.kp = {.i32 = 5218,  .radix = 5},	//(3 << 12, 10)
+			.ki = {.i32 = 1768,	.radix = 4},	//(1 << 12, 30)
 			.x = 0,
 			.x_sat = MAX_VQ,
-			.out_rshift = 12
+			.out_rshift = 10
 	};
 
 	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
