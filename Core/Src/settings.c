@@ -306,22 +306,21 @@ int16_t sin_mid = 1973;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 38
-	#define ALIGN_OFFSET -3230
-	int32_t gl_cos_min = 595;
-	int32_t gl_cos_max = 3404;
-	int32_t gl_sin_min = 585;
-	int32_t gl_sin_max = 3391;
-	int32_t gl_oerr_total = 152;
+	#define ALIGN_OFFSET -3265
+	int32_t gl_cos_min = 585;
+	int32_t gl_cos_max = 3389;
+	int32_t gl_sin_min = 617;
+	int32_t gl_sin_max = 3374;
+	int32_t gl_oerr_total = 216;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
-	#define ALIGN_OFFSET	1.12354243f
-	int32_t gl_cos_min = 605;
-	int32_t gl_cos_max = 3371;
-	int32_t gl_sin_min = 626;
-	int32_t gl_sin_max = 3374;
-	int32_t gl_oerr_total = 0;
-	int32_t gl_oerr_x = 0;
+	#define ALIGN_OFFSET 4753
+	int32_t gl_cos_min = 623;
+	int32_t gl_cos_max = 3388;
+	int32_t gl_sin_min = 593;
+	int32_t gl_sin_max = 3389;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4114
 #endif
 

@@ -264,6 +264,11 @@ int main(void)
 #endif
 	print_calibration_parameters();
 
+//	while(1)
+//		sinusoidal_fixed(MAX_VQ);
+//	while(1)
+//		foc_fixed(1000,0);
+
 //	uint32_t uart_tx_ts = 0;
 //	mctl_iq.kpki.kp.i32 = 100;
 //	mctl_iq.kpki.kp.radix = 7;

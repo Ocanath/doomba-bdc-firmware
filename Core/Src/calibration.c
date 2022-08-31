@@ -206,7 +206,9 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	int32_t bkp_div = gl_prop_delay_const_12b;
 	gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
 	gl_prop_delay_const_12b = 0x7FFFFFFF;
-
+	fixed_PI_params_t bkp_idctlp = id_pi;
+	id_pi.kp.i32 = 0;
+	id_pi.ki.i32 = 0;
 
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
 		sinusoidal_fixed(vq);
@@ -221,6 +223,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 
 	gl_prop_delayloop_interval = bkp_interval;
 	gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
+	id_pi = bkp_idctlp;
 
 	return abs_f(*run_distance/run_time_f);
 }
@@ -332,15 +335,15 @@ void auto_calibrate_motor(void)
 	//	align_offset = -PI/elec_conv_ratio;
 	int passcount = 0;
 
-	/*open loop lock angle for a coarse estimate of the align offset*/
-	align_offset = 0;	//first, zero out align offset for relative accuracy of this method
-	align_offset_fixed = 0;	//important: must clear for rotorlock to return correct value
-	int32_t lock_angle = 0;	//experiment with nonzero lock angles?
-	int32_t res = get_rotorlock_offsetdeviation(500, lock_angle, 500, 300);
-	res = wrap_2pi_12b(res - lock_angle);
-	res = wrap_2pi_12b(res + HALF_PI_12B);
-	align_offset = ((float)res)/4096.f;
-	align_offset_fixed = (int32_t)(align_offset*4096.f);
+//	/*open loop lock angle for a coarse estimate of the align offset*/
+//	align_offset = 0;	//first, zero out align offset for relative accuracy of this method
+//	align_offset_fixed = 0;	//important: must clear for rotorlock to return correct value
+//	int32_t lock_angle = 0;	//experiment with nonzero lock angles?
+//	int32_t res = get_rotorlock_offsetdeviation(500, lock_angle, 500, 300);
+//	res = wrap_2pi_12b(res - lock_angle);
+//	res = wrap_2pi_12b(res + HALF_PI_12B);
+//	align_offset = ((float)res)/4096.f;
+//	align_offset_fixed = (int32_t)(align_offset*4096.f);
 
 	while(1)
 	{
