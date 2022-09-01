@@ -264,8 +264,49 @@ int main(void)
 #endif
 	print_calibration_parameters();
 
+
+
+	uint32_t uart_tx_ts = 0;
+	while(1)
+	{
+		int32_t ft = (HAL_GetTick()*TWO_PI_12B)/1000;
+		int32_t vq = (500*sin_12b(wrap_2pi_12b(ft)))/4096;
+		elock_angle(vq,0);
+		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
+
+		if(HAL_GetTick() > uart_tx_ts)
+		{
+			uart_tx_ts = HAL_GetTick() + 10;
+
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(float)] = {0};
+
+			fmt.v = ((float)theta_m)/4096.f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ((float)vq)/4096.f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, bidx);
+		}
+	}
+	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
+	TIMER_UPDATE_DUTY(500,500,500);
+	if(error < 714 && error > -714)	//714 is 10 degrees
+	{
+		print_str("\r\nCoarse Align Check PASS. Error is: ");
+		print_int_as_str(error);
+		print_str("\r\n");
+	}
+	else
+	{
+		print_str("\r\nCoarse Align Check FAIL. Error is: ");
+		print_int_as_str(error);
+		print_str("\r\n");
+	}
+
 //	while(1)
-//		sinusoidal_fixed(MAX_VQ);
+//		sinusoidal_fixed(MAX_VQ, 0);
 //	while(1)
 //		foc_fixed(1000,0);
 
@@ -275,7 +316,7 @@ int main(void)
 //	mctl_iq.out_sat = 500;
 //	while(1)
 //	{
-//		sinusoidal_fixed(2048);
+//		sinusoidal_fixed(2048, 0);
 //		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
 //		uint32_t tick = HAL_GetTick();
 //		if(tick >= uart_tx_ts)
@@ -375,10 +416,10 @@ int main(void)
 		}
 		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
 		{
-			sinusoidal_fixed(vq_pctl);
+			sinusoidal_fixed(vq_pctl, 0);
 		}
 		else
-			sinusoidal_fixed(input_val);
+			sinusoidal_fixed(input_val, 0);
 
 		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
 

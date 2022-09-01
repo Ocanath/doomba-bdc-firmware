@@ -23,6 +23,11 @@ void print_float(float v)
 /*cheap helper function to avoid needing to use sprintf...*/
 int32_t int_to_str(int32_t arg, uint8_t* buf, int16_t buf_len)
 {
+	if(arg == 0)
+	{
+		buf[0] = '0';
+		return 1;
+	}
 	uint8_t flag = 0;
 	if (arg < 0)
 	{
@@ -77,7 +82,7 @@ void print_int_as_str(int32_t in)
 
 void print_calibration_parameters(void)
 {
-	print_str("\033[2J");
+	print_str("\0033\0143");
 
 	print_str("MODULE_NUMBER is: ");
 	print_int_as_str((int32_t)MODULE_NUMBER);
@@ -211,10 +216,10 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	id_pi.ki.i32 = 0;
 
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
-		sinusoidal_fixed(vq);
+		sinusoidal_fixed(vq,0);
 	float run_start = ((float)gl_theta_rem_m)/4096.f;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)
-		sinusoidal_fixed(vq);
+		sinusoidal_fixed(vq,0);
 	float run_end = ((float)gl_theta_rem_m)/4096.f;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
@@ -287,9 +292,10 @@ int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 	float theta_e = 0;
 	uint32_t uart_tx_ts = 0;
 	int16_t passcount = 0;
+	float vq = 400.f;
 	while(HAL_GetTick() < exp_ts)
 	{
-		elock_angle(400, (int32_t)(theta_e*4096.f));
+		elock_angle((int32_t)vq, (int32_t)(theta_e*4096.f));
 		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
@@ -301,14 +307,15 @@ int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 		theta_e += effort;
 
 		int32_t aoff_error_coarse = wrap_2pi_12b((int32_t)(theta_e*4096.f));
-		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
+		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse - error + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
 
 		uint32_t tick = HAL_GetTick();
 		if(tick >= uart_tx_ts)
 		{
 			uart_tx_ts = tick + 10;
 
-			if(effort > -4e-5f && effort < 4e-5f)
+
+			if(abs_f(error) < -0.0349f)	//about (+/-)1deg
 			{
 				passcount++;
 			}
@@ -320,6 +327,20 @@ int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 			{
 				return aoff_error_coarse;
 			}
+
+			const float rad_to_deg = 57.2958f;
+
+			floatsend_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(float)] = {0};
+
+			fmt.v = effort;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+			fmt.v = ((float)aoff_error_coarse)/4096.f;
+			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+
+			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+
 		}
 	}
 	return 0;//never happens
@@ -419,14 +440,14 @@ void test_foc()
 	while(1)
 	{
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal_fixed(vref);
+			sinusoidal_fixed(vref, 0);
 		//foc(iq_ref,0);//sinusoidal(.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(100);
 
 		for(uint32_t run_ts = HAL_GetTick()+2000; HAL_GetTick()< run_ts;)
-			sinusoidal_fixed(-vref);//foc(iq_ref,0);
+			sinusoidal_fixed(-vref, 0);//foc(iq_ref,0);
 		//sinusoidal(-.8f,0);
 
 		TIMER_UPDATE_DUTY(0,0,0);

@@ -93,7 +93,7 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
 
 /*
  * */
-void sinusoidal_fixed(int32_t vq_in)
+void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
 	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
@@ -107,7 +107,7 @@ void sinusoidal_fixed(int32_t vq_in)
 	iq_meas = -iq_meas;
 	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
-	int32_t vd = ctl_PI_fixed(0 - id_meas, &id_pi);
+	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &id_pi);
 //	int32_t vd = 0;
 
 	int32_t alpha,beta,tA,tB,tC;
