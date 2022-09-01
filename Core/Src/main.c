@@ -87,7 +87,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
  * check*/
 void openloop_mang_pctl(int32_t ang, float * theta_effort)
 {
-	elock_angle(400, (int32_t)( (*theta_effort) *4096.f));
+	elock_angle(400, 0, (int32_t)( (*theta_effort) *4096.f));
 	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
 
 	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
@@ -155,7 +155,7 @@ void show_locksweep_dif(void)
 	while(1)
 	{
 		int32_t theta = -( (TWO_PI_12B/10) * HAL_GetTick()) /1000;
-		int32_t encoder_angle = elock_angle(500, theta);
+		int32_t encoder_angle = elock_angle(500, 0, theta);
 		int32_t diff = wrap_2pi_12b(theta-encoder_angle);
 
 		uint32_t tick = HAL_GetTick();
@@ -264,75 +264,6 @@ int main(void)
 #endif
 	print_calibration_parameters();
 
-
-
-	uint32_t uart_tx_ts = 0;
-	while(1)
-	{
-		int32_t ft = (HAL_GetTick()*TWO_PI_12B)/1000;
-		int32_t vq = (500*sin_12b(wrap_2pi_12b(ft)))/4096;
-		elock_angle(vq,0);
-		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
-
-		if(HAL_GetTick() > uart_tx_ts)
-		{
-			uart_tx_ts = HAL_GetTick() + 10;
-
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[8*sizeof(float)] = {0};
-
-			fmt.v = ((float)theta_m)/4096.f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ((float)vq)/4096.f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			m_uart_tx_start(&m_huart2, buf, bidx);
-		}
-	}
-	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
-	TIMER_UPDATE_DUTY(500,500,500);
-	if(error < 714 && error > -714)	//714 is 10 degrees
-	{
-		print_str("\r\nCoarse Align Check PASS. Error is: ");
-		print_int_as_str(error);
-		print_str("\r\n");
-	}
-	else
-	{
-		print_str("\r\nCoarse Align Check FAIL. Error is: ");
-		print_int_as_str(error);
-		print_str("\r\n");
-	}
-
-//	while(1)
-//		sinusoidal_fixed(MAX_VQ, 0);
-//	while(1)
-//		foc_fixed(1000,0);
-
-//	uint32_t uart_tx_ts = 0;
-//	mctl_iq.kpki.kp.i32 = 100;
-//	mctl_iq.kpki.kp.radix = 7;
-//	mctl_iq.out_sat = 500;
-//	while(1)
-//	{
-//		sinusoidal_fixed(2048, 0);
-//		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
-//		uint32_t tick = HAL_GetTick();
-//		if(tick >= uart_tx_ts)
-//		{
-//			uart_tx_ts = tick + 10;
-//
-//			int16_fmt_t fmt;
-//			int bidx = 0;
-//			uint8_t buf[8*sizeof(int16_t)] = {0};
-//
-//			fmt.v = gl_dtheta_fixedpoint_rad_p_sec/16;
-//			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-//
-//			m_uart_tx_start(&m_huart2, buf, 1*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
-//		}
-//	}
 
 	theta_m_prev = 0;
 

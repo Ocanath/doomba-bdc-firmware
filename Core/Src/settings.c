@@ -315,11 +315,11 @@ int16_t sin_mid = 1973;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
-	#define ALIGN_OFFSET 4753
-	int32_t gl_cos_min = 623;
-	int32_t gl_cos_max = 3388;
-	int32_t gl_sin_min = 593;
-	int32_t gl_sin_max = 3389;
+	#define ALIGN_OFFSET 4746
+	int32_t gl_cos_min = 628;
+	int32_t gl_cos_max = 3375;
+	int32_t gl_sin_min = 601;
+	int32_t gl_sin_max = 3375;
 	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4114
 #endif

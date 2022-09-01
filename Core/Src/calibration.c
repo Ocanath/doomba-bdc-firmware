@@ -12,6 +12,9 @@
 #include "calibration_fixed.h"
 #include "m_uart.h"
 
+/*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
+static uint32_t uart_tx_ts = 0;
+
 
 void print_float(float v)
 {
@@ -126,7 +129,7 @@ void obtain_encoder_midpoints()
 	uint16_t s_min = 4096;
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
-	uint32_t uart_tx_ts = 0;
+
 	while(time_seconds() - t_start < 15)
 	{
 		uint16_t adc_sin = dma_adc_raw[ADC_SIN_CHAN];
@@ -243,13 +246,13 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
  * coarse estimate of comm. offset for calibration and quick calibration
  * validation
  * */
-int32_t elock_angle(int32_t vq, int32_t theta)
+int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta)
 {
 	theta = wrap_2pi_12b(theta);
 	int32_t sth = sin_12b(theta);
 	int32_t cth = cos_12b(theta);
 	int32_t alpha,beta, ta,tb,tc;
-	inverse_park_fixed(vq, 0, sth, cth, &alpha,&beta);
+	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
 	TIMER_UPDATE_DUTY(ta,tb,tc);
 	return wrap_2pi_12b(theta_rel_fixed() * elec_conv_ratio_fixed);
@@ -261,13 +264,13 @@ int32_t elock_angle(int32_t vq, int32_t theta)
  * */
 int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_settling_time_ms, int num_samples)
 {
-	elock_angle(vq, theta);	//initial angle lock
+	elock_angle(vq, 0, theta);	//initial angle lock
 	HAL_Delay(init_settling_time_ms);	//settling time to prevent rotor oscillations
 
 	int64_t sum = 0;
 	for(int i = 0; i < num_samples; i++)
 	{
-		sum += (int64_t)(elock_angle(vq,theta));
+		sum += (int64_t)(elock_angle(vq, 0, theta));
 		HAL_Delay(1);
 	}
 	sum = sum/((int64_t)num_samples);
@@ -287,15 +290,15 @@ int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_s
  *
  *
  * */
-int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
+
+int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts)
 {
 	float theta_e = 0;
-	uint32_t uart_tx_ts = 0;
 	int16_t passcount = 0;
-	float vq = 400.f;
 	while(HAL_GetTick() < exp_ts)
 	{
-		elock_angle((int32_t)vq, (int32_t)(theta_e*4096.f));
+
+		elock_angle(0, vq, (int32_t)(theta_e*4096.f));
 		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
@@ -307,15 +310,14 @@ int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 		theta_e += effort;
 
 		int32_t aoff_error_coarse = wrap_2pi_12b((int32_t)(theta_e*4096.f));
-		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse - error + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
+//		aoff_error_coarse = wrap_2pi_12b(aoff_error_coarse + HALF_PI_12B);	//settles on (+/-)pi/2 away, so gotta comp
 
 		uint32_t tick = HAL_GetTick();
 		if(tick >= uart_tx_ts)
 		{
 			uart_tx_ts = tick + 10;
 
-
-			if(abs_f(error) < -0.0349f)	//about (+/-)1deg
+			if(abs_f(error) < 0.0349f)	//about (+/-)1deg
 			{
 				passcount++;
 			}
@@ -328,18 +330,19 @@ int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts)
 				return aoff_error_coarse;
 			}
 
-			const float rad_to_deg = 57.2958f;
 
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[8*sizeof(float)] = {0};
-
-			fmt.v = effort;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = ((float)aoff_error_coarse)/4096.f;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+//			floatsend_t fmt;
+//			int bidx = 0;
+//			uint8_t buf[8*sizeof(float)] = {0};
+//
+//			fmt.v = ((float)theta_m)*rad_to_deg/4096.f;
+//			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+//			fmt.v = ((float)aoff_error_coarse)/4096.f*rad_to_deg;
+//			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+//			fmt.v = (float)(10*vq)/4096.f;
+//			buffer_data(fmt.d, sizeof(float), buf, &bidx);
+//
+//			m_uart_tx_start(&m_huart2, buf, bidx);	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 
 		}
 	}

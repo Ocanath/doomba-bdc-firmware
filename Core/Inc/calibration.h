@@ -27,8 +27,8 @@ void force_encoder_region();
 uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout);
 void auto_calibrate_motor(void);
 
-int32_t elock_angle(int32_t vq, int32_t theta);
+int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta);
 int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_settling_time_ms, int num_samples);
-int32_t openloop_eang_pctl(int32_t ang, uint32_t exp_ts);
+int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts);
 
 #endif /* CALIBRATION_H_ */
