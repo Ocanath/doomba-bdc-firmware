@@ -6,7 +6,6 @@
  */
 #include "calibration.h"
 #include "mag-encoder.h"
-#include "foc_commutation.h"
 #include "foc_fixed.h"
 #include "CAN.h"
 #include "calibration_fixed.h"
@@ -145,20 +144,21 @@ void obtain_encoder_midpoints()
 		if(adc_cos < c_min)
 			c_min = adc_cos;
 
+		uint32_t tick = HAL_GetTick();
 
-		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
-		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
-		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
-		float cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
-		float i_alpha,i_beta;
-		uint32_t tA,tB,tC;
-		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
-		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		int32_t theta = 420*sin_12b( wrap_2pi_12b((tick*2*4096)/10000) );
+		theta = wrap_2pi_12b(theta);
+		int32_t sin_theta = sin_12b(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		int32_t cos_theta = cos_12b(theta);				//and the cosine for park and inverse park domains
+		int32_t i_alpha,i_beta;
+		int32_t tA,tB,tC;
+		inverse_park_fixed(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm_fixed(i_alpha, i_beta, TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 
 
-		uint32_t tick = HAL_GetTick();
+
 		if(tick >= uart_tx_ts)
 		{
 			uart_tx_ts = tick + 10;
@@ -459,92 +459,5 @@ void test_foc()
 	}
 }
 
-enum {VERIFY_FAILED, VERIFY_PASSED, VERIFY_TIMEOUT};
-
-uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout)
-{
-	float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
-	uint32_t tau_switch_ts = HAL_GetTick();
-	float pos_prev = theta_m;
-	int pass_count = 0;
-	while(1)
-	{
-		theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
-		//		i2c_tx_data.v = theta_m;
-		foc(tau,0);
-
-		float diff = theta_m - pos_prev;
-		if(abs_f(diff) >= diff_thresh)
-		{
-			pos_prev = theta_m;
-			if((tau > 0 && diff > diff_thresh) || (tau < 0 && diff < -diff_thresh))
-			{
-				pass_count++;
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-			}
-			else
-			{
-				pass_count--;
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-			}
-			tau = -tau;
-			tau_switch_ts = HAL_GetTick();	//TODO: instead of time, move the rotor so the change in position is at least diff_thresh
-		}
-		if((HAL_GetTick() - tau_switch_ts) > timeout)
-		{
-			//			tau=-tau;
-			//			pos_prev = theta_m;
-			//			tau_switch_ts = HAL_GetTick();
-			return VERIFY_TIMEOUT;
-		}
-
-		if(pass_count >= pass_count_thresh)
-			return VERIFY_PASSED;
-		else if (pass_count <= -pass_count_thresh)
-			return VERIFY_FAILED;
-
-		//		int rc = handle_i2c(&hi2c1);
-		//		if(hi2c1.ErrorCode != 0 || rc != 0)
-		//		{
-		//			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
-		//			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
-		//			I2C1_Reset();
-		//			gl_i2c_mode = I2C_MODE_WAIT;
-		//		}
-	}
-
-}
-
-void force_encoder_region(void)
-{
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
-	uint8_t retc = VERIFY_FAILED;
-	float tau = 5.0f;
-	while(retc != VERIFY_PASSED)
-	{
-		retc = verify_encoder_region(tau, 0.33f, 3, 500);
-		if(retc == VERIFY_FAILED)
-		{
-			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
-		}
-		if(retc == VERIFY_TIMEOUT)
-		{
-			if(tau > 0)
-			{
-				tau+=5.0f;
-				if(tau > 50.0f)
-					tau = 50.0f;
-			}
-			if(tau < 0)
-			{
-				tau -= 5.0f;
-				if(tau < -50.0f)
-					tau = -50.0f;
-			}
-			tau = -tau;
-		}
-	}
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
-}
 
 

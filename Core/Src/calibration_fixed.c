@@ -4,14 +4,20 @@
  *  Created on: Oct 26, 2021
  *      Author: Ocanath Robotman
  */
-#include "foc_fixed.h"
 #include "init.h"
-#include "foc_commutation.h"
 #include "settings.h"
 #include "CAN.h"
 #include "m_uart.h"
 #include "calibration_fixed.h"
+#include "mag-encoder.h"
 
+float abs_f(float in)
+{
+	if(in < 0)
+		return -in;
+	else
+		return in;
+}
 
 /*TODO: change doubles to int32's and int64's for lower memory consumption.*/
 

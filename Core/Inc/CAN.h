@@ -79,8 +79,8 @@ extern pctl_params_t mctl_vq;
 extern ext_cmd_flags_t gl_ext_cmd_flags;
 extern const uint16_t ext_cmd_id;
 
-extern CAN_TxHeaderTypeDef   can_tx_header;
-extern CAN_RxHeaderTypeDef   can_rx_header;
+extern FDCAN_TxHeaderTypeDef   can_tx_header;
+extern FDCAN_RxHeaderTypeDef   can_rx_header;
 extern uint32_t			can_tx_mailbox;
 
 void CAN_Init(void);

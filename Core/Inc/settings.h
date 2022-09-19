@@ -7,7 +7,7 @@
 
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
-#include "stm32f3xx_hal.h"
+#include "stm32g4xx_hal.h"
 #include "profiles.h"
 /***********************Begin define hardware precomp settings*********************/
 

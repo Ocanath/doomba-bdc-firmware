@@ -7,8 +7,10 @@
 
 #ifndef INC_CALIBRATION_FIXED_H_
 #define INC_CALIBRATION_FIXED_H_
-#include "foc_commutation.h"
+#include "foc_fixed.h"
+#define NUM_CURRENT_SENSORS 3
 
+float abs_f(float in);
 void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx);
 int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist);
 void auto_calibrate_fixed(void);

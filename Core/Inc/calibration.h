@@ -8,7 +8,6 @@
 #ifndef CALIBRATION_H_
 #define CALIBRATION_H_
 #include "init.h"
-#include "foc_commutation.h"
 
 typedef enum {CAL_ERR_TIMEOUT, CAL_SUCCESS} regioncheck_retv;
 

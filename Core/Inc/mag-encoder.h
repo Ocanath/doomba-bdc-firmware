@@ -8,6 +8,7 @@
 #ifndef MAG_ENCODER_H_
 #define MAG_ENCODER_H_
 #include "adc.h"
+#include "foc_fixed.h"
 
 #define ADC_SIN_CHAN 	3
 #define ADC_COS_CHAN 	2
