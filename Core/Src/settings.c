@@ -330,7 +330,7 @@ int16_t sin_mid = 1973;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
-	#define ALIGN_OFFSET 4746
+	#define ALIGN_OFFSET (4746 - TWO_PI_12B*2)	//CRITICAL HACK: making this negative, on this motor, is required to prevent popping issues
 	int32_t gl_cos_min = 628;
 	int32_t gl_cos_max = 3375;
 	int32_t gl_sin_min = 601;
@@ -341,14 +341,7 @@ int16_t sin_mid = 1973;
 
 /*Load align offset globals from the define*/
 float align_offset = ((float)(ALIGN_OFFSET))/4096.f;
-/*
- * //CRITICAL. HACK.
- * the subtraction of 4pi here guarantees that the align offset is strictly negative.
- * FOR SOME REASON THIS MATTERS FOR STABILITY.
- * positive align offset values appear to cause 'ticking' at theta_rel = PI,
- * whereas negative values appear to be fine
- * */
-int32_t align_offset_fixed = ALIGN_OFFSET - TWO_PI_12B*2;
+int32_t align_offset_fixed = ALIGN_OFFSET;
 
 
 #if PROFILE == AEROSKY_MC4114
