@@ -5,12 +5,27 @@
  *      Author: Ocanath
  */
 #include "settings.h"
+#include "trig_fixed.h"
 
 /*
  * NOTE:
  *There are some dead serial numbers here. Calibration is so quick... try and be descriptive in your annotations,
  *and delete serial nums you know are dead, but if you get a bad serial number just do a new one. Generally higher numbers are
  *more likely to be ok.
+ *
+ *
+ *
+ * EXTREMELY IMPORTANT NOTE!!!!!!!!!!!!!
+ * MEGA CRAZY IMPORTANT!
+ * IDK WHAT THE FUCK!
+ *
+ *
+ *
+ * Positive align offsets... cause control instability
+ * idk why
+ * it's fucking weird
+ * but it's true
+ *
  */
 
 
@@ -326,7 +341,14 @@ int16_t sin_mid = 1973;
 
 /*Load align offset globals from the define*/
 float align_offset = ((float)(ALIGN_OFFSET))/4096.f;
-int32_t align_offset_fixed = ALIGN_OFFSET;
+/*
+ * //CRITICAL. HACK.
+ * the subtraction of 4pi here guarantees that the align offset is strictly negative.
+ * FOR SOME REASON THIS MATTERS FOR STABILITY.
+ * positive align offset values appear to cause 'ticking' at theta_rel = PI,
+ * whereas negative values appear to be fine
+ * */
+int32_t align_offset_fixed = ALIGN_OFFSET - TWO_PI_12B*2;
 
 
 #if PROFILE == AEROSKY_MC4114
