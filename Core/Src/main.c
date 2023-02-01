@@ -341,16 +341,44 @@ int main(void)
 			int32_t tau = input_val * (1 << gl_iq_rshift);	//scale up to match scale we use to transmit/report iq
 			foc_fixed(tau, 0);
 		}
-		else if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+		else if (gl_ext_cmd_flags.control_mode == SINUSOIDAL_MODE)
 		{
-			foc_fixed(iq_pctl, 0);
-		}
-		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
-		{
-			sinusoidal_fixed(vq_pctl, 0);
+			sinusoidal_fixed(input_val, 0);
 		}
 		else
-			sinusoidal_fixed(input_val, 0);
+		{
+			if(gl_ext_cmd_flags.use_uart_encoder != 0)
+			{
+				if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+				{
+					foc_fixed(iq_pctl, 0);
+				}
+				else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+				{
+					sinusoidal_fixed(vq_pctl, 0);
+				}
+			}
+			else
+			{
+				if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+				{
+					int32_t targ = can_rx_data.i32[0];
+					int32_t iq = ctl_PI_fixed( wrap_2pi_12b(targ - gl_theta_rem_m), &mctl_iq.kpki);
+					iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
+					iq = iq * (1 << gl_iq_rshift);
+					iq = saturate(iq, mctl_iq.out_sat);
+					foc_fixed(iq, 0);
+				}
+				else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+				{
+					int32_t targ = can_rx_data.i32[0];
+					int32_t vq = ctl_PI_fixed( wrap_2pi_12b(targ - gl_theta_rem_m), &mctl_vq.kpki);
+					vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_vq.kd.i32) >> mctl_vq.kd.radix;
+					vq = saturate(vq, mctl_vq.out_sat);
+					sinusoidal_fixed(vq, 0);
+				}
+			}
+		}
 
 		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
 
