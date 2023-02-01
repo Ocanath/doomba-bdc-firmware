@@ -60,7 +60,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];
-		if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+		if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -70,7 +70,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			iq = saturate(iq, mctl_iq.out_sat);
 			iq_pctl = iq;
 		}
-		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+		else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -262,7 +262,7 @@ int main(void)
 		}
 	}
 #endif
-	print_calibration_parameters();
+	//print_calibration_parameters();
 
 
 	theta_m_prev = 0;
@@ -349,18 +349,18 @@ int main(void)
 		{
 			if(gl_ext_cmd_flags.use_uart_encoder != 0)
 			{
-				if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+				if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
 				{
 					foc_fixed(iq_pctl, 0);
 				}
-				else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+				else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
 				{
 					sinusoidal_fixed(vq_pctl, 0);
 				}
 			}
 			else
 			{
-				if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+				if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
 				{
 					int32_t targ = can_rx_data.i32[0];
 					int32_t iq = ctl_PI_fixed( wrap_2pi_12b(targ - gl_theta_rem_m), &mctl_iq.kpki);
@@ -369,7 +369,7 @@ int main(void)
 					iq = saturate(iq, mctl_iq.out_sat);
 					foc_fixed(iq, 0);
 				}
-				else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+				else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
 				{
 					int32_t targ = can_rx_data.i32[0];
 					int32_t vq = ctl_PI_fixed( wrap_2pi_12b(targ - gl_theta_rem_m), &mctl_vq.kpki);
