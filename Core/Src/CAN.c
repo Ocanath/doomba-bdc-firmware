@@ -127,7 +127,7 @@ void CAN_Init(void)
 	hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
 	hcan.Init.TimeSeg1 = CAN_BS1_9TQ;
 	hcan.Init.TimeSeg2 = CAN_BS2_8TQ;
-	hcan.Init.Prescaler = 16;
+	hcan.Init.Prescaler = 2;				//change to 2 for 1 mbps
 
 	if (HAL_CAN_Init(&hcan) != HAL_OK)
 	{
