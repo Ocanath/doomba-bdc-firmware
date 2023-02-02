@@ -5,12 +5,27 @@
  *      Author: Ocanath
  */
 #include "settings.h"
+#include "trig_fixed.h"
 
 /*
  * NOTE:
  *There are some dead serial numbers here. Calibration is so quick... try and be descriptive in your annotations,
  *and delete serial nums you know are dead, but if you get a bad serial number just do a new one. Generally higher numbers are
  *more likely to be ok.
+ *
+ *
+ *
+ * EXTREMELY IMPORTANT NOTE!!!!!!!!!!!!!
+ * MEGA CRAZY IMPORTANT!
+ * IDK WHAT THE FUCK!
+ *
+ *
+ *
+ * Positive align offsets... cause control instability
+ * idk why
+ * it's fucking weird
+ * but it's true
+ *
  */
 
 
@@ -315,7 +330,7 @@ int16_t sin_mid = 1973;
 	#define PROFILE AEROSKY_MC4114
 #endif
 #if MODULE_NUMBER == 39
-	#define ALIGN_OFFSET 4746
+	#define ALIGN_OFFSET (4746 - TWO_PI_12B*2)	//CRITICAL HACK: making this negative, on this motor, is required to prevent popping issues
 	int32_t gl_cos_min = 628;
 	int32_t gl_cos_max = 3375;
 	int32_t gl_sin_min = 601;

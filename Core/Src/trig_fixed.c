@@ -34,6 +34,8 @@ int32_t sin_12b(int32_t theta)
     uint8_t is_neg = 0;
     if(theta == 0)
     	return 0;	//sin of 0 is 0
+    if(theta == PI_12B || theta == -PI_12B)
+    	return 0;
 
     if (theta > HALF_PI_12B && theta <= PI_12B) // if positiveand in quadrant II, put in quadrant I(same)
     {

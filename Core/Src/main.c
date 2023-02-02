@@ -25,7 +25,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];
-		if(gl_ext_cmd_flags.control_mode == POS_IQ_AENC)
+		if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -35,7 +35,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			iq = saturate(iq, mctl_iq.out_sat);
 			iq_pctl = iq;
 		}
-		else if (gl_ext_cmd_flags.control_mode == POS_VQ_AENC)
+		else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -105,7 +105,7 @@ int main(void)
 		}
 	}
 #endif
-	print_calibration_parameters();
+	//print_calibration_parameters();
 
 	theta_m_prev = 0;
 	uint32_t led_ts = 0;

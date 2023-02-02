@@ -170,7 +170,7 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 
 		/*THIS SECTION IS FOR IQ POS CONTROL MODE*/
 		case SET_PCTL_IQ_MODE:
-			gl_ext_cmd_flags.control_mode = POS_IQ_AENC;
+			gl_ext_cmd_flags.control_mode = PCTL_IQ;
 			break;
 		case CHANGE_PCTL_IQ_KP_VALUE:
 			mctl_iq.kpki.kp.i32 = fmt.v;
@@ -202,7 +202,7 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 
 		/*THIS SECTION IS FOR VQ POS CONTROL MODE*/
 		case SET_PCTL_VQ_MODE:
-			gl_ext_cmd_flags.control_mode = POS_VQ_AENC;
+			gl_ext_cmd_flags.control_mode = PCTL_VQ;
 			break;
 		case CHANGE_PCTL_VQ_KP_VALUE:
 			mctl_vq.kpki.kp.i32 = fmt.v;
