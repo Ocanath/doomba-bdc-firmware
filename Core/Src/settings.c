@@ -213,111 +213,165 @@ int16_t cos_mid = 2056;
 int16_t sin_mid = 1983;
 #endif
 #if MODULE_NUMBER == 20				//currently in gearbox
-	#define ALIGN_OFFSET	0.0229281429f
-int16_t cos_mid = 1973;
-int16_t sin_mid = 1973;
-#define PROFILE MULTISTAR_MS4225
+	#define ALIGN_OFFSET	94
+	int32_t gl_cos_min = 1973-1200;
+	int32_t gl_cos_max = 1973+1200;
+	int32_t gl_sin_min = 1973-1200;
+	int32_t gl_sin_max = 1973+1200;
+	int32_t gl_oerr_total = 180;
+	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 21					//currently in spinner launcher
-	#define ALIGN_OFFSET	0.0899067894f
-	int16_t cos_mid = 1997;
-	int16_t sin_mid = 1985;
+	#define ALIGN_OFFSET	368
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 22						//currently in spinner launcher
-	#define ALIGN_OFFSET	-0.877466202f
-	int16_t cos_mid = 1996;
-	int16_t sin_mid = 1974;
+	#define ALIGN_OFFSET	-3594
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 23						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	0.0346194729f
-	int16_t cos_mid = 1985;
-	int16_t sin_mid = 1986;
+	#define ALIGN_OFFSET	142
+	int32_t gl_cos_min = 1985-1200;
+	int32_t gl_cos_max = 1985+1200;
+	int32_t gl_sin_min = 1986-1200;
+	int32_t gl_sin_max = 1986+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 24						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	0.0907510966f
-	int16_t cos_mid = 1986;
-	int16_t sin_mid = 1984;
+	#define ALIGN_OFFSET 372
+	int32_t gl_cos_min = 1986-1200;
+	int32_t gl_cos_max = 1986+1200;
+	int32_t gl_sin_min = 1984-1200;
+	int32_t gl_sin_max = 1984+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 25						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.0f	//needs algining
-	int16_t cos_mid = 1976;
-	int16_t sin_mid = 1976;
+	#define ALIGN_OFFSET 372
+	int32_t gl_cos_min = 1976-1200;
+	int32_t gl_cos_max = 1976+1200;
+	int32_t gl_sin_min = 1976-1200;
+	int32_t gl_sin_max = 1976+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 26						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.0818852335f
-	int16_t cos_mid = 1988;
-	int16_t sin_mid = 1962;
+	#define ALIGN_OFFSET	-335
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 27						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.170397103f
-	int16_t cos_mid = 1977;
-	int16_t sin_mid = 1990;
+	#define ALIGN_OFFSET	-698
+	int32_t gl_cos_min = 1977-1200;
+	int32_t gl_cos_max = 1977+1200;
+	int32_t gl_sin_min = 1990-1200;
+	int32_t gl_sin_max = 1990+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 28						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.0970252305f
-	int16_t cos_mid = 1993;
-	int16_t sin_mid = 1984;
+	#define ALIGN_OFFSET	-397
+	int32_t gl_cos_min = 1993-1200;
+	int32_t gl_cos_max = 1993+1200;
+	int32_t gl_sin_min = 1984-1200;
+	int32_t gl_sin_max = 1984+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 29						//TLE Aerosky
-	#define ALIGN_OFFSET	2.01f
-	int16_t cos_mid = 1985;
-	int16_t sin_mid = 1985;
+	#define ALIGN_OFFSET	0
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 30						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET 	0.216673866f
-	int16_t cos_mid = 2000;
-	int16_t sin_mid = 1987;
+	#define ALIGN_OFFSET 	0
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 31						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	0.393527597f
-	int16_t cos_mid = 1973;
-	int16_t sin_mid = 1974;
+	#define ALIGN_OFFSET 0
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 32						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.256763965f
-	int16_t cos_mid = 1971;
-	int16_t sin_mid = 1978;
+	#define ALIGN_OFFSET	-1052
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 33						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	-0.115011632f
-	int16_t cos_mid = 1991;
-	int16_t sin_mid = 1970;
+	#define ALIGN_OFFSET	-471
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 34						//rando. TLE encoder/v4-r5
-	#define ALIGN_OFFSET	0.42705825f
-	int16_t cos_mid = 1976;
-	int16_t sin_mid = 1974;
+	#define ALIGN_OFFSET	1749
+	int32_t gl_cos_min = 600;
+	int32_t gl_cos_max = 3400;
+	int32_t gl_sin_min = 600;
+	int32_t gl_sin_max = 3400;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4225
 #endif
 #if MODULE_NUMBER == 35						//hex motor (nw needs fixing, not yet calibrated). TLE encoder/v4-r5
-	#define ALIGN_OFFSET -0.108883113f
-	int16_t cos_mid = 1972;
-	int16_t sin_mid = 1981;
+	#define ALIGN_OFFSET -446
+	int32_t gl_cos_min = 1972-1200;
+	int32_t gl_cos_max = 1972+1200;
+	int32_t gl_sin_min = 1981-1200;
+	int32_t gl_sin_max = 1981+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 36						//hex motor. TLE encoder/v4-r5
-	#define ALIGN_OFFSET -0.0932625011f
-	int16_t cos_mid = 1982;
-	int16_t sin_mid = 1963;
+	#define ALIGN_OFFSET	-382
+	int32_t gl_cos_min = 1982-1200;
+	int32_t gl_cos_max = 1982+1200;
+	int32_t gl_sin_min = 1963-1200;
+	int32_t gl_sin_max = 1963+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4822
 #endif
 #if MODULE_NUMBER == 37						//hex motor. TLE encoder/v4-r5
-	#define ALIGN_OFFSET 0.206599116f
-	int16_t cos_mid = 1984;
-	int16_t sin_mid = 1977;
+	#define ALIGN_OFFSET 846
+	int32_t gl_cos_min = 1984-1200;
+	int32_t gl_cos_max = 1984+1200;
+	int32_t gl_sin_min = 1977-1200;
+	int32_t gl_sin_max = 1977+1200;
+	int32_t gl_oerr_total = 180;
 	#define PROFILE MULTISTAR_MS4225
 #endif
 #if MODULE_NUMBER == 38

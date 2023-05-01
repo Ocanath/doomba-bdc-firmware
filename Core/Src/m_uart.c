@@ -21,7 +21,7 @@
 
 
 /*Initialize a baremetal uart handler structure for UART 1*/
-uart_it_t m_huart2 =
+volatile uart_it_t m_huart2 =
 {
 		.Instance = USART2,
 		.bytes_received = 0,

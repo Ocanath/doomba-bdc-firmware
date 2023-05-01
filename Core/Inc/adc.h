@@ -9,11 +9,6 @@
 #define ADC_H_
 #include "init.h"
 
-//iirSOS filt[3];
-uint8_t shunt_state;
-
-uint16_t adc_V[3];
-uint16_t adc_I[3];
 #define NUM_CURRENT_SENSORS 	3
 #define NUM_ADC 				4
 
@@ -28,18 +23,9 @@ uint16_t adc_I[3];
 #define ADC_CHAN_CURRENT_B 1
 #define ADC_CHAN_CURRENT_C 2
 
-float bemf_filtered[NUM_ADC];
-int bemf_adc_map[3];
-uint16_t dma_adc_raw[NUM_ADC];
+extern uint16_t dma_adc_raw[NUM_ADC];
 
-int zero_cross_flag[NUM_ADC];
-int gl_zero_cross_point;
-int rotor_pos;
 
 float adc_to_V(int adc);
-//int zeroCrossDetect(circularBuffer buf, int zcp, int polarity);
-float iA_filt;
-float iB_filt;
-//void init_23kHz_filt_coef();
 
 #endif /* ADC_H_ */

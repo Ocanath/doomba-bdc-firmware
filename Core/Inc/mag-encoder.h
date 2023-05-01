@@ -8,7 +8,6 @@
 #ifndef MAG_ENCODER_H_
 #define MAG_ENCODER_H_
 #include "adc.h"
-#include "foc_fixed.h"
 
 #define ADC_SIN_CHAN 	3
 #define ADC_COS_CHAN 	2
@@ -22,7 +21,7 @@
 #define TWO_PI              	6.28318530718
 #define ONE_BY_TWO_PI 			0.1591549
 
-const float rad_to_deg;
+const extern float rad_to_deg;
 
 extern float theta_m_prev;
 

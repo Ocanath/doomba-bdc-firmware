@@ -222,6 +222,79 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
     *ibeta = (id * sth + iq * cth) >> 12;
 }
 
+const int32_t two_by_three_sqrt3 = 4730;	//sqrt(3)*2/3*4096
+const int32_t harmonic_mag = 788;	//first harmonic magnitude divided by 6, with scaling vactor for normalization 0-1
+int32_t sin_third_harmonic_fixed(int32_t theta)
+{
+	theta = wrap_2pi_12b(theta);
+	int32_t theta3 = wrap_2pi_12b(theta*3);
+	int32_t v = sin_12b(theta)*two_by_three_sqrt3 / 4096;
+	v += sin_12b(theta3)*harmonic_mag / 4096;
+	return v;
+}
+const int32_t pi_by_3 = PI_12B/3;
+const int32_t two_pi_by_3 = TWO_PI_12B/3;
+void generate_3rdharmonic_waveforms(int32_t theta, int32_t m, int32_t half_period, int32_t* p_tA, int32_t* p_tB, int32_t* p_tC)
+{
+	*p_tA = (m*sin_third_harmonic_fixed(theta))/(1<<13) + half_period;
+	*p_tB = (-m*sin_third_harmonic_fixed(theta+pi_by_3))/(1<<13) + half_period;
+	*p_tC = (m*sin_third_harmonic_fixed(theta+two_pi_by_3))/(1<<13) + half_period;
+}
+const int32_t half_period_val = COMM_PWM_PERIOD/2;
+/*sinusoidal mode, no clarke-park, direct voltage in PWM space*/
+void voltage_3rd_harmonic(int32_t mag)
+{
+	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+
+	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
+
+	int32_t tA,tB,tC;
+	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	if(count >= gl_prop_delayloop_interval)
+	{
+		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		prev_mtheta_12b = theta_m;
+		count = 0;
+	}
+	count++;
+}
+
+void volage_pure_sinusoidal(int32_t m)
+{
+	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+
+	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
+
+	int32_t theta2 = wrap_2pi_12b(theta_elec+pi_by_3);
+	int32_t theta3 = wrap_2pi_12b(theta_elec+two_pi_by_3);
+
+	int32_t tA,tB,tC;
+	tA = m*sin_12b(theta_elec)/(1<<13) + half_period_val;
+	tB = -m*sin_12b(theta2)/(1<<13) + half_period_val;
+	tC = m*sin_12b(theta3)/(1<<13) + half_period_val;
+
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+	if(count >= gl_prop_delayloop_interval)
+	{
+		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
+		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
+		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
+		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		prev_mtheta_12b = theta_m;
+		count = 0;
+	}
+	count++;
+}
+
 /*A.K.A. Inverse Clarke*/
 void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* p_tA, int32_t* p_tB, int32_t* p_tC)
 {

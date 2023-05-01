@@ -34,7 +34,7 @@ typedef struct uart_it_t
 }uart_it_t;
 
 
-extern uart_it_t m_huart2;
+extern volatile uart_it_t m_huart2;
 
 uint8_t get_checksum(uint8_t * arr, int size);	//TODO: find a better place for this to live??
 void m_uart_it_handler(uart_it_t * h);

@@ -10,6 +10,7 @@
 #include "CAN.h"
 #include "calibration_fixed.h"
 #include "m_uart.h"
+#include "foc_commutation.h"
 
 /*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
 static uint32_t uart_tx_ts = 0;
@@ -18,7 +19,7 @@ static uint32_t uart_tx_ts = 0;
 void print_float(float v)
 {
 	uint8_t * ptr = (uint8_t * )(&v);
-	m_uart_tx_start(&m_huart2, ptr, sizeof(float));
+	m_uart_tx_start((uart_it_t*)(&m_huart2), ptr, sizeof(float));
 	while(m_huart2.bytes_to_send != 0);
 }
 
@@ -71,7 +72,7 @@ void print_str(const char * str)
 {
 	int strlen;
 	for(strlen=0;str[strlen] != 0; strlen++);
-	m_uart_tx_start(&m_huart2, (uint8_t*)str, strlen);
+	m_uart_tx_start((uart_it_t*)(&m_huart2), (uint8_t*)str, strlen);
 	while(m_huart2.bytes_to_send != 0);
 }
 
@@ -84,115 +85,42 @@ void print_int_as_str(int32_t in)
 
 void print_calibration_parameters(void)
 {
-	print_str("\0033\0143");
+	print_str("\0033\0143\0");
 
-	print_str("MODULE_NUMBER is: ");
+	print_str("MODULE_NUMBER is: \0");
 	print_int_as_str((int32_t)MODULE_NUMBER);
-	print_str("\r\n\r\n");
+	print_str("\r\n\r\n\0");
 
-	print_str("#define ALIGN_OFFSET ");
+	print_str("#define ALIGN_OFFSET \0");
 	print_int_as_str(align_offset_fixed);
-	print_str("\r\n");
+	print_str("\r\n\0");
 
-	print_str("int32_t gl_cos_min = ");
+	print_str("int32_t gl_cos_min = \0");
 	print_int_as_str(gl_cos_min);
-	print_str(";\r\n");
+	print_str(";\r\n\0");
 
-	print_str("int32_t gl_cos_max = ");
+	print_str("int32_t gl_cos_max = \0");
 	print_int_as_str(gl_cos_max);
-	print_str(";\r\n");
+	print_str(";\r\n\0");
 
-	print_str("int32_t gl_sin_min = ");
+	print_str("int32_t gl_sin_min = \0");
 	print_int_as_str(gl_sin_min);
-	print_str(";\r\n");
+	print_str(";\r\n\0");
 
-	print_str("int32_t gl_sin_max = ");
+	print_str("int32_t gl_sin_max = \0");
 	print_int_as_str(gl_sin_max);
-	print_str(";\r\n");
+	print_str(";\r\n\0");
 
-	print_str("int32_t gl_oerr_total = ");
+	print_str("int32_t gl_oerr_total = \0");
 	print_int_as_str(gl_oerr_total);
-	print_str(";\r\n");
+	print_str(";\r\n\0");
 }
+//
+//static float time_seconds()
+//{
+//	return ((float)HAL_GetTick())*.001f;
+//}
 
-static float time_seconds()
-{
-	return ((float)HAL_GetTick())*.001f;
-}
-
-void obtain_encoder_midpoints()
-{
-	TIMER_UPDATE_DUTY(500,500,500);
-	float t_start = time_seconds();
-	uint16_t s_max = 0;
-	uint16_t s_min = 4096;
-	uint16_t c_max = 0;
-	uint16_t c_min = 4096;
-
-	while(time_seconds() - t_start < 15)
-	{
-		uint16_t adc_sin = dma_adc_raw[ADC_SIN_CHAN];
-		uint16_t adc_cos = dma_adc_raw[ADC_COS_CHAN];
-
-		if(adc_sin > s_max)
-			s_max = adc_sin;
-		if(adc_sin < s_min)
-			s_min = adc_sin;
-
-		if(adc_cos > c_max)
-			c_max = adc_cos;
-		if(adc_cos < c_min)
-			c_min = adc_cos;
-
-		uint32_t tick = HAL_GetTick();
-
-		int32_t theta = 420*sin_12b( wrap_2pi_12b((tick*2*4096)/10000) );
-		theta = wrap_2pi_12b(theta);
-		int32_t sin_theta = sin_12b(theta);				//calculate the sin of the electrical (magnetic flux) angle
-		int32_t cos_theta = cos_12b(theta);				//and the cosine for park and inverse park domains
-		int32_t i_alpha,i_beta;
-		int32_t tA,tB,tC;
-		inverse_park_fixed(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
-		svm_fixed(i_alpha, i_beta, TIM1->ARR, &tA, &tB, &tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
-
-
-
-
-		if(tick >= uart_tx_ts)
-		{
-			uart_tx_ts = tick + 10;
-
-			int16_fmt_t fmt;
-			int bidx = 0;
-			uint8_t buf[8*sizeof(int16_t)] = {0};
-
-			fmt.v = adc_sin;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = adc_cos;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = s_max;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = s_min;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = c_max;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = c_min;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-
-
-			m_uart_tx_start(&m_huart2, buf, 6*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
-		}
-	}
-	TIMER_UPDATE_DUTY(0,0,0);
-	//sin_mid = (s_max + s_min)/2;
-	//cos_mid = (c_max + c_min)/2;
-	gl_sin_max = s_max;
-	gl_sin_min = s_min;
-	gl_cos_max = c_max;
-	gl_cos_min = c_min;
-	eval_encoder_params();
-}
 
 /*
  * Ramp up until steady state speed is high
@@ -416,7 +344,7 @@ void auto_calibrate_motor(void)
 			fmt.v = (float)align_offset_fixed;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 
-			m_uart_tx_start(&m_huart2, buf, 2*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			m_uart_tx_start((uart_it_t*)(&m_huart2), buf, 2*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
 		}
 
 		TIMER_UPDATE_DUTY(0,0,0);
@@ -459,5 +387,92 @@ void test_foc()
 	}
 }
 
+enum {VERIFY_FAILED, VERIFY_PASSED, VERIFY_TIMEOUT};
+
+uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout)
+{
+	float theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
+	uint32_t tau_switch_ts = HAL_GetTick();
+	float pos_prev = theta_m;
+	int pass_count = 0;
+	while(1)
+	{
+		theta_m = unwrap(theta_abs_rad(), &theta_m_prev)*.5f;	//get current motor position
+		//		i2c_tx_data.v = theta_m;
+		foc(tau,0);
+
+		float diff = theta_m - pos_prev;
+		if(abs_f(diff) >= diff_thresh)
+		{
+			pos_prev = theta_m;
+			if((tau > 0 && diff > diff_thresh) || (tau < 0 && diff < -diff_thresh))
+			{
+				pass_count++;
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			}
+			else
+			{
+				pass_count--;
+				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+			}
+			tau = -tau;
+			tau_switch_ts = HAL_GetTick();	//TODO: instead of time, move the rotor so the change in position is at least diff_thresh
+		}
+		if((HAL_GetTick() - tau_switch_ts) > timeout)
+		{
+			//			tau=-tau;
+			//			pos_prev = theta_m;
+			//			tau_switch_ts = HAL_GetTick();
+			return VERIFY_TIMEOUT;
+		}
+
+		if(pass_count >= pass_count_thresh)
+			return VERIFY_PASSED;
+		else if (pass_count <= -pass_count_thresh)
+			return VERIFY_FAILED;
+
+		//		int rc = handle_i2c(&hi2c1);
+		//		if(hi2c1.ErrorCode != 0 || rc != 0)
+		//		{
+		//			HAL_NVIC_ClearPendingIRQ(I2C1_EV_IRQn);				//and maybe doing this are critical for i2c_IT error recovery
+		//			while(HAL_NVIC_GetPendingIRQ(I2C1_EV_IRQn)==1);
+		//			I2C1_Reset();
+		//			gl_i2c_mode = I2C_MODE_WAIT;
+		//		}
+	}
+
+}
+
+void force_encoder_region(void)
+{
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint8_t retc = VERIFY_FAILED;
+	float tau = 5.0f;
+	while(retc != VERIFY_PASSED)
+	{
+		retc = verify_encoder_region(tau, 0.33f, 3, 500);
+		if(retc == VERIFY_FAILED)
+		{
+			theta_enc_prev -= TWO_PI;	//put the encoder in the correct region
+		}
+		if(retc == VERIFY_TIMEOUT)
+		{
+			if(tau > 0)
+			{
+				tau+=5.0f;
+				if(tau > 50.0f)
+					tau = 50.0f;
+			}
+			if(tau < 0)
+			{
+				tau -= 5.0f;
+				if(tau < -50.0f)
+					tau = -50.0f;
+			}
+			tau = -tau;
+		}
+	}
+	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+}
 
 
