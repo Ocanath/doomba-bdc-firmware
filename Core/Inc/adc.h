@@ -10,7 +10,7 @@
 #include "init.h"
 
 #define NUM_CURRENT_SENSORS 	3
-#define NUM_ADC 				4
+#define NUM_ADC 				2
 
 #define RISING 1
 #define FALLING 0

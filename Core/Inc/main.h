@@ -59,14 +59,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ENABLE_Pin GPIO_PIN_13
-#define ENABLE_GPIO_Port GPIOC
-#define LED_Pin GPIO_PIN_14
-#define LED_GPIO_Port GPIOC
-#define SS_AMS_Pin GPIO_PIN_4
+#define ENABLE_Pin GPIO_PIN_12
+#define ENABLE_GPIO_Port GPIOB
+#define SS_AMS_Pin GPIO_PIN_15
 #define SS_AMS_GPIO_Port GPIOA
-#define ENABLEB12_Pin GPIO_PIN_12
-#define ENABLEB12_GPIO_Port GPIOB
+#define LED_Pin GPIO_PIN_9
+#define LED_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -50,6 +50,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 int main(void)
 {
+
 	HAL_Init();
 	SystemClock_Config();
 	MX_GPIO_Init();
@@ -57,15 +58,20 @@ int main(void)
 	MX_ADC1_Init();
 	MX_FDCAN1_Init();
 	MX_TIM1_Init();
-	MX_TIM2_Init();
 	MX_USART1_UART_Init();
 	MX_USART2_UART_Init();
+	MX_TIM2_Init();
+	MX_SPI1_Init();
 
 	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
+
+
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
 	//disable adc dma interrupts. The adc itself should only have overrun interrupt enabled
 	hdma_adc1.Instance->CCR &= ~(1 << 2);	//disable half transfer complete interrupt
 	hdma_adc1.Instance->CCR &= ~(1 << 1);	//disable transfer complete interrupt
+
 
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
@@ -74,6 +80,7 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
 
 	TIMER_UPDATE_DUTY(0,0,0);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
@@ -90,7 +97,7 @@ int main(void)
 #ifdef GET_INIT_OFFSET
 	/*Best Method*/
 	auto_calibrate_motor();
-//	auto_calibrate_fixed();
+	//	auto_calibrate_fixed();
 #endif
 	TIMER_UPDATE_DUTY(500,500,500);
 #ifdef TEST_FOC
@@ -112,7 +119,7 @@ int main(void)
 	while (1)
 	{
 		foc_fixed(500,0);
-//		sinusoidal_fixed(input_val, 0);
+		//		sinusoidal_fixed(input_val, 0);
 
 		/*TODO: FDCAN stuff and RS485*/
 		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
