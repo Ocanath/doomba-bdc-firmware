@@ -178,10 +178,10 @@ int32_t get_elec_conversion_ratio(void)
 //		if(abs64(u) < 6)	//pass criteria .0001
 //		{
 //			passcount++;
-//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
+//			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
 //		}
 //		else
-//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+//			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 //		if(passcount > 10)
 //			break;	//if you've passed over 10 times, you're done!
 //	}
@@ -224,10 +224,10 @@ void auto_calibrate_fixed(void)
 		if(abs_f(u) < 0.0001f)	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
 		}
 		else
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 		if(passcount > 10)
 			break;	//if you've passed over 10 times, you're done!
 	}

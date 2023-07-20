@@ -81,13 +81,37 @@ int main(void)
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
+	HAL_GPIO_WritePin(ENABLE_GPIO_Port,ENABLE_Pin,1);
 
-	TIMER_UPDATE_DUTY(0,0,0);
+	TIMER_UPDATE_DUTY(1773,1773,1773);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	uint32_t led_ts = 0;
+
+
+	int32_t vq_in = 300;
+	int32_t vd = 0;
+	while(1)
+	{
+		int32_t t = wrap_2pi_12b(HAL_GetTick()*50);
+		int32_t sin_val = sin_12b(t);
+		int32_t cos_val = cos_12b(t);
+		int32_t alpha,beta,tA,tB,tC;
+		inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
+		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick-led_ts > 333)
+		{
+			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
+			led_ts = tick;
+		}
+	}
+
+	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);
 	get_current_cal_offsets();
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -115,7 +139,6 @@ int main(void)
 	//print_calibration_parameters();
 
 	theta_m_prev = 0;
-	uint32_t led_ts = 0;
 	while (1)
 	{
 		foc_fixed(500,0);
@@ -127,8 +150,8 @@ int main(void)
 		/*Blink the led if enabled*/
 		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
 		{
-			HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
 			led_ts = HAL_GetTick() + 200;
-		}	}
-	/* USER CODE END 3 */
+		}
+	}
 }

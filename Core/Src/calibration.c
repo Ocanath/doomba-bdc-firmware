@@ -324,10 +324,10 @@ void auto_calibrate_motor(void)
 		if(abs_f(u) < 0.00005f && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
 		}
 		else
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 		if(passcount > 10)
 			break;	//if you've passed over 10 times, you're done!
 
@@ -365,7 +365,7 @@ void test_foc()
 	int32_t vref = MAX_VQ;
 	for(int i = 0; i < 20; i ++)
 	{
-		HAL_GPIO_TogglePin(STAT_PORT,STAT_PIN);
+		HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
 		HAL_Delay(100);
 	}
 	while(1)
@@ -408,12 +408,12 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 			if((tau > 0 && diff > diff_thresh) || (tau < 0 && diff < -diff_thresh))
 			{
 				pass_count++;
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+				HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 			}
 			else
 			{
 				pass_count--;
-				HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+				HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);
 			}
 			tau = -tau;
 			tau_switch_ts = HAL_GetTick();	//TODO: instead of time, move the rotor so the change in position is at least diff_thresh
@@ -445,7 +445,7 @@ uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thres
 
 void force_encoder_region(void)
 {
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);
 	uint8_t retc = VERIFY_FAILED;
 	float tau = 5.0f;
 	while(retc != VERIFY_PASSED)
@@ -472,7 +472,7 @@ void force_encoder_region(void)
 			tau = -tau;
 		}
 	}
-	HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 }
 
 

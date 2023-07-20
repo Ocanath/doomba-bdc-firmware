@@ -14,17 +14,9 @@
 #define	MULTISTAR_MS4225	2
 #define AEROSKY_MC4114		3
 
-/*Is the external 16Mhz oscillator populated? (Note: all hw should have this populated...)*/
-#define EXTERNAL_OSCILLATOR
-
-/*******************************************END************************************/
 
 /**/
-#ifdef EXTERNAL_OSCILLATOR
-#define COMM_PWM_PERIOD 1125//1125?
-#else
-#define COMM_PWM_PERIOD 1000
-#endif
+#define COMM_PWM_PERIOD 2500	//nets us about 47khz, with around 12bit voltage resolution, which is pretty good all told
 
 #define MAX_VQ 3546	// (sqrt(3)/2) * 4096
 

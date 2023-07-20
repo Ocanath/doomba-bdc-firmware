@@ -132,13 +132,13 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 		case LED_ON:
 		{
 			flags->en_blink_led = 0;
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);
 			break;
 		}
 		case LED_OFF:
 		{
 			flags->en_blink_led = 0;
-			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,0);
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
 			break;
 		}
 		case LED_BLINK:

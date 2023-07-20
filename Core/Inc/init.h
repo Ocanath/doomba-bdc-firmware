@@ -11,9 +11,6 @@
 #include "stm32g4xx_hal.h"
 #include "settings.h"
 
-#define STAT_PORT GPIOC
-#define STAT_PIN GPIO_PIN_13
-
 #define CAL_PORT GPIOC
 #define CAL_PIN GPIO_PIN_14
 
