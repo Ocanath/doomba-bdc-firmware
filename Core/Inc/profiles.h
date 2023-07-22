@@ -13,7 +13,7 @@
 #define MULTISTAR_MS4822 	1
 #define	MULTISTAR_MS4225	2
 #define AEROSKY_MC4114		3
-
+#define TIGER_U8II_LITE		4
 
 /**/
 #define COMM_PWM_PERIOD 2500	//nets us about 47khz, with around 12bit voltage resolution, which is pretty good all told

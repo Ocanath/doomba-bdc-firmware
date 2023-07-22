@@ -9,8 +9,8 @@
 #define MAG_ENCODER_H_
 #include "adc.h"
 
-#define ADC_SIN_CHAN 	3
-#define ADC_COS_CHAN 	2
+#define ADC_SIN_CHAN 	1
+#define ADC_COS_CHAN 	0
 
 #define ONE_BY_THREE_FACTORIAL 	0.16666666666
 #define ONE_BY_FIVE_FACTORIAL 	0.00833333333

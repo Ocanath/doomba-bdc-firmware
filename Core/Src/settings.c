@@ -392,12 +392,49 @@ int16_t sin_mid = 1983;
 	int32_t gl_oerr_total = 180;
 	#define PROFILE AEROSKY_MC4114
 #endif
+#if MODULE_NUMBER == 40
+	#define ALIGN_OFFSET 100	//CRITICAL HACK: making this negative, on this motor, is required to prevent popping issues
+	int32_t gl_cos_min = 628;
+	int32_t gl_cos_max = 3375;
+	int32_t gl_sin_min = 601;
+	int32_t gl_sin_max = 3375;
+	int32_t gl_oerr_total = 180;
+	#define PROFILE TIGER_U8II_LITE
+#endif
 
 /*Load align offset globals from the define*/
 float align_offset = ((float)(ALIGN_OFFSET))/4096.f;
 int32_t align_offset_fixed = ALIGN_OFFSET;
 
+#if PROFILE == TIGER_U8II_LITE
+	/*Fixed crap that makes the thing work good*/
+	/*number of polepairs.*/
+	const int32_t elec_conv_ratio_fixed = 21;
+	/*Phase advancement params*/
+	int32_t gl_prop_delayloop_interval = 0x7FFFFF;
+	int32_t gl_prop_delay_const_12b = 0x7FFFFFFF;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp = {.i32 = 5218, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 6498, .radix = 9},	// 3 << 12, 277
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 10
+	};
+	fixed_PI_params_t id_pi = {
+			.kp = {.i32 = 5218,  .radix = 5},	//(3 << 12, 10)
+			.ki = {.i32 = 1768,	.radix = 4},	//(1 << 12, 30)
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 10
+	};
 
+	/*Floating crap i ought to just get rid of it already cammmaaaaaannnnnn*/
+	const float iq_gain = 0.03f;
+	const float id_gain = 0.01f;
+	const float gl_prop_delay_const = 900.f;
+	const float elec_conv_ratio = (float)elec_conv_ratio_fixed;		//7.f;	//22 poles + TLE encoder, so 11 pole pairs
+#endif
 #if PROFILE == AEROSKY_MC4114
 	/*Fixed crap that makes the thing work good*/
 	/*number of polepairs.*/
