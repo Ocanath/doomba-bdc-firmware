@@ -6,11 +6,11 @@
  */
 #include "calibration.h"
 #include "mag-encoder.h"
+#include "foc_commutation.h"
 #include "foc_fixed.h"
 #include "CAN.h"
 #include "calibration_fixed.h"
 #include "m_uart.h"
-#include "foc_commutation.h"
 
 /*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
 static uint32_t uart_tx_ts = 0;
@@ -115,12 +115,150 @@ void print_calibration_parameters(void)
 	print_int_as_str(gl_oerr_total);
 	print_str(";\r\n\0");
 }
-//
-//static float time_seconds()
-//{
-//	return ((float)HAL_GetTick())*.001f;
-//}
 
+static float time_seconds()
+{
+	return ((float)HAL_GetTick())*.001f;
+}
+
+/*open loop track a mechanical angle. Helper/prog on a robust coarse align offset
+ * check*/
+void openloop_mang_pctl(int32_t ang, float * theta_effort)
+{
+	elock_angle(400, 0, (int32_t)( (*theta_effort) *4096.f));
+	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
+
+	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
+	float effort = error/500.f;
+	if(effort > .001f)
+		effort = .001f;
+	if(effort < -.001f)
+		effort = -.001f;
+	(*theta_effort) += effort;
+}
+
+void ortho_helper(int32_t angle, int32_t * avgcos, int32_t * avgsin, float * eff, uint32_t stab_time)
+{
+	const int num_samples = 300;
+	*avgcos = 0;
+	*avgsin = 0;
+	/*First test: track 45 and get avg sin-cos vector once tracking is stable*/
+	for(uint32_t end_ts = HAL_GetTick()+stab_time; HAL_GetTick() < end_ts; )
+	{
+		openloop_mang_pctl(angle, eff);
+	}
+	uint32_t sum_ts = 0;
+	int samp = 0;
+	while(samp < num_samples)
+	{
+		openloop_mang_pctl(angle, eff);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= sum_ts)
+		{
+			sum_ts = tick + 1;
+			int32_t c,s;
+			get_sc_no_ortho_comp(&c, &s);
+			*avgcos+=c;
+			*avgsin+=s;
+			samp++;
+		}
+	}
+	*avgcos /= num_samples;
+	*avgsin /= num_samples;
+}
+
+/*Get sin-cos value at 45. Get sin-cos value at 135. Calculate magnitudes.
+ * Return twice the atan2 of the difference between 135mag and 45mag over the sum.
+ * This is the phase error
+ * */
+int32_t estimate_orthogonality_error(void)
+{
+	volatile int32_t vc45 = 0, vs45 = 0, vc135 = 0, vs135 = 0;
+	float eff = 0;
+
+	ortho_helper(PI_12B/4, (int32_t*)&vc45, (int32_t*)&vs45, &eff, 5000);
+	ortho_helper( (PI_12B*3) / 4, (int32_t*)&vc135, (int32_t*)&vs135, &eff, 5000);
+
+	TIMER_UPDATE_DUTY(500,500,500);
+	int32_t m45 = sqrt_i32(vc45*vc45 + vs45*vs45);
+	int32_t m135 = sqrt_i32(vc135*vc135 + vs135*vs135);
+	int32_t epsilon = 2*atan2_fixed( (m135-m45) , (m135+m45) );
+	return epsilon;
+}
+
+void obtain_encoder_midpoints()
+{
+	TIMER_UPDATE_DUTY(500,500,500);
+	float t_start = time_seconds();
+	uint16_t s_max = 0;
+	uint16_t s_min = 4096;
+	uint16_t c_max = 0;
+	uint16_t c_min = 4096;
+
+	while(time_seconds() - t_start < 15)
+	{
+		uint16_t adc_sin = dma_adc_raw[ADC_SIN_CHAN];
+		uint16_t adc_cos = dma_adc_raw[ADC_COS_CHAN];
+
+		if(adc_sin > s_max)
+			s_max = adc_sin;
+		if(adc_sin < s_min)
+			s_min = adc_sin;
+
+		if(adc_cos > c_max)
+			c_max = adc_cos;
+		if(adc_cos < c_min)
+			c_min = adc_cos;
+
+
+		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
+		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
+		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
+		float cos_theta = cos_fast(theta);				//and the cosine for park and inverse park domains
+		float i_alpha,i_beta;
+		uint32_t tA,tB,tC;
+		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
+		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
+		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= uart_tx_ts)
+		{
+			uart_tx_ts = tick + 10;
+
+			int16_fmt_t fmt;
+			int bidx = 0;
+			uint8_t buf[8*sizeof(int16_t)] = {0};
+
+			fmt.v = adc_sin;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = adc_cos;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = s_max;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = s_min;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = c_max;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+			fmt.v = c_min;
+			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
+
+
+			m_uart_tx_start((uart_it_t*)(&m_huart2), buf, 6*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+		}
+	}
+	TIMER_UPDATE_DUTY(0,0,0);
+	//sin_mid = (s_max + s_min)/2;
+	//cos_mid = (c_max + c_min)/2;
+	gl_sin_max = s_max;
+	gl_sin_min = s_min;
+	gl_cos_max = c_max;
+	gl_cos_min = c_min;
+	eval_encoder_params();
+}
 
 /*
  * Ramp up until steady state speed is high

@@ -88,18 +88,27 @@ int main(void)
 
 	uint32_t led_ts = 0;
 
+//	obtain_encoder_midpoints();
+//	gl_oerr_total = estimate_orthogonality_error();
+//	eval_encoder_params();
+//	auto_calibrate_motor();
 
-	int32_t vq_in = 300;
+	int32_t vq_in = 3546;
 	int32_t vd = 0;
 	while(1)
 	{
-		int32_t t = wrap_2pi_12b(HAL_GetTick()*50);
-		int32_t sin_val = sin_12b(t);
-		int32_t cos_val = cos_12b(t);
-		int32_t alpha,beta,tA,tB,tC;
-		inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
-		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-		TIMER_UPDATE_DUTY(tA,tB,tC);
+//		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+//		int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed);
+//		int32_t sin_val = sin_12b(theta_elec);
+//		int32_t cos_val = cos_12b(theta_elec);
+//		int32_t alpha,beta,tA,tB,tC;
+//		inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
+//		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+//		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+		sinusoidal_fixed(vq_in,vd);
+
+		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
 
 		uint32_t tick = HAL_GetTick();
 		if(tick-led_ts > 333)

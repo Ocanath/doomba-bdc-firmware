@@ -8,6 +8,7 @@
 #ifndef CALIBRATION_H_
 #define CALIBRATION_H_
 #include "init.h"
+#include "foc_commutation.h"
 
 typedef enum {CAL_ERR_TIMEOUT, CAL_SUCCESS} regioncheck_retv;
 
@@ -25,6 +26,9 @@ void test_foc();
 void force_encoder_region();
 uint8_t verify_encoder_region(float tau, float diff_thresh, int pass_count_thresh, uint32_t timeout);
 void auto_calibrate_motor(void);
+void obtain_encoder_midpoints(void);
+int32_t estimate_orthogonality_error(void);
+
 
 int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta);
 int32_t get_rotorlock_offsetdeviation(int32_t vq, int32_t theta, uint32_t init_settling_time_ms, int num_samples);

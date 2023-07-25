@@ -14,9 +14,10 @@
 #define	MULTISTAR_MS4225	2
 #define AEROSKY_MC4114		3
 #define TIGER_U8II_LITE		4
+#define VISHAN				5
 
 /**/
-#define COMM_PWM_PERIOD 2500	//nets us about 47khz, with around 12bit voltage resolution, which is pretty good all told
+#define COMM_PWM_PERIOD 1000	//nets us about 85khz, with around 12bit voltage resolution. speed beats reso.
 
 #define MAX_VQ 3546	// (sqrt(3)/2) * 4096
 
