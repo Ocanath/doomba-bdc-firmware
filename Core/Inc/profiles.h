@@ -15,6 +15,7 @@
 #define AEROSKY_MC4114		3
 #define TIGER_U8II_LITE		4
 #define VISHAN				5
+#define MD_2816C			6
 
 /**/
 #define COMM_PWM_PERIOD 1000	//nets us about 85khz, with around 12bit voltage resolution. speed beats reso.

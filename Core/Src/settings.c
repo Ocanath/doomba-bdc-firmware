@@ -402,26 +402,58 @@ int16_t sin_mid = 1983;
 	#define PROFILE TIGER_U8II_LITE
 #endif
 #if MODULE_NUMBER == 41
-	#define ALIGN_OFFSET -2116
+	#define ALIGN_OFFSET -2626
 	int32_t gl_cos_min = 0;
-	int32_t gl_cos_max = 3588;
+	int32_t gl_cos_max = 3607;
 	int32_t gl_sin_min = 0;
-	int32_t gl_sin_max = 3626;
-	int32_t gl_oerr_total = -1090;
+	int32_t gl_sin_max = 3635;
+	int32_t gl_oerr_total = -1470;
 	#define PROFILE VISHAN
+#endif
+#if MODULE_NUMBER == 42
+	#define ALIGN_OFFSET 853
+	int32_t gl_cos_min = 519;
+	int32_t gl_cos_max = 3433;
+	int32_t gl_sin_min = 528;
+	int32_t gl_sin_max = 3426;
+	int32_t gl_oerr_total = 0;
+	#define PROFILE MD_2816C
 #endif
 
 /*Load align offset globals from the define*/
 float align_offset = ((float)(ALIGN_OFFSET))/4096.f;
 int32_t align_offset_fixed = ALIGN_OFFSET;
 
+#if PROFILE == MD_2816C
+	/*Fixed crap that makes the thing work good*/
+	/*number of polepairs.*/
+	const int32_t elec_conv_ratio_fixed = 7;
+	/*Phase advancement params*/
+	int32_t gl_prop_delayloop_interval = 25;
+	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	/*PI controllers paramteres*/
+	fixed_PI_params_t iq_pi = {
+			.kp = {.i32 = 5218, .radix = 5},		//(4 << 12, 33)
+			.ki = {.i32 = 6498, .radix = 9},	// 3 << 12, 277
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 10
+	};
+	fixed_PI_params_t id_pi = {
+			.kp = {.i32 = 5218,  .radix = 5},	//(3 << 12, 10)
+			.ki = {.i32 = 1768,	.radix = 4},	//(1 << 12, 30)
+			.x = 0,
+			.x_sat = MAX_VQ,
+			.out_rshift = 10
+	};
+#endif
 #if PROFILE == VISHAN
 		/*Fixed crap that makes the thing work good*/
 		/*number of polepairs.*/
 		const int32_t elec_conv_ratio_fixed = 1;
 		/*Phase advancement params*/
 		int32_t gl_prop_delayloop_interval = 9;
-		int32_t gl_prop_delay_const_12b = 5;//(int32_t)(25.f/ gl_prop_delay_const);
+		int32_t gl_prop_delay_const_12b = 3;//(int32_t)(25.f/ gl_prop_delay_const);
 		/*PI controllers paramteres*/
 		fixed_PI_params_t iq_pi = {
 				.kp = {.i32 = 5218, .radix = 5},		//(4 << 12, 33)

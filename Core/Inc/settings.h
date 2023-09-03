@@ -12,7 +12,7 @@
 /***********************Begin define hardware precomp settings*********************/
 
 /*Motor serial number, for the #define lookup list in settings.c . Also the CAN Node ID*/
-#define MODULE_NUMBER 41
+#define MODULE_NUMBER 42
 
 
 //#define FLIP_TAU
