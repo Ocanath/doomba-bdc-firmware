@@ -82,14 +82,15 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port,ENABLE_Pin,1);
+	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin, 1);
 
 	TIMER_UPDATE_DUTY(1773,1773,1773);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	uint32_t led_ts = 0;
 
-//	obtain_encoder_midpoints();
-//	gl_oerr_total = estimate_orthogonality_error();
+	obtain_encoder_midpoints();
+	gl_oerr_total = estimate_orthogonality_error();
 	eval_encoder_params();
 
 //	auto_calibrate_motor();
