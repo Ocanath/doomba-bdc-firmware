@@ -8,6 +8,7 @@
 #ifndef INC_CAN_H_
 #define INC_CAN_H_
 #include "init.h"
+#include "fds.h"
 
 #define PAYLOAD_SIZE_CAN 8
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
@@ -77,7 +78,7 @@ extern pctl_params_t mctl_iq;
 extern pctl_params_t mctl_vq;
 
 extern ext_cmd_flags_t gl_ext_cmd_flags;
-extern const uint16_t ext_cmd_id;
+extern uint16_t gl_ext_cmd_id;
 
 extern FDCAN_TxHeaderTypeDef   can_tx_header;
 extern FDCAN_RxHeaderTypeDef   can_rx_header;
