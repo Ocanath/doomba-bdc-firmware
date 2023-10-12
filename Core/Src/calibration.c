@@ -409,7 +409,7 @@ void auto_calibrate_motor(void)
 
 	while(1)
 	{
-		int32_t vq = 2048;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)
+		int32_t vq = 500;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)
 		float run_dist_1,run_dist_2;
 		float run1_speed = run_v(vq,400, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
 		float run2_speed = run_v(-vq,400, &run_dist_2);

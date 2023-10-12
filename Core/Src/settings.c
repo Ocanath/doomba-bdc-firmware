@@ -411,12 +411,12 @@ int16_t sin_mid = 1983;
 	#define PROFILE VISHAN
 #endif
 #if MODULE_NUMBER == 42
-	#define ALIGN_OFFSET 853
-	int32_t gl_cos_min = 519;
-	int32_t gl_cos_max = 3433;
-	int32_t gl_sin_min = 528;
-	int32_t gl_sin_max = 3426;
-	int32_t gl_oerr_total = 0;
+	#define ALIGN_OFFSET 902
+	int32_t gl_cos_min = 276;
+	int32_t gl_cos_max = 3737;
+	int32_t gl_sin_min = 274;
+	int32_t gl_sin_max = 3704;
+	int32_t gl_oerr_total = 74;
 	#define PROFILE MD_2816C
 #endif
 
@@ -429,8 +429,8 @@ int32_t align_offset_fixed = ALIGN_OFFSET;
 	/*number of polepairs.*/
 	const int32_t elec_conv_ratio_fixed = 7;
 	/*Phase advancement params*/
-	int32_t gl_prop_delayloop_interval = 25;
-	int32_t gl_prop_delay_const_12b = 1;//(int32_t)(25.f/ gl_prop_delay_const);
+	int32_t gl_prop_delayloop_interval = 60;
+	int32_t gl_prop_delay_const_12b = 3;//(int32_t)(25.f/ gl_prop_delay_const);
 	/*PI controllers paramteres*/
 	fixed_PI_params_t iq_pi = {
 			.kp = {.i32 = 5218, .radix = 5},		//(4 << 12, 33)
