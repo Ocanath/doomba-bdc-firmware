@@ -195,6 +195,7 @@ void obtain_encoder_midpoints()
 	uint16_t s_min = 4096;
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
+	HAL_Delay(10);//let the dma load us up some ADC values. Place at the top in case this runs directly after dma initialization, since this MCU can really fucking fly
 
 	while(time_seconds() - t_start < 15)
 	{
@@ -211,7 +212,6 @@ void obtain_encoder_midpoints()
 		if(adc_cos < c_min)
 			c_min = adc_cos;
 
-
 		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
 		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
@@ -221,39 +221,11 @@ void obtain_encoder_midpoints()
 		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
-
-
-
-		uint32_t tick = HAL_GetTick();
-		if(tick >= uart_tx_ts)
-		{
-			uart_tx_ts = tick + 10;
-
-			int16_fmt_t fmt;
-			int bidx = 0;
-			uint8_t buf[8*sizeof(int16_t)] = {0};
-
-			fmt.v = adc_sin;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = adc_cos;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = s_max;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = s_min;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = c_max;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-			fmt.v = c_min;
-			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
-
-
-			m_uart_tx_start((uart_it_t*)(&m_huart2), buf, 6*sizeof(int16_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
-		}
 	}
 	TIMER_UPDATE_DUTY(0,0,0);
 	//sin_mid = (s_max + s_min)/2;
 	//cos_mid = (c_max + c_min)/2;
-	gl_sin_max = s_max;
+ 	gl_sin_max = s_max;
 	gl_sin_min = s_min;
 	gl_cos_max = c_max;
 	gl_cos_min = c_min;
