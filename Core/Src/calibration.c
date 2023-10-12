@@ -131,7 +131,7 @@ void obtain_encoder_midpoints()
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
 	HAL_Delay(10);//let the dma load us up some ADC values. Place at the top in case this runs directly after dma initialization, since this MCU can really fucking fly
-	can_payload_t can_rx_data = {0};
+//	can_payload_t can_rx_data = {0};
 	uint8_t exit = 0;
 	while(time_seconds() - t_start < 15 && exit == 0)
 	{

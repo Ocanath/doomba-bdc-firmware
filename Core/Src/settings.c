@@ -54,19 +54,19 @@ fds_motor_params_t fds_mp =
 	.module_number = 0,
 
 	/*The all important align offset*/
-	.align_offset_fixed = 0,
+	.align_offset_fixed = 902,
 
 	/*These are not hand obtained ever, so no commands for them*/
-	.gl_cos_min = 0,
-	.gl_cos_max = 0,
-	.gl_sin_min = 0,
-	.gl_sin_max = 0,
-	.gl_oerr_total = 0,
+	.gl_cos_min = 276,
+	.gl_cos_max = 3737,
+	.gl_sin_min = 274,
+	.gl_sin_max = 3704,
+	.gl_oerr_total = 74,
 
 	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
-	.elec_conv_ratio_fixed = 11,
-	.gl_prop_delayloop_interval = 0x7FFFFFFF,
-	.gl_prop_delay_const_12b = 0x7FFFFFFF,
+	.elec_conv_ratio_fixed = 7,
+	.gl_prop_delayloop_interval = 60,
+	.gl_prop_delay_const_12b = 3,
 	.iq_pi = {
 		.kp = {
 				.i32 = 5218,
@@ -82,16 +82,16 @@ fds_motor_params_t fds_mp =
 	},
 	.id_pi = {
 		.kp = {
-				.i32 = 5218,
-				.radix = 5
+				.i32 = 0,
+				.radix = 12
 		},
 		.ki = {
-				.i32 = 1768,
-				.radix = 4
+				.i32 = 30,
+				.radix = 12
 		},
 		.x = 0,
-		.x_sat = MAX_VQ,
-		.out_rshift = 10
+		.x_sat = 0,
+		.out_rshift = 12
 	}
 };
 
