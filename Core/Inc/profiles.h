@@ -37,12 +37,38 @@ typedef struct fixed_PI_params_t
 	uint8_t out_rshift;
 }fixed_PI_params_t;
 
-extern const int32_t elec_conv_ratio_fixed;
-extern int32_t gl_prop_delay_const_12b;
-extern int32_t gl_prop_delayloop_interval;
-extern fixed_PI_params_t iq_pi;
-extern fixed_PI_params_t id_pi;
-extern int32_t align_offset_fixed;
+
+typedef struct fds_motor_params_t
+{
+	/*CAN id. THIS. MUST. BE. FIRST.*/
+	uint32_t module_number;
+
+	/*Properties of the motor which have to be measured and differ for each instance*/
+	int32_t align_offset_fixed;
+	int32_t gl_cos_min;
+	int32_t gl_cos_max;
+	int32_t gl_sin_min;
+	int32_t gl_sin_max;
+	int32_t gl_oerr_total;
+
+
+	/*Properties of the motor which are either inherent or do not change between instances
+	 * These must be written by the CAN master*/
+	int32_t elec_conv_ratio_fixed;
+	int32_t gl_prop_delayloop_interval;
+	int32_t gl_prop_delay_const_12b;
+	fixed_PI_params_t iq_pi;
+	fixed_PI_params_t id_pi;
+
+}fds_motor_params_t;
+
+
+//extern const int32_t elec_conv_ratio_fixed;
+//extern int32_t gl_prop_delay_const_12b;
+//extern int32_t gl_prop_delayloop_interval;
+//extern fixed_PI_params_t iq_pi;
+//extern fixed_PI_params_t id_pi;
+extern fds_motor_params_t fds_mp;
 
 
 extern const float elec_conv_ratio;

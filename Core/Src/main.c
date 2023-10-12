@@ -88,14 +88,15 @@ int main(void)
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
 	uint32_t led_ts = 0;
-	obtain_encoder_midpoints();
-	gl_oerr_total = estimate_orthogonality_error();
-	eval_encoder_params();
-
-	auto_calibrate_motor();
 
 
-	int32_t vq_in = 0;
+//	obtain_encoder_midpoints();
+//	gl_oerr_total = estimate_orthogonality_error();
+//	eval_encoder_params();
+//	auto_calibrate_motor();
+
+
+	int32_t vq_in = 1000;
 	while(1)
 	{
 		sinusoidal_fixed(vq_in,0);

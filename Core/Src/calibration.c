@@ -15,6 +15,7 @@
 /*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
 static uint32_t uart_tx_ts = 0;
 
+enum {EXIT_CALIBRATION = 0xDE};
 
 void print_float(float v)
 {
@@ -88,103 +89,37 @@ void print_calibration_parameters(void)
 	print_str("\0033\0143\0");
 
 	print_str("MODULE_NUMBER is: \0");
-	print_int_as_str((int32_t)MODULE_NUMBER);
+	print_int_as_str((int32_t)fds_mp.module_number);
 	print_str("\r\n\r\n\0");
 
 	print_str("#define ALIGN_OFFSET \0");
-	print_int_as_str(align_offset_fixed);
+	print_int_as_str(fds_mp.align_offset_fixed);
 	print_str("\r\n\0");
 
 	print_str("int32_t gl_cos_min = \0");
-	print_int_as_str(gl_cos_min);
+	print_int_as_str(fds_mp.gl_cos_min);
 	print_str(";\r\n\0");
 
 	print_str("int32_t gl_cos_max = \0");
-	print_int_as_str(gl_cos_max);
+	print_int_as_str(fds_mp.gl_cos_max);
 	print_str(";\r\n\0");
 
 	print_str("int32_t gl_sin_min = \0");
-	print_int_as_str(gl_sin_min);
+	print_int_as_str(fds_mp.gl_sin_min);
 	print_str(";\r\n\0");
 
 	print_str("int32_t gl_sin_max = \0");
-	print_int_as_str(gl_sin_max);
+	print_int_as_str(fds_mp.gl_sin_max);
 	print_str(";\r\n\0");
 
 	print_str("int32_t gl_oerr_total = \0");
-	print_int_as_str(gl_oerr_total);
+	print_int_as_str(fds_mp.gl_oerr_total);
 	print_str(";\r\n\0");
 }
 
 static float time_seconds()
 {
 	return ((float)HAL_GetTick())*.001f;
-}
-
-/*open loop track a mechanical angle. Helper/prog on a robust coarse align offset
- * check*/
-void openloop_mang_pctl(int32_t ang, float * theta_effort)
-{
-	elock_angle(400, 0, (int32_t)( (*theta_effort) *4096.f));
-	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
-
-	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
-	float effort = error/500.f;
-	if(effort > .001f)
-		effort = .001f;
-	if(effort < -.001f)
-		effort = -.001f;
-	(*theta_effort) += effort;
-}
-
-void ortho_helper(int32_t angle, int32_t * avgcos, int32_t * avgsin, float * eff, uint32_t stab_time)
-{
-	const int num_samples = 300;
-	*avgcos = 0;
-	*avgsin = 0;
-	/*First test: track 45 and get avg sin-cos vector once tracking is stable*/
-	for(uint32_t end_ts = HAL_GetTick()+stab_time; HAL_GetTick() < end_ts; )
-	{
-		openloop_mang_pctl(angle, eff);
-	}
-	uint32_t sum_ts = 0;
-	int samp = 0;
-	while(samp < num_samples)
-	{
-		openloop_mang_pctl(angle, eff);
-
-		uint32_t tick = HAL_GetTick();
-		if(tick >= sum_ts)
-		{
-			sum_ts = tick + 1;
-			int32_t c,s;
-			get_sc_no_ortho_comp(&c, &s);
-			*avgcos+=c;
-			*avgsin+=s;
-			samp++;
-		}
-	}
-	*avgcos /= num_samples;
-	*avgsin /= num_samples;
-}
-
-/*Get sin-cos value at 45. Get sin-cos value at 135. Calculate magnitudes.
- * Return twice the atan2 of the difference between 135mag and 45mag over the sum.
- * This is the phase error
- * */
-int32_t estimate_orthogonality_error(void)
-{
-	volatile int32_t vc45 = 0, vs45 = 0, vc135 = 0, vs135 = 0;
-	float eff = 0;
-
-	ortho_helper(PI_12B/4, (int32_t*)&vc45, (int32_t*)&vs45, &eff, 5000);
-	ortho_helper( (PI_12B*3) / 4, (int32_t*)&vc135, (int32_t*)&vs135, &eff, 5000);
-
-	TIMER_UPDATE_DUTY(500,500,500);
-	int32_t m45 = sqrt_i32(vc45*vc45 + vs45*vs45);
-	int32_t m135 = sqrt_i32(vc135*vc135 + vs135*vs135);
-	int32_t epsilon = 2*atan2_fixed( (m135-m45) , (m135+m45) );
-	return epsilon;
 }
 
 void obtain_encoder_midpoints()
@@ -196,8 +131,9 @@ void obtain_encoder_midpoints()
 	uint16_t c_max = 0;
 	uint16_t c_min = 4096;
 	HAL_Delay(10);//let the dma load us up some ADC values. Place at the top in case this runs directly after dma initialization, since this MCU can really fucking fly
-
-	while(time_seconds() - t_start < 15)
+//	can_payload_t can_rx_data = {0};
+	uint8_t exit = 0;
+	while(time_seconds() - t_start < 15 && exit == 0)
 	{
 		uint16_t adc_sin = dma_adc_raw[ADC_SIN_CHAN];
 		uint16_t adc_cos = dma_adc_raw[ADC_COS_CHAN];
@@ -212,6 +148,7 @@ void obtain_encoder_midpoints()
 		if(adc_cos < c_min)
 			c_min = adc_cos;
 
+
 		float theta = 420*sin_fast( (fmod_2pi(.2*time_seconds() + PI) - PI) );
 		theta = fmod_2pi(theta + PI) - PI;		//re-modulate theta_m. ensure that the angle is constrained from -pi to pi!!
 		float sin_theta = sin_fast(theta);				//calculate the sin of the electrical (magnetic flux) angle
@@ -221,14 +158,32 @@ void obtain_encoder_midpoints()
 		inverse_park_transform(enc_mid_voltage_amp, 0, sin_theta, cos_theta, &i_alpha, &i_beta);	//maybe call theta rel again?
 		svm(i_alpha,i_beta,TIM1->ARR, &tA, &tB, &tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
+
+
+		/*handle commands such as exit commands*/
+//		if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
+//		{
+//			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
+//			{
+//				if (can_rx_header.StdId == gl_ext_cmd_id)
+//				{
+//					if(can_rx_data.d[0] == EXIT_CALIBRATION)
+//					{
+//						exit = 1;
+//					}
+//				}
+//			}
+//		}
+
+
 	}
 	TIMER_UPDATE_DUTY(0,0,0);
 	//sin_mid = (s_max + s_min)/2;
 	//cos_mid = (c_max + c_min)/2;
- 	gl_sin_max = s_max;
-	gl_sin_min = s_min;
-	gl_cos_max = c_max;
-	gl_cos_min = c_min;
+	fds_mp.gl_sin_max = s_max;
+	fds_mp.gl_sin_min = s_min;
+	fds_mp.gl_cos_max = c_max;
+	fds_mp.gl_cos_min = c_min;
 	eval_encoder_params();
 }
 
@@ -248,13 +203,13 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	 * the motor speed) to the controller, which is likely big enough that the simple 'P'
 	 * dynamics is not sufficient to stabilize.
 	 * */
-	int32_t bkp_interval = gl_prop_delayloop_interval;	//backup before clobber
-	int32_t bkp_div = gl_prop_delay_const_12b;
-	gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
-	gl_prop_delay_const_12b = 0x7FFFFFFF;
-	fixed_PI_params_t bkp_idctlp = id_pi;
-	id_pi.kp.i32 = 0;
-	id_pi.ki.i32 = 0;
+	int32_t bkp_interval = fds_mp.gl_prop_delayloop_interval;	//backup before clobber
+	int32_t bkp_div = fds_mp.gl_prop_delay_const_12b;
+	fds_mp.gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
+	fds_mp.gl_prop_delay_const_12b = 0x7FFFFFFF;
+	fixed_PI_params_t bkp_idctlp = fds_mp.id_pi;
+	fds_mp.id_pi.kp.i32 = 0;
+	fds_mp.id_pi.ki.i32 = 0;
 
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
 		sinusoidal_fixed(vq,0);
@@ -267,9 +222,9 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	*run_distance = run_end-run_start;
 	float run_time_f = (float)run_time;//stay in ms, to keep our gain small and avoid floating point errors
 
-	gl_prop_delayloop_interval = bkp_interval;
-	gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
-	id_pi = bkp_idctlp;
+	fds_mp.gl_prop_delayloop_interval = bkp_interval;
+	fds_mp.gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
+	fds_mp.id_pi = bkp_idctlp;
 
 	return abs_f(*run_distance/run_time_f);
 }
@@ -293,7 +248,7 @@ int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta)
 	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta);
 	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
 	TIMER_UPDATE_DUTY(ta,tb,tc);
-	return wrap_2pi_12b(theta_rel_fixed() * elec_conv_ratio_fixed);
+	return wrap_2pi_12b(theta_rel_fixed() * fds_mp.elec_conv_ratio_fixed);
 }
 
 /*
@@ -337,7 +292,7 @@ int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts)
 	{
 
 		elock_angle(0, vq, (int32_t)(theta_e*4096.f));
-		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*elec_conv_ratio);
+		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*fds_mp.elec_conv_ratio_fixed);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
 		float effort = error/500.f;
@@ -389,30 +344,27 @@ int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts)
 
 /*
  *Automatically find the encoder offset
+ *recommended params:
+ *	run_vq=2048
+ *	runtime=400
+ *	gain = 7.0
+ *	passthresh = 0.00005f
  */
-void auto_calibrate_motor(void)
+void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float passthresh)
 {
 
 	TIMER_UPDATE_DUTY(0,0,0);
-	//	align_offset = -PI/elec_conv_ratio;
+//	can_payload_t can_tx_data = {0};
+//	can_payload_t can_rx_data = {0};
+	uint8_t exit = 0;
 	int passcount = 0;
-
-//	/*open loop lock angle for a coarse estimate of the align offset*/
-//	align_offset = 0;	//first, zero out align offset for relative accuracy of this method
-//	align_offset_fixed = 0;	//important: must clear for rotorlock to return correct value
-//	int32_t lock_angle = 0;	//experiment with nonzero lock angles?
-//	int32_t res = get_rotorlock_offsetdeviation(500, lock_angle, 500, 300);
-//	res = wrap_2pi_12b(res - lock_angle);
-//	res = wrap_2pi_12b(res + HALF_PI_12B);
-//	align_offset = ((float)res)/4096.f;
-//	align_offset_fixed = (int32_t)(align_offset*4096.f);
-
-	while(1)
+	while(exit == 0)
 	{
-		int32_t vq = 2048;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)
+
+		int32_t vq = run_vq;	//voltage percent out of sqrt(3)/2*4096 (applied to supply voltage)
 		float run_dist_1,run_dist_2;
-		float run1_speed = run_v(vq,400, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
-		float run2_speed = run_v(-vq,400, &run_dist_2);
+		float run1_speed = run_v(vq,runtime, &run_dist_1);	//returns absolute value of the run speed, with the total distance of the run output to the dist var
+		float run2_speed = run_v(-vq,runtime, &run_dist_2);
 		TIMER_UPDATE_DUTY(500,500,500);
 
 		float sign = 0.f;
@@ -425,43 +377,117 @@ void auto_calibrate_motor(void)
 			align_offset = -align_offset;		//if you're flipped and you have moved appreciably, flip the align offset and the sign should flip
 
 		double err = run1_speed-run2_speed;	//compute base term for control effort
-		double u = err/7.0;	//scale control effort down (k gain)
+		double u = err/gain;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		align_offset_fixed = (int32_t)(align_offset*4096.f);
+		fds_mp.align_offset_fixed = (int32_t)(align_offset*4096.f);
 
 
-		if(abs_f(u) < 0.00005f && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
+		if(abs_f(u) < passthresh && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
 		{
-			passcount++;
 			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
+			passcount++;
 		}
 		else
-			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
-		if(passcount > 10)
-			break;	//if you've passed over 10 times, you're done!
-
-
-
 		{
-
-			floatsend_t fmt;
-			int bidx = 0;
-			uint8_t buf[8*sizeof(float)] = {0};
-
-			fmt.v = (float)u;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			fmt.v = (float)align_offset_fixed;
-			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-
-			m_uart_tx_start((uart_it_t*)(&m_huart2), buf, 2*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
+			passcount = 0;
 		}
+
+
+		/*handle commands such as exit commands*/
+//		while(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) >= 1)
+//		{
+//			if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data.d) == HAL_OK)
+//			{
+//				if (can_rx_header.StdId == gl_ext_cmd_id)
+//				{
+//					if(can_rx_data.d[0] == EXIT_CALIBRATION)
+//					{
+//						exit = 1;
+//					}
+//				}
+//			}
+//		}
+		if(passcount > 10)
+			exit = 1;
+
+
+//		can_tx_data.i32[0] = fds_mp.align_offset_fixed;
+//		HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(1);
 	}
-	align_offset_fixed = (int32_t)(align_offset * 4096.f);
+	fds_mp.align_offset_fixed = (int32_t)(align_offset * 4096.f);
 
+}
+
+/*open loop track a mechanical angle. Helper/prog on a robust coarse align offset
+ * check*/
+void openloop_mang_pctl(int32_t ang, float * theta_effort)
+{
+	elock_angle(400, 0, (int32_t)( (*theta_effort) *4096.f));
+	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
+
+	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
+	float effort = error/500.f;
+	if(effort > .001f)
+		effort = .001f;
+	if(effort < -.001f)
+		effort = -.001f;
+	(*theta_effort) += effort;
+}
+
+/*for orthogonality compensation*/
+void ortho_helper(int32_t angle, int32_t * avgcos, int32_t * avgsin, float * eff, uint32_t stab_time)
+{
+	const int num_samples = 300;
+	*avgcos = 0;
+	*avgsin = 0;
+	/*First test: track 45 and get avg sin-cos vector once tracking is stable*/
+	for(uint32_t end_ts = HAL_GetTick()+stab_time; HAL_GetTick() < end_ts; )
+	{
+		openloop_mang_pctl(angle, eff);
+	}
+	uint32_t sum_ts = 0;
+	int samp = 0;
+	while(samp < num_samples)
+	{
+		openloop_mang_pctl(angle, eff);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick >= sum_ts)
+		{
+			sum_ts = tick + 1;
+			int32_t c,s;
+			get_sc_no_ortho_comp(&c, &s);
+			*avgcos+=c;
+			*avgsin+=s;
+			samp++;
+		}
+	}
+	*avgcos /= num_samples;
+	*avgsin /= num_samples;
+}
+
+/*Get sin-cos value at 45. Get sin-cos value at 135. Calculate magnitudes.
+ * Return twice the atan2 of the difference between 135mag and 45mag over the sum.
+ * This is the phase error
+ * */
+int32_t estimate_orthogonality_error(void)
+{
+	volatile int32_t vc45 = 0, vs45 = 0, vc135 = 0, vs135 = 0;
+	float eff = 0;
+
+	ortho_helper(PI_12B/4, (int32_t*)&vc45, (int32_t*)&vs45, &eff, 5000);
+	ortho_helper( (PI_12B*3) / 4, (int32_t*)&vc135, (int32_t*)&vs135, &eff, 5000);
+
+	TIMER_UPDATE_DUTY(500,500,500);
+	int32_t m45 = sqrt_i32(vc45*vc45 + vs45*vs45);
+	int32_t m135 = sqrt_i32(vc135*vc135 + vs135*vs135);
+	int32_t epsilon = 2*atan2_fixed( (m135-m45) , (m135+m45) );
+	return epsilon;
 }
 
 
