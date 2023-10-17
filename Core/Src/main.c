@@ -8,6 +8,8 @@
 #include "CAN.h"
 #include "foc_fixed.h"
 #include "m_uart.h"
+#include "PPP.h"
+
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
@@ -96,11 +98,27 @@ int main(void)
 //	auto_calibrate_motor();
 
 
-	int32_t vq_in = 1000;
+	int32_t vq_in = 100;
+
+//	m_uart_tx_start((uart_it_t*)(&m_huart2), tx_buf, 8);
+	#define PAYLOADSIZE 3
+	int16_t pld[PAYLOADSIZE] = {0};
+	uint8_t ppp_stuffed[PAYLOADSIZE*sizeof(int16_t)+2] = {0};
+	uint32_t tx_ts = 0;
+	volatile int stuffed_length = 0;
 	while(1)
 	{
-		sinusoidal_fixed(vq_in,0);
 		uint32_t tick = HAL_GetTick();
+
+		sinusoidal_fixed(vq_in,0);
+
+		if(tick - tx_ts > 10)
+		{
+			tx_ts = tick;
+			stuffed_length = PPP_stuff( (uint8_t*)(&pld[0]), 3*sizeof(int16_t), ppp_stuffed, (PAYLOADSIZE*sizeof(int16_t)+2) );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), ppp_stuffed, stuffed_length);
+		}
+
 		if(tick-led_ts > 333)
 		{
 			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
