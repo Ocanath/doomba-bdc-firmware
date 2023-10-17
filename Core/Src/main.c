@@ -114,6 +114,9 @@ int main(void)
 
 		if(tick - tx_ts > 10)
 		{
+			pld[0] = hadc1.Instance->JDR1;
+			pld[1] = hadc1.Instance->JDR2;
+			pld[2] = hadc1.Instance->JDR3;
 			tx_ts = tick;
 			stuffed_length = PPP_stuff( (uint8_t*)(&pld[0]), 3*sizeof(int16_t), ppp_stuffed, (PAYLOADSIZE*sizeof(int16_t)+2) );
 			m_uart_tx_start((uart_it_t*)(&m_huart2), ppp_stuffed, stuffed_length);
