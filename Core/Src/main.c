@@ -10,6 +10,10 @@
 #include "m_uart.h"
 #include "PPP.h"
 
+#define PRESTUFF_BUF_SIZE 64
+#define STUFF_BUF_SIZE	((2*PRESTUFF_BUF_SIZE)+2)
+uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
+uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
@@ -99,12 +103,6 @@ int main(void)
 
 
 	int32_t vq_in = 100;
-
-//	m_uart_tx_start((uart_it_t*)(&m_huart2), tx_buf, 8);
-	#define PAYLOADSIZE 3
-	int16_t pld[PAYLOADSIZE] = {0};
-	uint8_t ppp_stuffed[PAYLOADSIZE*sizeof(int16_t)+2] = {0};
-	uint32_t tx_ts = 0;
 	volatile int stuffed_length = 0;
 	while(1)
 	{
@@ -112,15 +110,18 @@ int main(void)
 
 		sinusoidal_fixed(vq_in,0);
 
-		if(tick - tx_ts > 10)
-		{
-			pld[0] = hadc1.Instance->JDR1;
-			pld[1] = hadc1.Instance->JDR2;
-			pld[2] = hadc1.Instance->JDR3;
-			tx_ts = tick;
-			stuffed_length = PPP_stuff( (uint8_t*)(&pld[0]), 3*sizeof(int16_t), ppp_stuffed, (PAYLOADSIZE*sizeof(int16_t)+2) );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), ppp_stuffed, stuffed_length);
-		}
+		//if(tick - tx_ts > 10)
+		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
+		int16_t * pwb16 = (int16_t*)(&gl_working_buf[0]);
+		pwb16[0] = hadc1.Instance->JDR1;
+		pwb16[1] = hadc1.Instance->JDR2;
+		pwb16[2] = hadc1.Instance->JDR3;
+		uint32_t * pwb32 = (uint32_t*)(&pwb16[3]);
+		pwb32[0]=tick;
+		int pld_size = (3*sizeof(int16_t)+sizeof(uint32_t));
+		stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+		m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+
 
 		if(tick-led_ts > 333)
 		{
