@@ -174,9 +174,9 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
 {
-	int32_t ia = dma_adc_raw[0] - current_input_offset_A;
-	int32_t ib = dma_adc_raw[1] - current_input_offset_B;
-	int32_t ic = -(ia + ib);
+	int32_t ia = ((int16_t)ADC1->JDR1) - 1990;
+	int32_t ib = ((int16_t)ADC1->JDR2) - 1990;
+	int32_t ic = ((int16_t)ADC1->JDR3) - 1990;
 
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);

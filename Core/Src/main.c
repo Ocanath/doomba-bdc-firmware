@@ -115,11 +115,12 @@ int main(void)
 		{
 			int16_t * pwb16 = (int16_t*)(&gl_working_buf[0]);
 			int i16widx = 0;
-			pwb16[i16widx++] = hadc1.Instance->JDR1;
-			pwb16[i16widx++] = hadc1.Instance->JDR2;
-			pwb16[i16widx++] = hadc1.Instance->JDR3;
-	//		pwb16[i16widx++] = dma_adc_raw[0];
-	//		pwb16[i16widx++] = dma_adc_raw[1];
+			pwb16[i16widx++] = ((int16_t)ADC1->JDR1) - 1995;
+			pwb16[i16widx++] = ((int16_t)ADC1->JDR2) - 1995;
+			pwb16[i16widx++] = ((int16_t)ADC1->JDR3) - 1995;
+			pwb16[i16widx++] = 0;
+			pwb16[i16widx++] = ((int16_t)dma_adc_raw[0]) - cos_mid;
+			pwb16[i16widx++] = ((int16_t)dma_adc_raw[1]) - sin_mid;
 			uint32_t * pwb32 = (uint32_t*)(&pwb16[i16widx]);
 			pwb32[0]=tick;
 			int pld_size = (i16widx*sizeof(int16_t)+sizeof(uint32_t));
