@@ -102,7 +102,7 @@ int main(void)
 //	auto_calibrate_motor();
 
 
-	int32_t vq_in = 100;
+	int32_t vq_in = 1000;
 	volatile int stuffed_length = 0;
 	while(1)
 	{
@@ -110,21 +110,22 @@ int main(void)
 
 		sinusoidal_fixed(vq_in,0);
 
-		//if(tick - tx_ts > 10)
-		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
-		int16_t * pwb16 = (int16_t*)(&gl_working_buf[0]);
-		int i16widx = 0;
-		pwb16[i16widx++] = hadc1.Instance->JDR1;
-		pwb16[i16widx++] = hadc1.Instance->JDR2;
-		pwb16[i16widx++] = hadc1.Instance->JDR3;
-//		pwb16[i16widx++] = dma_adc_raw[0];
-//		pwb16[i16widx++] = dma_adc_raw[1];
-		uint32_t * pwb32 = (uint32_t*)(&pwb16[i16widx]);
-		pwb32[0]=tick;
-		int pld_size = (i16widx*sizeof(int16_t)+sizeof(uint32_t));
-		stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-		m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-
+//		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
+		if(m_huart2.bytes_to_send == 0)
+		{
+			int16_t * pwb16 = (int16_t*)(&gl_working_buf[0]);
+			int i16widx = 0;
+			pwb16[i16widx++] = hadc1.Instance->JDR1;
+			pwb16[i16widx++] = hadc1.Instance->JDR2;
+			pwb16[i16widx++] = hadc1.Instance->JDR3;
+	//		pwb16[i16widx++] = dma_adc_raw[0];
+	//		pwb16[i16widx++] = dma_adc_raw[1];
+			uint32_t * pwb32 = (uint32_t*)(&pwb16[i16widx]);
+			pwb32[0]=tick;
+			int pld_size = (i16widx*sizeof(int16_t)+sizeof(uint32_t));
+			stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
 
 		if(tick-led_ts > 333)
 		{
