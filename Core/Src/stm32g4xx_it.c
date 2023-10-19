@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "init.h"
 #include "m_uart.h"
+#include "foc_fixed.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -209,7 +210,8 @@ void DMA1_Channel1_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
 
   /* USER CODE END DMA1_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc1);
+//  HAL_DMA_IRQHandler(&hdma_adc1);
+//	sinusoidal_fixed(100,0);
   /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
 	DMA1->IFCR = 0xFFFFFFFF;	//clear any and all interrupts that may have led us here
   /* USER CODE END DMA1_Channel1_IRQn 1 */
