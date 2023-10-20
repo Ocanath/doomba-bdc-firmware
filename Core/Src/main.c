@@ -10,11 +10,6 @@
 #include "m_uart.h"
 #include "PPP.h"
 
-#define PRESTUFF_BUF_SIZE 64
-#define STUFF_BUF_SIZE	((2*PRESTUFF_BUF_SIZE)+2)
-uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
-uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
-
 static volatile int16_fmt_t uart_encoder_data = {0};
 
 int32_t input_val = 0;
@@ -97,13 +92,12 @@ int main(void)
 
 
 //	obtain_encoder_midpoints();
-//	gl_oerr_total = estimate_orthogonality_error();
+//	fds_mp.gl_oerr_total = estimate_orthogonality_error();
 //	eval_encoder_params();
-//	auto_calibrate_motor();
+//	auto_calibrate_motor(700, 700, 5.f,.00001);
 
 
-	int32_t vq_in = 100;
-	volatile int stuffed_length = 0;
+	int32_t vq_in = 800;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
@@ -111,23 +105,6 @@ int main(void)
 		sinusoidal_fixed(vq_in,0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
-		if(m_huart2.bytes_to_send == 0)
-		{
-			int16_t * pwb16 = (int16_t*)(&gl_working_buf[0]);
-			int i16widx = 0;
-			pwb16[i16widx++] = gl_iq;
-			pwb16[i16widx++] = gl_id;
-//			pwb16[i16widx++] = 0;
-//			pwb16[i16widx++] = ((int16_t)dma_adc_raw[0]) - cos_mid;
-//			pwb16[i16widx++] = ((int16_t)dma_adc_raw[1]) - sin_mid;
-			uint32_t * pwb32 = (uint32_t*)(&pwb16[i16widx]);
-			int i32widx = 0;
-			pwb32[i32widx++] = tick;
-			pwb32[i32widx++] = fletchers_checksum32((uint32_t*)(&gl_working_buf[0]), 2);
-			int pld_size = (i16widx*sizeof(int16_t)+i32widx*sizeof(uint32_t));
-			stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-		}
 
 		if(tick-led_ts > 333)
 		{
@@ -135,13 +112,6 @@ int main(void)
 			led_ts = tick;
 		}
 	}
-
-//	while(1)
-//	{
-//		sinusoidal_fixed(200,0);
-//	}
-//	auto_calibrate_motor();
-
 
 	gl_ext_cmd_flags.control_mode = PCTL_VQ;
 	mctl_vq.kpki.kp.i32 = 100;

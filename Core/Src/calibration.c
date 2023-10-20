@@ -358,6 +358,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //	can_payload_t can_rx_data = {0};
 	uint8_t exit = 0;
 	int passcount = 0;
+	align_offset = ((float)fds_mp.align_offset_fixed)/4096.f;
 	while(exit == 0)
 	{
 
@@ -390,7 +391,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		}
 		else
 		{
-			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
+			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);	//count the number of passes
 			passcount = 0;
 		}
 
