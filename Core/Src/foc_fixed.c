@@ -148,8 +148,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
 	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
 
-	vq = saturate(vq,1000);
-	vd = saturate(vd,1000);
+	vq = saturate(vq,MAX_VQ);
+	vd = saturate(vd,MAX_VQ);
 
 
 	int32_t alpha,beta,tA,tB,tC;

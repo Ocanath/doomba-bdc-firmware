@@ -17,8 +17,8 @@
 
 //#define FLIP_TAU
 
-//#define GET_INIT_OFFSET
-//#define GET_ENCODER_MIDPOINT
+#define GET_INIT_OFFSET
+#define GET_ENCODER_MIDPOINT
 //#define TEST_FOC
 
 //#define GIMBAL_MOTOR

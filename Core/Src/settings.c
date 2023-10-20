@@ -54,44 +54,44 @@ fds_motor_params_t fds_mp =
 	.module_number = 0,
 
 	/*The all important align offset*/
-	.align_offset_fixed = 853,
+	.align_offset_fixed = 0,
 
 	/*These are not hand obtained ever, so no commands for them*/
-	.gl_cos_min = 535,
-	.gl_cos_max = 3428,
-	.gl_sin_min = 556,
-	.gl_sin_max = 3404,
-	.gl_oerr_total = -18,
+	.gl_cos_min = 0,
+	.gl_cos_max = 0,
+	.gl_sin_min = 0,
+	.gl_sin_max = 0,
+	.gl_oerr_total = 0,
 
 	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
-	.elec_conv_ratio_fixed = 7,
+	.elec_conv_ratio_fixed = 0,
 	.gl_prop_delayloop_interval = 100,
 	.gl_prop_delay_const_12b = 0x7FFFFFFF,
 	.iq_pi = {
 		.kp = {
-				.i32 = 5218,
-				.radix = 5
+				.i32 = 0,
+				.radix = 0
 		},
 		.ki = {
-				.i32 = 6498,
-				.radix = 9
+				.i32 = 0,
+				.radix = 0
 		},
 		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
-		.x_sat = MAX_VQ,
-		.out_rshift = 10
+		.x_sat = 0,
+		.out_rshift = 31
 	},
 	.id_pi = {
 		.kp = {
-				.i32 = 5218,
-				.radix = 5
+				.i32 = 0,
+				.radix = 31
 		},
 		.ki = {
-				.i32 = 7000,
-				.radix = 8
+				.i32 = 0,
+				.radix = 31
 		},
 		.x = 0,
-		.x_sat = MAX_VQ,
-		.out_rshift = 10
+		.x_sat = 0,
+		.out_rshift = 31
 	}
 };
 

@@ -205,7 +205,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	 * */
 	int32_t bkp_interval = fds_mp.gl_prop_delayloop_interval;	//backup before clobber
 	int32_t bkp_div = fds_mp.gl_prop_delay_const_12b;
-	fds_mp.gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
+	fds_mp.gl_prop_delayloop_interval = 10;	//turn off phase advancement by clobbering these constants
 	fds_mp.gl_prop_delay_const_12b = 0x7FFFFFFF;
 	fixed_PI_params_t bkp_idctlp = fds_mp.id_pi;
 	fds_mp.id_pi.kp.i32 = 0;
