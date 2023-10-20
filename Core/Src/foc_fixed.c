@@ -5,11 +5,6 @@
 #include "m_uart.h"
 #include "PPP.h"
 
-#define PRESTUFF_BUF_SIZE 64
-#define STUFF_BUF_SIZE	((2*PRESTUFF_BUF_SIZE)+2)
-uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
-uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
-
 /*Some constants for FOC math*/
 #define SQRT_3_12B			7094	//(sqrt(3))*2^12
 #define TWO_BY_SQRT_3_12B	4730	//(2/sqrt(3))*2^12
@@ -133,28 +128,13 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 	gl_iq = iq_meas;
 	gl_id = id_meas;
-
-//	while(m_huart2.bytes_to_send != 0);
-	if(m_huart2.bytes_to_send == 0)
-	{
-		uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-		int i32widx = 0;
-//		pwb32[i32widx++] = theta_elec;
-//		pwb32[i32widx++] = theta_m;
-		pwb32[i32widx++] = gl_iq;
-		pwb32[i32widx++] = gl_id;
-		pwb32[i32widx++] = HAL_GetTick();
-		int pld_size = i32widx*sizeof(uint32_t);
-		int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-		m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-	}
 }
 
 /*
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_m = theta_rel_fixed()+TWO_PI_12B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_12b(theta_elec);
 	int32_t cos_val = cos_12b(theta_elec);
@@ -168,8 +148,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
 	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
 
-	vq = saturate(vq,MAX_VQ);
-	vd = saturate(vd,MAX_VQ);
+	vq = saturate(vq,1000);
+	vd = saturate(vd,1000);
 
 
 	int32_t alpha,beta,tA,tB,tC;

@@ -15,6 +15,13 @@ static volatile int16_fmt_t uart_encoder_data = {0};
 int32_t input_val = 0;
 static volatile int32_t vq_pctl = 0;
 static volatile int32_t iq_pctl = 0;
+
+#define PRESTUFF_BUF_SIZE 64
+#define STUFF_BUF_SIZE	((2*PRESTUFF_BUF_SIZE)+2)
+uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
+uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
+
+
 /**
  */
 void m_uart_rx_cplt_callback(uart_it_t * h)
@@ -102,9 +109,23 @@ int main(void)
 	{
 		uint32_t tick = HAL_GetTick();
 
-		sinusoidal_fixed(vq_in,0);
+//		sinusoidal_fixed(vq_in,0);
+		foc_fixed(-100, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
+		if(m_huart2.bytes_to_send == 0)
+		{
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+	//		pwb32[i32widx++] = theta_elec;
+	//		pwb32[i32widx++] = theta_m;
+			pwb32[i32widx++] = gl_iq;
+			pwb32[i32widx++] = gl_id;
+			pwb32[i32widx++] = HAL_GetTick();
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
 
 		if(tick-led_ts > 333)
 		{
