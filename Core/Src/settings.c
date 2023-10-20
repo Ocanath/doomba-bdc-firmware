@@ -117,7 +117,7 @@ void load_flash_params(void)
 	if(is_page_empty(sizeof(fds_mp)/sizeof(uint32_t)) == 0)
 		m_read_flash((uint32_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
 	else
-		m_write_flash((uint32_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
+		m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 	gl_ext_cmd_id = (0x7FF - fds_mp.module_number);	//load this ONCE on startup
 }
 

@@ -71,8 +71,9 @@ int main(void)
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
-	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
+	load_flash_params();
 
+	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
@@ -104,13 +105,15 @@ int main(void)
 //	auto_calibrate_motor(700, 700, 5.f,.00001);
 
 
-	int32_t vq_in = 800;
+//	int32_t vq_in = 800;
+	int32_t tau = 0;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
 //		sinusoidal_fixed(vq_in,0);
-		foc_fixed(-100, 0);
+		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
+		foc_fixed(tau, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
 		if(m_huart2.bytes_to_send == 0)
@@ -118,7 +121,7 @@ int main(void)
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
-	//		pwb32[i32widx++] = theta_m;
+			pwb32[i32widx++] = tau;
 			pwb32[i32widx++] = gl_iq;
 			pwb32[i32widx++] = gl_id;
 			pwb32[i32widx++] = HAL_GetTick();
