@@ -99,7 +99,8 @@ int main(void)
 	uint32_t led_ts = 0;
 
 //	fds_mp.elec_conv_ratio_fixed = 7;
-//	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+	fds_mp.align_offset_fixed = 1222;
+	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
 	fds_mp.gl_oerr_total = estimate_orthogonality_error();
@@ -107,7 +108,7 @@ int main(void)
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
-	auto_calibrate_motor(2000, 700, 5.f,.00001);
+	auto_calibrate_motor(2000, 700, 7.f,.00001);
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
