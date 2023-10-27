@@ -11,6 +11,7 @@
 #include "CAN.h"
 #include "calibration_fixed.h"
 #include "m_uart.h"
+#include "PPP.h"
 
 /*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
 static uint32_t uart_tx_ts = 0;
@@ -210,6 +211,10 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	fixed_PI_params_t bkp_idctlp = fds_mp.id_pi;
 	fds_mp.id_pi.kp.i32 = 0;
 	fds_mp.id_pi.ki.i32 = 0;
+	fds_mp.id_pi.out_rshift = 32;
+	fds_mp.id_pi.out_rshift = 32;
+	fds_mp.id_pi.x_sat = 0;
+	fds_mp.id_pi.x_sat = 0;
 
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
 		sinusoidal_fixed(vq,0);
@@ -374,6 +379,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		else if (run_dist_1 < 0 && run_dist_2 > 0)
 			sign = -1.f;	//the direction is flipped. positive tau means negative encoder direction
 
+		//comment this if statement if you have stability issues
 		if(sign < 0 && abs_f(run_dist_1) > 6.f && abs_f(run_dist_2) > 6.f)
 			align_offset = -align_offset;		//if you're flipped and you have moved appreciably, flip the align offset and the sign should flip
 
@@ -410,6 +416,21 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //				}
 //			}
 //		}
+		if(m_huart2.bytes_to_send == 0)
+		{
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+	//		pwb32[i32widx++] = theta_elec;
+			pwb32[i32widx++] = fds_mp.align_offset_fixed;
+//			pwb32[i32widx++] = gl_iq;
+//			pwb32[i32widx++] = gl_id;
+			pwb32[i32widx++] = HAL_GetTick();
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+
+
 		if(passcount > 10)
 			exit = 1;
 

@@ -1,5 +1,8 @@
 #include "PPP.h"
 
+uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
+uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
+
 /*
 	Takes a payload and stuffs it based on PPP byte stuffing protocol. 
 	Result is available in a global fixed stuffing buffer

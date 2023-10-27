@@ -16,10 +16,6 @@ int32_t input_val = 0;
 static volatile int32_t vq_pctl = 0;
 static volatile int32_t iq_pctl = 0;
 
-#define PRESTUFF_BUF_SIZE 64
-#define STUFF_BUF_SIZE	((2*PRESTUFF_BUF_SIZE)+2)
-uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
-uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
 
 
 /**
