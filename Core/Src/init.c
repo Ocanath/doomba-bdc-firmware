@@ -88,6 +88,7 @@ void MX_ADC1_Init(void)
 	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_FALLING;
 	hadc1.Init.DMAContinuousRequests = ENABLE;
 	hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+//	hadc1.Init.OversamplingMode = DISABLE;
 	hadc1.Init.OversamplingMode = ENABLE;
 	hadc1.Init.Oversampling.Ratio = ADC_OVERSAMPLING_RATIO_4;
 	hadc1.Init.Oversampling.RightBitShift = ADC_RIGHTBITSHIFT_NONE;

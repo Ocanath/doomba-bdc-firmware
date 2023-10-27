@@ -98,9 +98,6 @@ int main(void)
 
 	uint32_t led_ts = 0;
 
-//	fds_mp.elec_conv_ratio_fixed = 7;
-	fds_mp.align_offset_fixed = 1222;
-	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
 	fds_mp.gl_oerr_total = estimate_orthogonality_error();
@@ -125,14 +122,14 @@ int main(void)
 #endif
 
 //	int32_t vq_in = 3546;
-	int32_t tau = 2000;
+	int32_t tau = -2000;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
-//		sinusoidal_fixed(vq_in,0);
+		sinusoidal_fixed(1800, 0);
 //		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
-		foc_fixed(tau, 0);
+//		foc_fixed(tau, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
 		if(m_huart2.bytes_to_send == 0)
@@ -140,7 +137,7 @@ int main(void)
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
-//			pwb32[i32widx++] = tau;
+			pwb32[i32widx++] = tau;
 			pwb32[i32widx++] = gl_iq;
 			pwb32[i32widx++] = gl_id;
 			pwb32[i32widx++] = HAL_GetTick();
@@ -148,6 +145,7 @@ int main(void)
 			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
 			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
 		}
+
 
 		if(tick-led_ts > 333)
 		{

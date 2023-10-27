@@ -121,4 +121,36 @@ void load_flash_params(void)
 	gl_ext_cmd_id = (0x7FF - fds_mp.module_number);	//load this ONCE on startup
 }
 
+void write_flash_params(void)
+{
+	fds_mp.elec_conv_ratio_fixed = 7;
+	fds_mp.align_offset_fixed = 1222;
+	fds_mp.iq_pi = (fixed_PI_params_t){
+		.kp = {
+				.i32 = 10000,
+				.radix = 3
+		},
+				.ki = {
+						.i32 = 10000,
+						.radix = 7
+		},
+		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_sat = MAX_VQ,
+		.out_rshift = 9
+	};
+	fds_mp.id_pi = (fixed_PI_params_t){
+		.kp = {
+				.i32 = 5000,
+				.radix = 5
+		},
+				.ki = {
+						.i32 = 10000,
+						.radix = 7
+		},
+		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_sat = MAX_VQ,
+		.out_rshift = 9
+	};
+	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+}
 
