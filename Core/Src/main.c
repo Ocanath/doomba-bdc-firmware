@@ -101,7 +101,7 @@ int main(void)
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
-	auto_calibrate_motor(2000, 700, 7.f,.00001);
+	auto_calibrate_motor(2000, 700, 7.f,.0001);
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
@@ -118,12 +118,12 @@ int main(void)
 #endif
 
 //	int32_t vq_in = 3546;
-	int32_t tau = -2000;
+	int32_t tau = 2000;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
-		sinusoidal_fixed(1800, 0);
+		sinusoidal_fixed(2000, 0);
 //		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
 //		foc_fixed(tau, 0);
 
@@ -133,7 +133,8 @@ int main(void)
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
-			pwb32[i32widx++] = tau;
+//			pwb32[i32widx++] = tau;
+			pwb32[i32widx++] = gl_theta_rem_m;
 			pwb32[i32widx++] = gl_iq;
 			pwb32[i32widx++] = gl_id;
 			pwb32[i32widx++] = HAL_GetTick();
