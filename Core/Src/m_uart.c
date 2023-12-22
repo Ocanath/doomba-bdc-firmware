@@ -58,6 +58,22 @@ uint8_t get_checksum(uint8_t * arr, int size)
 }
 
 /*
+Generic hex checksum calculation.
+TODO: use this in the psyonic API
+*/
+uint32_t fletchers_checksum32(uint32_t* arr, int size)
+{
+	int32_t checksum = 0;
+	int32_t fchk = 0;
+	for (int i = 0; i < size; i++)
+	{
+		checksum += (int32_t)arr[i];
+		fchk += checksum;
+	}
+	return fchk;
+}
+
+/*
  * Baremetal uart handler.
  *
  * Note: may require timer to trigger based on rx activity, to reset if partial frame detected. Depends on the behavior of the IDLE interrupt in

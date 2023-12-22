@@ -16,7 +16,7 @@
  *
  * Neat!
  * */
-uint32_t m_write_flash(uint32_t * words, int num_words);
+uint32_t m_write_flash(uint64_t * words, int num_words);
 
 /*
  * really simple block read. behaves as advertised, targeting the very last page of memory

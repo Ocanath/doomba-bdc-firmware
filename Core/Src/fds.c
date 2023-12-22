@@ -5,7 +5,7 @@
  *      Author: Ocanath
  */
 #include "fds.h"
-#define LAST_PAGE 31
+#define LAST_PAGE 63
 
 
 /*
@@ -33,7 +33,7 @@ uint32_t get_page_start_address(uint32_t page_number)
 }
 
 /**/
-uint32_t m_write_flash(uint32_t * words, int num_words)
+uint32_t m_write_flash(uint64_t * words, int num_words)
 {
 
 	uint32_t error = 0;

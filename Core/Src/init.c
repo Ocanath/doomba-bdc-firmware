@@ -81,14 +81,19 @@ void MX_ADC1_Init(void)
 	hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
 	hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
 	hadc1.Init.LowPowerAutoWait = DISABLE;
-	hadc1.Init.ContinuousConvMode = ENABLE;
+	hadc1.Init.ContinuousConvMode = DISABLE;
 	hadc1.Init.NbrOfConversion = 2;
 	hadc1.Init.DiscontinuousConvMode = DISABLE;
 	hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIG_T1_TRGO;
 	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_FALLING;
 	hadc1.Init.DMAContinuousRequests = ENABLE;
-	hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-	hadc1.Init.OversamplingMode = DISABLE;
+	hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+//	hadc1.Init.OversamplingMode = DISABLE;
+	hadc1.Init.OversamplingMode = ENABLE;
+	hadc1.Init.Oversampling.Ratio = ADC_OVERSAMPLING_RATIO_4;
+	hadc1.Init.Oversampling.RightBitShift = ADC_RIGHTBITSHIFT_NONE;
+	hadc1.Init.Oversampling.TriggeredMode = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
+	hadc1.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
 	if (HAL_ADC_Init(&hadc1) != HAL_OK)
 	{
 		Error_Handler();
@@ -104,7 +109,7 @@ void MX_ADC1_Init(void)
 	 */
 	sConfig.Channel = ADC_CHANNEL_1;
 	sConfig.Rank = ADC_REGULAR_RANK_1;
-	sConfig.SamplingTime = ADC_SAMPLETIME_6CYCLES_5;
+	sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
 	sConfig.SingleDiff = ADC_SINGLE_ENDED;
 	sConfig.OffsetNumber = ADC_OFFSET_NONE;
 	sConfig.Offset = 0;
@@ -124,7 +129,7 @@ void MX_ADC1_Init(void)
 	 */
 	sConfigInjected.InjectedChannel = ADC_CHANNEL_15;
 	sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
-	sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_6CYCLES_5;
+	sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_2CYCLES_5;
 	sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
 	sConfigInjected.InjectedOffsetNumber = ADC_OFFSET_NONE;
 	sConfigInjected.InjectedOffset = 0;
@@ -132,7 +137,7 @@ void MX_ADC1_Init(void)
 	sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
 	sConfigInjected.AutoInjectedConv = DISABLE;
 	sConfigInjected.QueueInjectedContext = DISABLE;
-	sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJEC_T1_CC4;
+	sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJEC_T1_TRGO;
 	sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_FALLING;
 	sConfigInjected.InjecOversamplingMode = DISABLE;
 	if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
@@ -435,7 +440,7 @@ void MX_USART2_UART_Init(void)
 
 	/* USER CODE END USART2_Init 1 */
 	huart2.Instance = USART2;
-	huart2.Init.BaudRate = 115200;
+	huart2.Init.BaudRate = 921600;
 	huart2.Init.WordLength = UART_WORDLENGTH_8B;
 	huart2.Init.StopBits = UART_STOPBITS_1;
 	huart2.Init.Parity = UART_PARITY_NONE;
@@ -462,7 +467,9 @@ void MX_USART2_UART_Init(void)
 		Error_Handler();
 	}
 	/* USER CODE BEGIN USART2_Init 2 */
-
+	USART2->CR1 |= (1 << 5) | (1 << 7) | (1 << 2) | (1 << 3);       //enable rxneie, txeie, RE and TE
+	USART2->CR1 &= ~(1 << 7);       //disable TX interrupt
+	USART2->CR1 |= (1 << 4);        //enable IDLE interrupt
 	/* USER CODE END USART2_Init 2 */
 
 }

@@ -11,6 +11,7 @@ extern int32_t curr_scf[3];
 
 /*Global motor current, to share with the rest of the software*/
 extern int32_t gl_iq;
+extern int32_t gl_id;
 extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta_fixedpoint_rad_p_sec;

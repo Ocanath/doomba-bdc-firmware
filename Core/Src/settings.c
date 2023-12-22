@@ -54,44 +54,44 @@ fds_motor_params_t fds_mp =
 	.module_number = 0,
 
 	/*The all important align offset*/
-	.align_offset_fixed = 902,
+	.align_offset_fixed = 0,
 
 	/*These are not hand obtained ever, so no commands for them*/
-	.gl_cos_min = 276,
-	.gl_cos_max = 3737,
-	.gl_sin_min = 274,
-	.gl_sin_max = 3704,
-	.gl_oerr_total = 74,
+	.gl_cos_min = 0,
+	.gl_cos_max = 0,
+	.gl_sin_min = 0,
+	.gl_sin_max = 0,
+	.gl_oerr_total = 0,
 
 	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
-	.elec_conv_ratio_fixed = 7,
-	.gl_prop_delayloop_interval = 60,
-	.gl_prop_delay_const_12b = 3,
+	.elec_conv_ratio_fixed = 0,
+	.gl_prop_delayloop_interval = 100,
+	.gl_prop_delay_const_12b = 0x7FFFFFFF,
 	.iq_pi = {
 		.kp = {
-				.i32 = 5218,
-				.radix = 5
+				.i32 = 0,
+				.radix = 0
 		},
 		.ki = {
-				.i32 = 6498,
-				.radix = 9
+				.i32 = 0,
+				.radix = 0
 		},
 		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
-		.x_sat = MAX_VQ,
-		.out_rshift = 10
+		.x_sat = 0,
+		.out_rshift = 31
 	},
 	.id_pi = {
 		.kp = {
 				.i32 = 0,
-				.radix = 12
+				.radix = 31
 		},
 		.ki = {
-				.i32 = 30,
-				.radix = 12
+				.i32 = 0,
+				.radix = 31
 		},
 		.x = 0,
 		.x_sat = 0,
-		.out_rshift = 12
+		.out_rshift = 31
 	}
 };
 
@@ -117,8 +117,40 @@ void load_flash_params(void)
 	if(is_page_empty(sizeof(fds_mp)/sizeof(uint32_t)) == 0)
 		m_read_flash((uint32_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
 	else
-		m_write_flash((uint32_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
+		m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 	gl_ext_cmd_id = (0x7FF - fds_mp.module_number);	//load this ONCE on startup
 }
 
+void write_flash_params(void)
+{
+	fds_mp.elec_conv_ratio_fixed = 7;
+	fds_mp.align_offset_fixed = 1222;
+	fds_mp.iq_pi = (fixed_PI_params_t){
+		.kp = {
+				.i32 = 10000,
+				.radix = 3
+		},
+				.ki = {
+						.i32 = 10000,
+						.radix = 7
+		},
+		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_sat = MAX_VQ,
+		.out_rshift = 9
+	};
+	fds_mp.id_pi = (fixed_PI_params_t){
+		.kp = {
+				.i32 = 5000,
+				.radix = 5
+		},
+				.ki = {
+						.i32 = 10000,
+						.radix = 7
+		},
+		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_sat = MAX_VQ,
+		.out_rshift = 9
+	};
+	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+}
 

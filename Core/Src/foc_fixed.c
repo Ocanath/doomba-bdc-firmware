@@ -2,6 +2,8 @@
 #include "mag-encoder.h"
 #include "init.h"
 #include "CAN.h"
+#include "m_uart.h"
+#include "PPP.h"
 
 /*Some constants for FOC math*/
 #define SQRT_3_12B			7094	//(sqrt(3))*2^12
@@ -40,6 +42,7 @@ uint32_t count = 0;
 
 /*Shared variables (current, unwrapped theta)*/
 int32_t gl_iq = 0;
+int32_t gl_id = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
@@ -95,7 +98,7 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_m = theta_rel_fixed()+TWO_PI_12B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_12b(theta_elec);
 	int32_t cos_val = cos_12b(theta_elec);
@@ -104,11 +107,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-	iq_meas = -iq_meas;
-	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
 	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &fds_mp.id_pi);
-//	int32_t vd = 0;
 
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
@@ -127,13 +127,14 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	count++;
 
 	gl_iq = iq_meas;
+	gl_id = id_meas;
 }
 
 /*
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_m = theta_rel_fixed()+TWO_PI_12B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_12b(theta_elec);
 	int32_t cos_val = cos_12b(theta_elec);
@@ -143,8 +144,6 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-	iq_meas = -iq_meas;
-	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
 
 	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
 	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
@@ -170,13 +169,14 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	count++;
 
 	gl_iq = iq_meas;
+	gl_id = id_meas;
 }
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
 {
-	int32_t ia = dma_adc_raw[0] - current_input_offset_A;
-	int32_t ib = dma_adc_raw[1] - current_input_offset_B;
-	int32_t ic = -(ia + ib);
+	int32_t ia = ((int16_t)ADC1->JDR1) - 1990;
+	int32_t ib = ((int16_t)ADC1->JDR2) - 1990;
+	int32_t ic = ((int16_t)ADC1->JDR3) - 1990;
 
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);

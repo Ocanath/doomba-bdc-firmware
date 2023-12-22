@@ -8,12 +8,16 @@
 #include "CAN.h"
 #include "foc_fixed.h"
 #include "m_uart.h"
+#include "PPP.h"
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
 int32_t input_val = 0;
 static volatile int32_t vq_pctl = 0;
 static volatile int32_t iq_pctl = 0;
+
+
+
 /**
  */
 void m_uart_rx_cplt_callback(uart_it_t * h)
@@ -63,8 +67,9 @@ int main(void)
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
-	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
+	load_flash_params();
 
+	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
@@ -89,80 +94,16 @@ int main(void)
 
 	uint32_t led_ts = 0;
 
-
-//	obtain_encoder_midpoints();
-//	gl_oerr_total = estimate_orthogonality_error();
-//	eval_encoder_params();
-//	auto_calibrate_motor();
-
-
-	int32_t vq_in = 1000;
-	while(1)
-	{
-		sinusoidal_fixed(vq_in,0);
-		uint32_t tick = HAL_GetTick();
-		if(tick-led_ts > 333)
-		{
-			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-			led_ts = tick;
-		}
-	}
-
-//	while(1)
-//	{
-//		sinusoidal_fixed(200,0);
-//	}
-//	auto_calibrate_motor();
-
-
-	gl_ext_cmd_flags.control_mode = PCTL_VQ;
-	mctl_vq.kpki.kp.i32 = 100;
-	mctl_vq.kpki.kp.radix = 5;
-	mctl_vq.kpki.ki.i32 = 0;
-	mctl_vq.kpki.kp.radix = 0;
-	mctl_vq.kpki.x_sat = 0;
-	mctl_vq.kpki.out_rshift = 11;
-	mctl_vq.kd.i32 = 0;
-	mctl_vq.kd.radix = 0;
-	mctl_vq.out_sat = 1000;
-	while(1)
-	{
-//		int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-//		int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed);
-
-//		int32_t targ = HAL_GetTick()*10000;
-//		int32_t vq = ctl_PI_fixed( (targ - gl_theta_rem_m), &mctl_vq.kpki);
-//		vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_vq.kd.i32) >> mctl_vq.kd.radix;
-//		vq = saturate(vq, mctl_vq.out_sat);
-		int32_t vq = 1500;
-		sinusoidal_fixed(vq,0);
-//		foc_fixed(1000,0);
-
-		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
-
-		uint32_t tick = HAL_GetTick();
-		if(tick-led_ts > 333)
-		{
-			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-			led_ts = tick;
-		}
-	}
-
-	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);
-	get_current_cal_offsets();
-	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
-
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
-	gl_oerr_total = estimate_orthogonality_error();
+	fds_mp.gl_oerr_total = estimate_orthogonality_error();
 	eval_encoder_params();
+	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
-	/*Best Method*/
-	auto_calibrate_motor();
-	//	auto_calibrate_fixed();
+	auto_calibrate_motor(2000, 700, 7.f,.0001);
+	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
-	TIMER_UPDATE_DUTY(500,500,500);
 #ifdef TEST_FOC
 	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
 	TIMER_UPDATE_DUTY(500,500,500);
@@ -175,22 +116,38 @@ int main(void)
 		}
 	}
 #endif
-	//print_calibration_parameters();
 
-	theta_m_prev = 0;
-	while (1)
+//	int32_t vq_in = 3546;
+	int32_t tau = 2000;
+	while(1)
 	{
-		foc_fixed(500,0);
-		//		sinusoidal_fixed(input_val, 0);
+		uint32_t tick = HAL_GetTick();
 
-		/*TODO: FDCAN stuff and RS485*/
-		get_dtheta();	//estimate velocity. synchronous with sinusoidal/foc calls, uses timer.
+		sinusoidal_fixed(2000, 0);
+//		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
+//		foc_fixed(tau, 0);
 
-		/*Blink the led if enabled*/
-		if(HAL_GetTick()>=led_ts && gl_ext_cmd_flags.en_blink_led)
+//		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
+		if(m_huart2.bytes_to_send == 0)
+		{
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+	//		pwb32[i32widx++] = theta_elec;
+//			pwb32[i32widx++] = tau;
+			pwb32[i32widx++] = gl_theta_rem_m;
+			pwb32[i32widx++] = gl_iq;
+			pwb32[i32widx++] = gl_id;
+			pwb32[i32widx++] = HAL_GetTick();
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+
+
+		if(tick-led_ts > 333)
 		{
 			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-			led_ts = HAL_GetTick() + 200;
+			led_ts = tick;
 		}
 	}
 }
