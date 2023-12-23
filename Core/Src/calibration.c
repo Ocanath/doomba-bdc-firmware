@@ -206,7 +206,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	 * */
 	int32_t bkp_interval = fds_mp.gl_prop_delayloop_interval;	//backup before clobber
 	int32_t bkp_div = fds_mp.gl_prop_delay_const_12b;
-	fds_mp.gl_prop_delayloop_interval = 10;	//turn off phase advancement by clobbering these constants
+	fds_mp.gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
 	fds_mp.gl_prop_delay_const_12b = 0x7FFFFFFF;
 	fixed_PI_params_t bkp_idctlp = fds_mp.id_pi;
 	fds_mp.id_pi.kp.i32 = 0;
@@ -216,11 +216,45 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	fds_mp.id_pi.x_sat = 0;
 	fds_mp.id_pi.x_sat = 0;
 
-	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
-		sinusoidal_fixed(vq,0);
+	int32_t vqstart = 0;
+	for(uint32_t stop_ts = HAL_GetTick() + 50; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
+	{
+		sinusoidal_fixed(vqstart,0);
+		if(vq > 0)
+		{
+			vqstart++;
+			if(vqstart > vq)
+				vqstart = vq;
+		}
+		else if(vq < 0)
+		{
+			vqstart--;
+			if(vqstart < vq)
+				vqstart = vq;
+		}
+	}
 	float run_start = ((float)gl_theta_rem_m)/4096.f;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)
 		sinusoidal_fixed(vq,0);
+
+	//decelerate
+	vqstart = vq;
+	for(uint32_t stop_ts = HAL_GetTick() + 50; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
+	{
+		sinusoidal_fixed(vqstart,0);
+		if(vqstart > 0)
+		{
+			vqstart--;
+			if(vq < 0)
+				vq = 0;
+		}
+		if(vqstart < 0)
+		{
+			vqstart++;
+			if(vq > 0)
+				vq = 0;
+		}
+	}
 	float run_end = ((float)gl_theta_rem_m)/4096.f;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
@@ -376,12 +410,9 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		float sign = 0.f;
 		if(run_dist_1 > 0.f && run_dist_2 < 0.f)
 			sign = 1.f;		//the direction is how it should be. positive tau means positive encoder direction
-		else if (run_dist_1 < 0 && run_dist_2 > 0)
+		else if (run_dist_1 < 0.f && run_dist_2 > 0.f)
 			sign = -1.f;	//the direction is flipped. positive tau means negative encoder direction
 
-		//comment this if statement if you have stability issues
-		if(sign < 0 && abs_f(run_dist_1) > 6.f && abs_f(run_dist_2) > 6.f)
-			align_offset = -align_offset;		//if you're flipped and you have moved appreciably, flip the align offset and the sign should flip
 
 		double err = run1_speed-run2_speed;	//compute base term for control effort
 		double u = err/gain;	//scale control effort down (k gain)
@@ -394,6 +425,8 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		{
 			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
 			passcount++;
+			if(sign < 0)
+				align_offset = fmod_2pi( (align_offset + PI) + PI ) - PI;	//
 		}
 		else
 		{
