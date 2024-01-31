@@ -542,7 +542,7 @@ int32_t estimate_orthogonality_error(void)
 	TIMER_UPDATE_DUTY(500,500,500);
 	int32_t m45 = sqrt_i32(vc45*vc45 + vs45*vs45);
 	int32_t m135 = sqrt_i32(vc135*vc135 + vs135*vs135);
-	int32_t epsilon = 2*atan2_fixed( (m135-m45) , (m135+m45) );
+	int32_t epsilon = 2*atan2_12b( (m135-m45) , (m135+m45) );
 	return epsilon;
 }
 

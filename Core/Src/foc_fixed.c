@@ -76,7 +76,7 @@ void get_dtheta(void)
 }
 
 
-int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_params_t * p)
+int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p)
 {
 	//NOTE: out_rshift applied TWICE, to avoid x overflow, while maintaining thesame radix when adding x and effort to get u.
 	p->x = p->x + ((p->ki.i32*error)/p->x_integral_div);	//accumulate x with controlled slope: two controls are div scaling factor, and frequency of control law updates

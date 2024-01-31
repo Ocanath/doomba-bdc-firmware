@@ -6,7 +6,7 @@
 % Outputs: 
 %   atan2, fixed point. 4096*pi -> pi, -4096*pi -> -pi.
 %   OUTPUT RANGE -12868 to 12868 (off by 1 possible)
-function out = atan2_fixed(y,x)
+function out = atan2_12b(y,x)
     assert(isa(y,'int32') & isa(x,'int32'),'Error: inputs must be of type int32');
     
     FP_HALF_PI = 6434;  %int32(4096*pi/2);

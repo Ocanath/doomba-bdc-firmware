@@ -73,7 +73,7 @@ v_m = zeros(1,length(theta));
 for i = 1:length(theta)
     tick = uint32(t(i)*1000);
     
-    theta_m = atan2_fixed(sin_in(i),cos_in(i)) - align_offset_fixed;
+    theta_m = atan2_12b(sin_in(i),cos_in(i)) - align_offset_fixed;
     theta_elec = mod( (theta_m*elec_conv_ratio + phase_adv) +PI, TWO_PI)-PI;
     sin_f(i) = sin_fixed(theta_elec);
     cos_f(i) = cos_fixed(theta_elec);   
@@ -134,13 +134,13 @@ sin_fixed_shifted = fixed_theta_shifted;
 cos_fixed_shifted = sin_fixed_shifted;
 
 for i = 1:length(theta)
-    th = atan2_fixed(sin_in(i),cos_in(i));
+    th = atan2_12b(sin_in(i),cos_in(i));
     th = mod((th+align_offset+PI),TWO_PI)-PI;
     sth = sin_fixed(th);
     cth = cos_fixed(th);
     sin_fixed_shifted(i) = sth;
     cos_fixed_shifted(i) = cth;
-    fixed_theta_shifted(i) = atan2_fixed(sth/2,cth/2);
+    fixed_theta_shifted(i) = atan2_12b(sth/2,cth/2);
 end
 
 figure(6)
@@ -187,9 +187,9 @@ ref = atan2(sin(theta),cos(theta));
 float_ref = atan2(single(sin_in),single(cos_in));
 fixed_ref = int32(zeros(1,length(theta)));
 for i = 1:length(theta)
-    fixed_ref(i) = atan2_fixed(int32(sin_in(i)),int32(cos_in(i)));
+    fixed_ref(i) = atan2_12b(int32(sin_in(i)),int32(cos_in(i)));
 end
-% fixed_ref = atan2_fixed(sin_in,cos_in);
+% fixed_ref = atan2_12b(sin_in,cos_in);
 
 
 

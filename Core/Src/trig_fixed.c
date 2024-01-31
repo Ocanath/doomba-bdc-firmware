@@ -9,18 +9,18 @@
  * */
 
 /*Poly Coefficients used for sin calculation, scaled up by 2^12*/
-static const int32_t sc1 = 117;
-static const int32_t sc2 = -834;
-static const int32_t sc3 = 85;
-static const int32_t sc4 = 4078;
-static const int32_t sc5 = 1;
+static const int32_t sc1_12b = 117;
+static const int32_t sc2_12b = -834;
+static const int32_t sc3_12b = 85;
+static const int32_t sc4_12b = 4078;
+static const int32_t sc5_12b = 1;
 
 /*Poly coefficients, scaled up by 2^12*/
-static const int32_t tc1 = 580;    //2^12 scale
-static const int32_t tc2 = -1406;    //2^12
-static const int32_t tc3 = -66;    //2^12
-static const int32_t tc4 = 4112;    //2^12
-static const int32_t tc5 = -1*4096;    //2^12, with extra scaling factor applied for speed
+static const int32_t tc1_12b = 580;    //2^12 scale
+static const int32_t tc2_12b = -1406;    //2^12
+static const int32_t tc3_12b = -66;    //2^12
+static const int32_t tc4_12b = 4112;    //2^12
+static const int32_t tc5_12b = -1*4096;    //2^12, with extra scaling factor applied for speed
 
 /*
 *   Input:
@@ -65,7 +65,7 @@ int32_t sin_12b(int32_t theta)
     int32_t theta2 = (theta * theta) >> 12;
     int32_t theta3 = (theta2 * theta) >> 12;
     int32_t theta4 = (theta3 * theta) >> 12;
-    int32_t res = sc1 * theta4 + sc2 * theta3 + sc3 * theta2 + sc4 * theta + (sc5 << 12);
+    int32_t res = sc1_12b * theta4 + sc2_12b * theta3 + sc3_12b * theta2 + sc4_12b * theta + (sc5_12b << 12);
     res = res >> 12;
 
     int32_t y;
@@ -83,7 +83,7 @@ int32_t cos_12b(int32_t theta)
 }
 
 
-int32_t atan2_fixed(int32_t y, int32_t x)
+int32_t atan2_12b(int32_t y, int32_t x)
 {
     //assert(isa(y, 'int32') & isa(x, 'int32'), 'Error: inputs must be of type int32');
 
@@ -132,7 +132,7 @@ int32_t atan2_fixed(int32_t y, int32_t x)
     int32_t a4 = (a3 * a) >> 12;
 
     // best, most multiplies, 4th order
-    int32_t r = a4 * tc1 + a3 * tc2 + a2 * tc3 + a * tc4 + tc5; //compute polynomial result. Shift the last coefficient, to apply the factor of 2^12 present in all the exponents
+    int32_t r = a4 * tc1_12b + a3 * tc2_12b + a2 * tc3_12b + a * tc4_12b + tc5_12b; //compute polynomial result. Shift the last coefficient, to apply the factor of 2^12 present in all the exponents
     r = r >> 12;    //remove the factor of 2^15 added by the coefficints, leaving only the factor of 2^12 that was preserved in the exponents
 
     // fp_coef from fixed_point_foc

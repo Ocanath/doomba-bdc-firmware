@@ -175,29 +175,31 @@ int main(void)
 
 
 
-	fixed_PI_params_t pctl_vq = {
-			.kp = {.i32 = 10, .radix = 9},
-			.ki = {.i32 = 10, .radix = 10},
+	fixed_PI_2_params_t pctl_vq = {
+			.kp = {.i32 = 40, .radix = 8},
+			.ki = {.i32 = 7, .radix = 10},
 			.x_integral_div = 100,
 			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
 			.x_sat = 300,	//no integral efforts for now
 			.out_rshift = 0
 	};
-	i32_t pctl_kd_vq = {
-			.i32 = 25,	//no deriv effort either, for now
+	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
+			.i32 = 12,	//no deriv effort either, for now
 			.radix = 5
 	};
+	uint32_t uart_tx_ts = 0;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
 		int32_t qd = 0;
 		int32_t q = gl_theta_rem_m;
-		int32_t vq = ctl_PI_fixed_2(qd - q, (fixed_PI_params_t*)(&pctl_vq));
-		vq = 0;
+		int32_t vq = ctl_PI_fixed_2(qd - q, (fixed_PI_2_params_t*)(&pctl_vq));
 		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
-		vq -= damping;
+//		vq -= damping;
 		vq = saturate(vq, 500);
+
+//		int32_t iq_req = (sin_12b(wrap_2pi_12b(tick))*100)/4096;
 
 		sinusoidal_fixed(vq,0);
 
@@ -207,20 +209,23 @@ int main(void)
 //		foc_fixed(tau, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
-		if(m_huart2.bytes_to_send == 0)
+		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 1 )
 		{
+			uart_tx_ts = tick;
+
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
-			pwb32[i32widx++] = gl_theta_rem_m/10;
-			pwb32[i32widx++] = pctl_vq.x;
-			pwb32[i32widx++] = vq;
-			pwb32[i32widx++] = damping;
+//			pwb32[i32widx++] = qd/10;
+//			pwb32[i32widx++] = gl_theta_rem_m/10;
+//			pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
+//			pwb32[i32widx++] = vq;
+//			pwb32[i32widx++] = damping;
 
 
 //		pwb32[i32widx++] = theta_elec;
-//			pwb32[i32widx++] = tau;
-//			pwb32[i32widx++] = gl_iq;
-//			pwb32[i32widx++] = gl_id;
+			pwb32[i32widx++] = vq;
+			pwb32[i32widx++] = gl_iq;
+			pwb32[i32widx++] = gl_id;
 //			int32_t s,c;
 //			get_sc_no_ortho_comp(&s,&c);
 //			pwb32[i32widx++] = s;
@@ -235,10 +240,10 @@ int main(void)
 
 
 
-		if(tick-led_ts > 500)
-		{
-			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-			led_ts = tick;
-		}
+//		if(tick-led_ts > 500)
+//		{
+//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
+//			led_ts = tick;
+//		}
 	}
 }

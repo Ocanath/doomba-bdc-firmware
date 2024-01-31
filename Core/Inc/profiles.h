@@ -28,7 +28,7 @@ typedef struct i32_t
 	int32_t radix;	//'decimal' point. true value is i32/2^radix
 }i32_t;
 
-typedef struct fixed_PI_params_t
+typedef struct fixed_PI_2_params_t
 {
 	i32_t kp;
 	i32_t ki;
@@ -36,8 +36,16 @@ typedef struct fixed_PI_params_t
 	int32_t x;
 	int32_t x_sat;
 	uint8_t out_rshift;
-}fixed_PI_params_t;
+}fixed_PI_2_params_t;
 
+typedef struct fixed_PI_params_t
+{
+	i32_t kp;
+	i32_t ki;
+	int32_t x;
+	int32_t x_sat;
+	uint8_t out_rshift;
+}fixed_PI_params_t;
 
 typedef struct fds_motor_params_t
 {
