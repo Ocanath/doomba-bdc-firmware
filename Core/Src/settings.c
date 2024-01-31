@@ -64,7 +64,7 @@ fds_motor_params_t fds_mp =
 	.gl_oerr_total = 0,
 
 	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
-	.elec_conv_ratio_fixed = 0,
+	.elec_conv_ratio_fixed = 11,
 	.gl_prop_delayloop_interval = 100,
 	.gl_prop_delay_const_12b = 0x7FFFFFFF,
 	.iq_pi = {

@@ -11,9 +11,6 @@
 #define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
 #define ONE_THIRD_12B		1365
 
-/*Define for low-noise velocity estimator, used exposed over CAN and used as a damping term*/
-#define VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US	1000
-
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
  *
  * The remainder will range +/-half_overflow_val
@@ -46,7 +43,7 @@ int32_t gl_id = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
-static int32_t dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
+int32_t gl_dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 
 /*Previous Theta for position estimator.*/
 static int32_t prev_theta_m=0;
@@ -70,12 +67,26 @@ void get_dtheta(void)
 	if(cnt >= VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US)
 	{
 
-		int32_t dtheta = gl_theta_rem_m - dtheta_prev_theta;
-		dtheta_prev_theta = gl_theta_rem_m;
+		int32_t dtheta = gl_theta_rem_m - gl_dtheta_prev_theta;
+		gl_dtheta_prev_theta = gl_theta_rem_m;
 		cnt = TIM2->CNT;	//read one final time for best accuracy
 		TIM2->CNT = 0;
 		gl_dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / cnt);
 	}
+}
+
+
+int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_params_t * p)
+{
+	//NOTE: out_rshift applied TWICE, to avoid x overflow, while maintaining thesame radix when adding x and effort to get u.
+	p->x = p->x + ((p->ki.i32*error)/p->x_integral_div);	//accumulate x with controlled slope: two controls are div scaling factor, and frequency of control law updates
+	int32_t sat = p->x_sat << (p->out_rshift + p->ki.radix);
+	if(p->x > sat)
+		p->x = sat;
+	if(p->x < -sat)
+		p->x = -sat;
+	int32_t u = ((p->x >> p->ki.radix) + ((p->kp.i32*error) >> p->kp.radix)) >> p->out_rshift;	//one application of outshift
+	return u;
 }
 
 /*

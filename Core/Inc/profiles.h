@@ -32,6 +32,7 @@ typedef struct fixed_PI_params_t
 {
 	i32_t kp;
 	i32_t ki;
+	int32_t x_integral_div;
 	int32_t x;
 	int32_t x_sat;
 	uint8_t out_rshift;

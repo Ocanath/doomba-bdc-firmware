@@ -3,6 +3,10 @@
 #include "trig_fixed.h"
 #include "settings.h"
 
+/*Define for low-noise velocity estimator, used exposed over CAN and used as a damping term*/
+#define VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US	1000
+
+
 /*Current input offset and current scaling constants*/
 extern int32_t current_input_offset_A;
 extern int32_t current_input_offset_B;
@@ -15,6 +19,7 @@ extern int32_t gl_id;
 extern int32_t gl_theta_rem_m;
 extern int32_t gl_theta_rotations;
 extern int32_t gl_dtheta_fixedpoint_rad_p_sec;
+extern int32_t gl_dtheta_prev_theta;
 
 /*Overflow value constants, for unwrap_overflow function*/
 extern const int32_t half_overflow_val;
@@ -40,5 +45,6 @@ void get_current_cal_offsets(void);
 int32_t saturate(int32_t v, int32_t sat);
 int32_t unwrap_32_overflow(int32_t theta, int32_t * prev_theta, int32_t * rotations);
 void get_dtheta(void);
+int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_params_t * p);
 
 #endif // ! FOC_FIXED_H

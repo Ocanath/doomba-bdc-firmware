@@ -424,9 +424,10 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		if(abs_f(u) < passthresh && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
 		{
 			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
-			passcount++;
 			if(sign < 0)
 				align_offset = fmod_2pi( (align_offset + PI) + PI ) - PI;	//
+			else
+				passcount++;
 		}
 		else
 		{
