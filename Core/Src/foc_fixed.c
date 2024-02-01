@@ -109,20 +109,20 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
-	int32_t theta_m = ( theta_rel_fixed() / 4 )+TWO_PI_12B;	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_12b(theta_elec);
-	int32_t cos_val = cos_12b(theta_elec);
+	int32_t theta_m = theta_rel_fixed()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_14b(theta_elec);
+	int32_t cos_val = cos_14b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
 	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &fds_mp.id_pi);
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
@@ -145,16 +145,16 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
-	int32_t theta_m = theta_rel_fixed()+TWO_PI_12B;	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_12b(theta_elec);
-	int32_t cos_val = cos_12b(theta_elec);
+	int32_t theta_m = theta_rel_fixed()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_14b(theta_elec);
+	int32_t cos_val = cos_14b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 
 	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
+	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
 	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
 	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
@@ -164,7 +164,7 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
@@ -183,7 +183,7 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	gl_id = id_meas;
 }
 
-void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
+void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t shift)
 {
 	int32_t ia = ((int16_t)ADC1->JDR1) - 1990;
 	int32_t ib = ((int16_t)ADC1->JDR2) - 1990;
@@ -191,7 +191,7 @@ void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
 
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
-	park_fixed(ialpha,ibeta,sth,cth,iq,id);
+	park_fixed(ialpha,ibeta,sth,cth,iq,id, shift);
 }
 
 void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta)
@@ -204,10 +204,10 @@ void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t *
 //	*beta = ((SQRT_3_12B*ib - SQRT_3_12B*ic) >> 12) * ONE_THIRD_12B >> 12;	//
 }
 
-void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id)
+void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id, uint8_t shift)
 {
-	*id = (alpha*cos_theta + beta*sin_theta) >> 12;
-	*iq = (-alpha*sin_theta + beta*cos_theta) >> 12;
+	*id = (alpha*cos_theta + beta*sin_theta) >> shift;
+	*iq = (-alpha*sin_theta + beta*cos_theta) >> shift;
 }
 
 /* 
@@ -221,7 +221,7 @@ Inputs:
 Outputs :
      ialpha, ibeta in whichever scale iqand id were passed
 */
-void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32_t * ialpha, int32_t* ibeta)
+void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32_t * ialpha, int32_t* ibeta, uint8_t shift)
 {
     /* 
         NOTE: If desired, it is possible to
@@ -229,8 +229,8 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
         the controller to have a higher res.This function removes the 2 ^ 12
         term from sin and cos, but not the 2 ^ n term from iq and id
     */
-    *ialpha = (id * cth - iq * sth) >> 12;
-    *ibeta = (id * sth + iq * cth) >> 12;
+    *ialpha = (id * cth - iq * sth) >> shift;
+    *ibeta = (id * sth + iq * cth) >> shift;
 }
 
 const int32_t two_by_three_sqrt3 = 4730;	//sqrt(3)*2/3*4096

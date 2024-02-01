@@ -194,7 +194,8 @@ int main(void)
 
 		int32_t qd = 0;
 		int32_t q = gl_theta_rem_m;
-		int32_t vq = ctl_PI_fixed_2(qd - q, (fixed_PI_2_params_t*)(&pctl_vq));
+		int32_t e = (qd-q) >> 2;	//go down to 12
+		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
 		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
 //		vq -= damping;
 		vq = saturate(vq, 500);

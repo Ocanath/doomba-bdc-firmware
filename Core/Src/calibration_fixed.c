@@ -119,7 +119,7 @@ int32_t get_elec_conversion_ratio(void)
 	int32_t sth = sin_12b(theta_elec);
 	int32_t cth = cos_12b(theta_elec);
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+	inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	HAL_Delay(100);
@@ -136,7 +136,7 @@ int32_t get_elec_conversion_ratio(void)
 		theta_elec = wrap_2pi_12b(theta);
 		sth = sin_12b(theta_elec);
 		cth = cos_12b(theta_elec);
-		inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+		inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
 		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 

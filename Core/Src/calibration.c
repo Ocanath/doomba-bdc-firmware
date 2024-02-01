@@ -284,7 +284,7 @@ int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta)
 	int32_t sth = sin_12b(theta);
 	int32_t cth = cos_12b(theta);
 	int32_t alpha,beta, ta,tb,tc;
-	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta);
+	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
 	TIMER_UPDATE_DUTY(ta,tb,tc);
 	return wrap_2pi_12b(theta_rel_fixed() * fds_mp.elec_conv_ratio_fixed);
