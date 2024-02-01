@@ -25,7 +25,7 @@
 uint16_t gl_ext_cmd_id;
 
 static int32_t v_radix = DEFAULT_V_REPORT_RADIX;
-int32_t gl_v_uS_conv = 1000000 >> (12 - DEFAULT_V_REPORT_RADIX);
+int32_t gl_v_uS_conv = 1000000 >> (14 - DEFAULT_V_REPORT_RADIX);
 int32_t gl_iq_rshift = DEFAULT_IQ_RSHIFT;
 
 FDCAN_TxHeaderTypeDef		can_tx_header;

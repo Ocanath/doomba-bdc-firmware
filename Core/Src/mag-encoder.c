@@ -131,7 +131,7 @@ void eval_encoder_params(void)
 	oerr_total_ncos = cos_14b(-fds_mp.gl_oerr_total);
 }
 
-int32_t theta_rel_fixed(void)
+int32_t theta_rel_14b(void)
 {
 	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
 	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
@@ -144,8 +144,27 @@ int32_t theta_rel_fixed(void)
 	return atan2_14b(sinVal,cosVal) - fds_mp.align_offset_fixed;
 }
 
+int32_t theta_rel_12b(void)
+{
+	return (theta_rel_14b() >> 2);
+}
+
+
+/**/
+int32_t theta_abs_14b(void)
+{
+	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
+	sinVal = (sinVal*mul_sin)/div_sin;
+	cosVal = (cosVal*mul_cos)/div_cos;
+	/*
+	 * sin phase compensator term.
+	 */
+	return atan2_14b(sinVal,cosVal);
+}
+
 /*return raw atan2 angle, no commutation offset or orthogonality/phase error comp*/
-int32_t theta_abs_fixed(void)
+int32_t theta_abs_12b(void)
 {
 	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
 	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;

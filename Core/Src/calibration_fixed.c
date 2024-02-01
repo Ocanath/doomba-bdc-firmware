@@ -124,7 +124,7 @@ int32_t get_elec_conversion_ratio(void)
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	HAL_Delay(100);
 
-	int32_t theta_m_start = theta_rel_fixed();
+	int32_t theta_m_start = theta_rel_12b();
 	uint8_t one_m_rev = 0;
 	int32_t prev_theta_m = 0;
 
@@ -140,7 +140,7 @@ int32_t get_elec_conversion_ratio(void)
 		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-		int32_t theta_m = theta_rel_fixed() - theta_m_start;	//atan2, apply align offset
+		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
 		gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 		if(gl_theta_rem_m >= TWO_PI_12B+10)

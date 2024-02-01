@@ -194,20 +194,20 @@ int main(void)
 
 		int32_t qd = 0;
 		int32_t q = gl_theta_rem_m;
-		int32_t e = (qd-q) >> 2;	//go down to 12
+		int32_t e = qd-q;	//go down to 12
 		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
 		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
 //		vq -= damping;
 		vq = saturate(vq, 500);
 
-//		int32_t iq_req = (sin_12b(wrap_2pi_12b(tick))*100)/4096;
+		int32_t id_req = (sin_12b(wrap_2pi_12b(tick*10))*1200)/4096;
 
-		sinusoidal_fixed(vq,0);
+//		sinusoidal_fixed(vq,id_req);
 
 		get_dtheta();
 
 //		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
-//		foc_fixed(tau, 0);
+		foc_fixed(300, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
 		if(m_huart2.bytes_to_send == 0 )//&& (tick - uart_tx_ts) > 1 )
@@ -220,13 +220,20 @@ int main(void)
 //			pwb32[i32widx++] = gl_theta_rem_m/10;
 //			pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
 //			pwb32[i32widx++] = vq;
-//			pwb32[i32widx++] = damping;
+//			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
 
+//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
+//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
+//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
 
 //		pwb32[i32widx++] = theta_elec;
-			pwb32[i32widx++] = vq;
-			pwb32[i32widx++] = gl_iq;
+//			pwb32[i32widx++] = vq;
+//			pwb32[i32widx++] = gl_iq;
+			pwb32[i32widx++] = 0;
+			pwb32[i32widx++] = id_req;
 			pwb32[i32widx++] = gl_id;
+			pwb32[i32widx++] = 300;
+			pwb32[i32widx++] = gl_iq;
 //			int32_t s,c;
 //			get_sc_no_ortho_comp(&s,&c);
 //			pwb32[i32widx++] = s;

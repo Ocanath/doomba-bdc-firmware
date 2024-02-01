@@ -37,13 +37,18 @@ extern int32_t oerr_total_ncos;
 //extern int16_t cos_mid;
 //extern int16_t sin_mid;
 
+
+
 float theta_abs_rad();
 float theta_rel_rad();
 float theta_abs_deg();
 float theta_rel_deg();
-int32_t theta_rel_fixed(void);
-int32_t theta_abs_fixed(void);
+int32_t theta_rel_14b(void);
+int32_t theta_rel_12b(void);
+int32_t theta_abs_14b(void);
+int32_t theta_abs_12b(void);
 void get_sc_no_ortho_comp(int32_t * c, int32_t * s);
+
 
 /*
  * fast trig functions

@@ -233,7 +233,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 				vqstart = vq;
 		}
 	}
-	float run_start = ((float)gl_theta_rem_m)/4096.f;
+	float run_start = ((float)gl_theta_rem_m)/16384.f;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)
 		sinusoidal_fixed(vq,0);
 
@@ -255,7 +255,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 				vq = 0;
 		}
 	}
-	float run_end = ((float)gl_theta_rem_m)/4096.f;
+	float run_end = ((float)gl_theta_rem_m)/16384.f;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
 	*run_distance = run_end-run_start;
@@ -287,7 +287,7 @@ int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta)
 	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
 	TIMER_UPDATE_DUTY(ta,tb,tc);
-	return wrap_2pi_12b(theta_rel_fixed() * fds_mp.elec_conv_ratio_fixed);
+	return wrap_2pi_12b(theta_rel_12b() * fds_mp.elec_conv_ratio_fixed);
 }
 
 /*
@@ -331,7 +331,7 @@ int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts)
 	{
 
 		elock_angle(0, vq, (int32_t)(theta_e*4096.f));
-		int32_t theta_m = wrap_2pi_12b(theta_rel_fixed()*fds_mp.elec_conv_ratio_fixed);
+		int32_t theta_m = wrap_2pi_12b(theta_rel_12b()*fds_mp.elec_conv_ratio_fixed);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
 		float effort = error/500.f;
@@ -397,7 +397,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //	can_payload_t can_rx_data = {0};
 	uint8_t exit = 0;
 	int passcount = 0;
-	align_offset = ((float)fds_mp.align_offset_fixed)/4096.f;
+	align_offset = ((float)fds_mp.align_offset_fixed)/16384.f;
 	while(exit == 0)
 	{
 
@@ -418,7 +418,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		double u = err/gain;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		fds_mp.align_offset_fixed = (int32_t)(align_offset*4096.f);
+		fds_mp.align_offset_fixed = (int32_t)(align_offset*16384.f);
 
 
 		if(abs_f(u) < passthresh && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
@@ -475,7 +475,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(1);
 	}
-	fds_mp.align_offset_fixed = (int32_t)(align_offset * 4096.f);
+	fds_mp.align_offset_fixed = (int32_t)(align_offset * 16384.f);
 
 }
 
@@ -484,7 +484,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 void openloop_mang_pctl(int32_t ang, float * theta_effort)
 {
 	elock_angle(400, 0, (int32_t)( (*theta_effort) *4096.f));
-	int32_t theta_m = theta_abs_fixed();	//important: use abs, not rel. for use with getting orthogonality error
+	int32_t theta_m = theta_abs_12b();	//important: use abs, not rel. for use with getting orthogonality error
 
 	float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
 	float effort = error/500.f;

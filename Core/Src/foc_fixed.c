@@ -109,7 +109,7 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
-	int32_t theta_m = theta_rel_fixed()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
@@ -145,7 +145,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
-	int32_t theta_m = theta_rel_fixed()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
@@ -255,7 +255,7 @@ const int32_t half_period_val = COMM_PWM_PERIOD/2;
 /*sinusoidal mode, no clarke-park, direct voltage in PWM space*/
 void voltage_3rd_harmonic(int32_t mag)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
@@ -278,7 +278,7 @@ void voltage_3rd_harmonic(int32_t mag)
 
 void volage_pure_sinusoidal(int32_t m)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
+	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
