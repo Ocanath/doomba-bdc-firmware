@@ -123,12 +123,12 @@ void eval_encoder_params(void)
 {
 	sin_mid = (fds_mp.gl_sin_max + fds_mp.gl_sin_min)/2;
 	cos_mid = (fds_mp.gl_cos_max + fds_mp.gl_cos_min)/2;
-	mul_cos = (1<<12);
+	mul_cos = (1<<14);
 	div_cos = (fds_mp.gl_cos_max - fds_mp.gl_cos_min)/2;
-	mul_sin = (1<<12);
+	mul_sin = (1<<14);
 	div_sin = (fds_mp.gl_sin_max - fds_mp.gl_sin_min)/2;
-	oerr_total_nsin = sin_12b(-fds_mp.gl_oerr_total);
-	oerr_total_ncos = cos_12b(-fds_mp.gl_oerr_total);
+	oerr_total_nsin = sin_14b(-fds_mp.gl_oerr_total);
+	oerr_total_ncos = cos_14b(-fds_mp.gl_oerr_total);
 }
 
 int32_t theta_rel_fixed(void)
@@ -140,8 +140,8 @@ int32_t theta_rel_fixed(void)
 	/*
 	 * sin phase compensator term.
 	 */
-	sinVal = (sinVal*4096 - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
-	return atan2_12b(sinVal,cosVal) - fds_mp.align_offset_fixed;
+	sinVal = (sinVal*16384 - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
+	return atan2_14b(sinVal,cosVal) - fds_mp.align_offset_fixed;
 }
 
 /*return raw atan2 angle, no commutation offset or orthogonality/phase error comp*/

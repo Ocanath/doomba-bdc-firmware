@@ -209,7 +209,7 @@ int main(void)
 //		foc_fixed(tau, 0);
 
 //		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
-		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 1 )
+		if(m_huart2.bytes_to_send == 0 )//&& (tick - uart_tx_ts) > 1 )
 		{
 			uart_tx_ts = tick;
 

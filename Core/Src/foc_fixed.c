@@ -109,7 +109,7 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
-	int32_t theta_m = theta_rel_fixed()+TWO_PI_12B;	//atan2, apply align offset
+	int32_t theta_m = ( theta_rel_fixed() / 4 )+TWO_PI_12B;	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_12b(theta_elec);
 	int32_t cos_val = cos_12b(theta_elec);
