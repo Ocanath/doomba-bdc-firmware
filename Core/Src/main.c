@@ -52,7 +52,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
-volatile uint16_t nv_spi_angle = 0;
+volatile int16_t nv_spi_angle = 0;
 volatile uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
 volatile uint32_t nv_count = 0;
 
@@ -194,7 +194,7 @@ int main(void)
 		nv_count = TIM2->CNT;
 
 		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
-		uint16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+		int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
 		uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
 		p_fb[0] = nv_spi_buf[1];
 		p_fb[1] = nv_spi_buf[0];
@@ -204,6 +204,8 @@ int main(void)
 		TIM2->CNT = 0;
 		while(TIM2->CNT < 1);	//potentially optional
 		nv_count = TIM2->CNT;
+
+		HAL_Delay(1);
 	}
 
 	fixed_PI_2_params_t pctl_vq = {
