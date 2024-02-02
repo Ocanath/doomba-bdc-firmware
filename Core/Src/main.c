@@ -52,6 +52,10 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
+volatile uint16_t nv_spi_angle = 0;
+volatile uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
+volatile uint32_t nv_count = 0;
+
 int main(void)
 {
 
@@ -173,7 +177,34 @@ int main(void)
 //		}
 //	}
 
+	#define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
+	#define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
+	#define READ_ANGLEUNC	0x7FFE
+	#define READ_ANGLECOM	0xFFFF
 
+	uint16_t word_tx = 0;
+	uint8_t * ptx = (uint8_t*)(&word_tx);
+	ptx[0] = (READ_ANGLEUNC & 0xFF00) >> 8;
+	ptx[1] = (READ_ANGLEUNC & 0x00FF);
+	while(1)
+	{
+		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
+		TIM2->CNT = 0;
+		while(TIM2->CNT < 1);
+		nv_count = TIM2->CNT;
+
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
+		uint16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+		uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
+		p_fb[0] = nv_spi_buf[1];
+		p_fb[1] = nv_spi_buf[0];
+		nv_spi_angle = tmp_flipbuf;	//asssign atomically
+
+		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
+		TIM2->CNT = 0;
+		while(TIM2->CNT < 1);	//potentially optional
+		nv_count = TIM2->CNT;
+	}
 
 	fixed_PI_2_params_t pctl_vq = {
 			.kp = {.i32 = 60, .radix = 8},
