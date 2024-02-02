@@ -22,8 +22,10 @@
 #define DEFAULT_V_REPORT_RADIX	4
 #define DEFAULT_IQ_RSHIFT		3	//estimated max value of iq is in the ~17bit domain. shift 3 to get it between 14-15bit
 
+uint16_t gl_ext_cmd_id;
+
 static int32_t v_radix = DEFAULT_V_REPORT_RADIX;
-int32_t gl_v_uS_conv = 1000000 >> (12 - DEFAULT_V_REPORT_RADIX);
+int32_t gl_v_uS_conv = 1000000 >> (14 - DEFAULT_V_REPORT_RADIX);
 int32_t gl_iq_rshift = DEFAULT_IQ_RSHIFT;
 
 FDCAN_TxHeaderTypeDef		can_tx_header;
@@ -66,7 +68,7 @@ pctl_params_t mctl_vq = {
 		.out_sat = 0,
 };
 
-const uint16_t ext_cmd_id = (0x7FF - MODULE_NUMBER);
+
 
 enum {
 

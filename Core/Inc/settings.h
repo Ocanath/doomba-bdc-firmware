@@ -12,7 +12,7 @@
 /***********************Begin define hardware precomp settings*********************/
 
 /*Motor serial number, for the #define lookup list in settings.c . Also the CAN Node ID*/
-#define MODULE_NUMBER 42
+//#define MODULE_NUMBER 38
 
 
 //#define FLIP_TAU
@@ -23,15 +23,18 @@
 
 //#define GIMBAL_MOTOR
 
+
 extern int32_t gl_cos_min;
 extern int32_t gl_cos_max;
 extern int32_t gl_sin_min;
 extern int32_t gl_sin_max;
-extern int32_t gl_oerr_total;
 extern int32_t gl_oerr_x;
 
 extern float enc_mid_voltage_amp;
 //uint32_t i2c_address;
 extern uint32_t ser_num;
+
+void load_flash_params(void);
+
 
 #endif /* SETTINGS_H_ */

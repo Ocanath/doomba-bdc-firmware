@@ -2,15 +2,14 @@
 #include "mag-encoder.h"
 #include "init.h"
 #include "CAN.h"
+#include "m_uart.h"
+#include "PPP.h"
 
 /*Some constants for FOC math*/
 #define SQRT_3_12B			7094	//(sqrt(3))*2^12
 #define TWO_BY_SQRT_3_12B	4730	//(2/sqrt(3))*2^12
 #define	ONE_BY_SQRT_3_12B	2365	//(1/sqrt(3))*2^12
 #define ONE_THIRD_12B		1365
-
-/*Define for low-noise velocity estimator, used exposed over CAN and used as a damping term*/
-#define VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US	1000
 
 /*Constant for overflow. This times overflow_count + return value is the gigantic unwrapped angle.
  *
@@ -40,10 +39,11 @@ uint32_t count = 0;
 
 /*Shared variables (current, unwrapped theta)*/
 int32_t gl_iq = 0;
+int32_t gl_id = 0;
 int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
-static int32_t dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
+int32_t gl_dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 
 /*Previous Theta for position estimator.*/
 static int32_t prev_theta_m=0;
@@ -67,12 +67,26 @@ void get_dtheta(void)
 	if(cnt >= VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US)
 	{
 
-		int32_t dtheta = gl_theta_rem_m - dtheta_prev_theta;
-		dtheta_prev_theta = gl_theta_rem_m;
+		int32_t dtheta = gl_theta_rem_m - gl_dtheta_prev_theta;
+		gl_dtheta_prev_theta = gl_theta_rem_m;
 		cnt = TIM2->CNT;	//read one final time for best accuracy
 		TIM2->CNT = 0;
 		gl_dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / cnt);
 	}
+}
+
+
+int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p)
+{
+	//NOTE: out_rshift applied TWICE, to avoid x overflow, while maintaining thesame radix when adding x and effort to get u.
+	p->x = p->x + ((p->ki.i32*error)/p->x_integral_div);	//accumulate x with controlled slope: two controls are div scaling factor, and frequency of control law updates
+	int32_t sat = p->x_sat << (p->out_rshift + p->ki.radix);
+	if(p->x > sat)
+		p->x = sat;
+	if(p->x < -sat)
+		p->x = -sat;
+	int32_t u = ((p->x >> p->ki.radix) + ((p->kp.i32*error) >> p->kp.radix)) >> p->out_rshift;	//one application of outshift
+	return u;
 }
 
 /*
@@ -95,92 +109,89 @@ int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_12b(theta_elec);
-	int32_t cos_val = cos_12b(theta_elec);
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_14b(theta_elec);
+	int32_t cos_val = cos_14b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-	iq_meas = -iq_meas;
-	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-//	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &id_pi);
-	int32_t vd = 0;
+	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &fds_mp.id_pi);
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= gl_prop_delayloop_interval)
+	if(count >= fds_mp.gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
 	count++;
 
 	gl_iq = iq_meas;
+	gl_id = id_meas;
 }
 
 /*
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
-	int32_t sin_val = sin_12b(theta_elec);
-	int32_t cos_val = cos_12b(theta_elec);
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t sin_val = sin_14b(theta_elec);
+	int32_t cos_val = cos_14b(theta_elec);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 
 	int32_t iq_meas, id_meas;
-	get_current(sin_val, cos_val, &iq_meas, &id_meas);
-	iq_meas = -iq_meas;
-	id_meas = -id_meas;	//for some reason I don't understand, my park and clarkes return a sign-flipped iq and id result. Very odd
+	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &iq_pi);
-	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &id_pi);
+	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
+	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
 
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
 
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= gl_prop_delayloop_interval)
+	if(count >= fds_mp.gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
 	count++;
 
 	gl_iq = iq_meas;
+	gl_id = id_meas;
 }
 
-void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id)
+void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t shift)
 {
-	int32_t ia = dma_adc_raw[0] - current_input_offset_A;
-	int32_t ib = dma_adc_raw[1] - current_input_offset_B;
-	int32_t ic = -(ia + ib);
+	int32_t ia = ((int16_t)ADC1->JDR1) - 1990;
+	int32_t ib = ((int16_t)ADC1->JDR2) - 1990;
+	int32_t ic = ((int16_t)ADC1->JDR3) - 1990;
 
 	int32_t ialpha,ibeta;
 	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
-	park_fixed(ialpha,ibeta,sth,cth,iq,id);
+	park_fixed(ialpha,ibeta,sth,cth,iq,id, shift);
 }
 
 void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta)
@@ -193,10 +204,10 @@ void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t *
 //	*beta = ((SQRT_3_12B*ib - SQRT_3_12B*ic) >> 12) * ONE_THIRD_12B >> 12;	//
 }
 
-void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id)
+void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id, uint8_t shift)
 {
-	*id = (alpha*cos_theta + beta*sin_theta) >> 12;
-	*iq = (-alpha*sin_theta + beta*cos_theta) >> 12;
+	*id = (alpha*cos_theta + beta*sin_theta) >> shift;
+	*iq = (-alpha*sin_theta + beta*cos_theta) >> shift;
 }
 
 /* 
@@ -210,7 +221,7 @@ Inputs:
 Outputs :
      ialpha, ibeta in whichever scale iqand id were passed
 */
-void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32_t * ialpha, int32_t* ibeta)
+void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32_t * ialpha, int32_t* ibeta, uint8_t shift)
 {
     /* 
         NOTE: If desired, it is possible to
@@ -218,8 +229,8 @@ void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32
         the controller to have a higher res.This function removes the 2 ^ 12
         term from sin and cos, but not the 2 ^ n term from iq and id
     */
-    *ialpha = (id * cth - iq * sth) >> 12;
-    *ibeta = (id * sth + iq * cth) >> 12;
+    *ialpha = (id * cth - iq * sth) >> shift;
+    *ibeta = (id * sth + iq * cth) >> shift;
 }
 
 const int32_t two_by_three_sqrt3 = 4730;	//sqrt(3)*2/3*4096
@@ -244,8 +255,8 @@ const int32_t half_period_val = COMM_PWM_PERIOD/2;
 /*sinusoidal mode, no clarke-park, direct voltage in PWM space*/
 void voltage_3rd_harmonic(int32_t mag)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
@@ -253,12 +264,12 @@ void voltage_3rd_harmonic(int32_t mag)
 	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= gl_prop_delayloop_interval)
+	if(count >= fds_mp.gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
@@ -267,8 +278,8 @@ void voltage_3rd_harmonic(int32_t mag)
 
 void volage_pure_sinusoidal(int32_t m)
 {
-	int32_t theta_m = theta_rel_fixed();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
@@ -283,12 +294,12 @@ void volage_pure_sinusoidal(int32_t m)
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
 
-	if(count >= gl_prop_delayloop_interval)
+	if(count >= fds_mp.gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}

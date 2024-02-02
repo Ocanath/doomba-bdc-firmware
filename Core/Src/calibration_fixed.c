@@ -36,7 +36,7 @@ void dowse_for_align_offset(void)
 		uint32_t tick = (HAL_GetTick()-start_tick);
 
 		uint32_t tbasis = tick/15;
-		align_offset_fixed = wrap_2pi_12b(tbasis);
+		fds_mp.align_offset_fixed = wrap_2pi_12b(tbasis);
 
 		sinusoidal_fixed(500,0);
 		get_dtheta();
@@ -45,7 +45,7 @@ void dowse_for_align_offset(void)
 		if(avq > max_abs_dq)
 		{
 			max_abs_dq = avq;
-//			aoff_of_dqmax = align_offset_fixed;
+//			aoff_of_dqmax = fds_mp.align_offset_fixed;
 		}
 
 		if(tick >= avg_v_ts)
@@ -65,9 +65,9 @@ void dowse_for_align_offset(void)
 
 			fmt.v = dif;
 			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = align_offset_fixed;
+			fmt.v = fds_mp.align_offset_fixed;
 			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-//			fmt.v = align_offset_fixed;
+//			fmt.v = fds_mp.align_offset_fixed;
 //			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
 
 			m_uart_tx_start((uart_it_t*)&m_huart2, buf, 2*sizeof(int32_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
@@ -119,12 +119,12 @@ int32_t get_elec_conversion_ratio(void)
 	int32_t sth = sin_12b(theta_elec);
 	int32_t cth = cos_12b(theta_elec);
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+	inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	HAL_Delay(100);
 
-	int32_t theta_m_start = theta_rel_fixed();
+	int32_t theta_m_start = theta_rel_12b();
 	uint8_t one_m_rev = 0;
 	int32_t prev_theta_m = 0;
 
@@ -136,11 +136,11 @@ int32_t get_elec_conversion_ratio(void)
 		theta_elec = wrap_2pi_12b(theta);
 		sth = sin_12b(theta_elec);
 		cth = cos_12b(theta_elec);
-		inverse_park_fixed(300,0,sth,cth,&alpha,&beta);
+		inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
 		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
-		int32_t theta_m = theta_rel_fixed() - theta_m_start;	//atan2, apply align offset
+		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
 		gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
 
 		if(gl_theta_rem_m >= TWO_PI_12B+10)
@@ -167,18 +167,18 @@ int32_t get_elec_conversion_ratio(void)
 //		else if (dist1 < 0 && dist2 > 0)
 //			sign = -1;
 //		if(sign < 0 && abs64(dist1) > 24576 && abs64(dist2) > 24576 )
-//			align_offset_fixed = -align_offset_fixed;
+//			fds_mp.align_offset_fixed = -fds_mp.align_offset_fixed;
 //
 //		int64_t err = run1_speed-run2_speed;
 //		int64_t u = (err* (1 << 16) )/7;	//apply a 12 bit leftshift and apply control effort reduction
 //		if(sign < 0)
 //			u = -u;
-//		align_offset_fixed = (u + align_offset_fixed) >> 32;	//remove bitshifts applied in run_v and in the control effort calculation
+//		fds_mp.align_offset_fixed = (u + fds_mp.align_offset_fixed) >> 32;	//remove bitshifts applied in run_v and in the control effort calculation
 //
 //		if(abs64(u) < 6)	//pass criteria .0001
 //		{
 //			passcount++;
-//			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
+//			HAL_GPIO_WritePin(STAT_PORT,STAT_PIN,1);	//count the number of passes
 //		}
 //		else
 //			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,0);
@@ -220,7 +220,7 @@ void auto_calibrate_fixed(void)
 		double u = err/7.0;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		align_offset_fixed = (int32_t)(align_offset * 4096.f);
+		fds_mp.align_offset_fixed = (int32_t)(align_offset * 4096.f);
 		if(abs_f(u) < 0.0001f)	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;

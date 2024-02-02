@@ -121,17 +121,17 @@ float theta_rel_rad()
  * and midpoints for commutation encoder.*/
 void eval_encoder_params(void)
 {
-	sin_mid = (gl_sin_max+gl_sin_min)/2;
-	cos_mid = (gl_cos_max+gl_cos_min)/2;
-	mul_cos = (1<<12);
-	div_cos = (gl_cos_max - gl_cos_min)/2;
-	mul_sin = (1<<12);
-	div_sin = (gl_sin_max - gl_sin_min)/2;
-	oerr_total_nsin = sin_12b(-gl_oerr_total);
-	oerr_total_ncos = cos_12b(-gl_oerr_total);
+	sin_mid = (fds_mp.gl_sin_max + fds_mp.gl_sin_min)/2;
+	cos_mid = (fds_mp.gl_cos_max + fds_mp.gl_cos_min)/2;
+	mul_cos = (1<<14);
+	div_cos = (fds_mp.gl_cos_max - fds_mp.gl_cos_min)/2;
+	mul_sin = (1<<14);
+	div_sin = (fds_mp.gl_sin_max - fds_mp.gl_sin_min)/2;
+	oerr_total_nsin = sin_14b(-fds_mp.gl_oerr_total);
+	oerr_total_ncos = cos_14b(-fds_mp.gl_oerr_total);
 }
 
-int32_t theta_rel_fixed(void)
+int32_t theta_rel_14b(void)
 {
 	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
 	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
@@ -140,18 +140,37 @@ int32_t theta_rel_fixed(void)
 	/*
 	 * sin phase compensator term.
 	 */
-	sinVal = (sinVal*4096 - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
-	return atan2_fixed(sinVal,cosVal) - align_offset_fixed;
+	sinVal = (sinVal*16384 - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
+	return atan2_14b(sinVal,cosVal) - fds_mp.align_offset_fixed;
 }
 
-/*return raw atan2 angle, no commutation offset or orthogonality/phase error comp*/
-int32_t theta_abs_fixed(void)
+int32_t theta_rel_12b(void)
+{
+	return (theta_rel_14b() >> 2);
+}
+
+
+/**/
+int32_t theta_abs_14b(void)
 {
 	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
 	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
 	sinVal = (sinVal*mul_sin)/div_sin;
 	cosVal = (cosVal*mul_cos)/div_cos;
-	return atan2_fixed(sinVal,cosVal);
+	/*
+	 * sin phase compensator term.
+	 */
+	return atan2_14b(sinVal,cosVal);
+}
+
+/*return raw atan2 angle, no commutation offset or orthogonality/phase error comp*/
+int32_t theta_abs_12b(void)
+{
+	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
+	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
+	sinVal = (sinVal*mul_sin)/div_sin;
+	cosVal = (cosVal*mul_cos)/div_cos;
+	return atan2_12b(sinVal,cosVal);
 }
 
 /*

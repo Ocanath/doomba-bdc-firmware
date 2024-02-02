@@ -3,3 +3,5 @@
 .settings
 /Release/
 ***.asv
+FixedpointTrigTest/*.exe 
+FixedpointTrigTest/*.csv

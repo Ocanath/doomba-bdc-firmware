@@ -36,6 +36,7 @@ typedef struct uart_it_t
 
 extern volatile uart_it_t m_huart2;
 
+uint32_t fletchers_checksum32(uint32_t* arr, int size);
 uint8_t get_checksum(uint8_t * arr, int size);	//TODO: find a better place for this to live??
 void m_uart_it_handler(uart_it_t * h);
 void m_uart_tx_start(uart_it_t * h, uint8_t * buf, int size);
