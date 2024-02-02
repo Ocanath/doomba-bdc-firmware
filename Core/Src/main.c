@@ -198,7 +198,10 @@ int main(void)
 		uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
 		p_fb[0] = nv_spi_buf[1];
 		p_fb[1] = nv_spi_buf[0];
-		nv_spi_angle = tmp_flipbuf;	//asssign atomically
+		uint8_t parity = (tmp_flipbuf & (1 << 15)) >> 15;
+		uint8_t error = (tmp_flipbuf & (1 << 14)) >> 14;
+
+		nv_spi_angle = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
 
 		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 		TIM2->CNT = 0;
