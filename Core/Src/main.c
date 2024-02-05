@@ -52,11 +52,6 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
-volatile int16_t nv_spi_angle = 0;
-volatile uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
-volatile uint32_t nv_count = 0;
-volatile uint8_t nv_parity=0;
-volatile uint8_t nv_error=0;
 
 int main(void)
 {
@@ -75,14 +70,13 @@ int main(void)
 
 	load_flash_params();
 
-	eval_encoder_params();	//initial call to get centerpoints and gains, for commutation
+	set_encoder_read_type(READ_ANGLEUNC);
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
 	//disable adc dma interrupts. The adc itself should only have overrun interrupt enabled
 	hdma_adc1.Instance->CCR &= ~(1 << 2);	//disable half transfer complete interrupt
 	hdma_adc1.Instance->CCR &= ~(1 << 1);	//disable transfer complete interrupt
-
 
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
@@ -195,48 +189,21 @@ int main(void)
 	uint32_t create_error_ts = 0;
 
 
-	#define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
-	#define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
-	#define READ_ANGLEUNC	0x7FFE
-	#define READ_ANGLECOM	0xFFFF
 
-	uint16_t word_tx = 0;
-	uint8_t * ptx = (uint8_t*)(&word_tx);
-	ptx[0] = (READ_ANGLEUNC & 0xFF00) >> 8;
-	ptx[1] = (READ_ANGLEUNC & 0x00FF);
 	while(1)
 	{
-		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
-		TIM2->CNT = 0;
-		while(TIM2->CNT < 1);
-		nv_count = TIM2->CNT;
 
-		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
-		int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
-		uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
-		p_fb[0] = nv_spi_buf[1];	//bits 7-0
-		p_fb[1] = nv_spi_buf[0];	//bits 15-8
-		nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
-		nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
-		tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
-		if(tmp_flipbuf & (1<<13))
-			tmp_flipbuf |= (0b11 << 14);
-		nv_spi_angle = tmp_flipbuf;
-
-		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
-		TIM2->CNT = 0;
-		while(TIM2->CNT < 1);	//potentially optional
-		nv_count = TIM2->CNT;
+		int32_t angle = theta_rel_14b();
 
 		uint32_t tick = HAL_GetTick();
-		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+		if(m_huart2.bytes_to_send == 0 )
 		{
 			uart_tx_ts = tick;
 
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
 			pwb32[i32widx++] = 0;
-			pwb32[i32widx++] = nv_spi_angle;
+			pwb32[i32widx++] = angle;
 			pwb32[i32widx++] = HAL_GetTick();
 			int pld_size = i32widx*sizeof(uint32_t);
 			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );

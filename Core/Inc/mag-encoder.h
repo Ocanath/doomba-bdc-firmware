@@ -9,6 +9,9 @@
 #define MAG_ENCODER_H_
 #include "adc.h"
 
+#define READ_ANGLEUNC	0x7FFE
+#define READ_ANGLECOM	0xFFFF
+
 #define ADC_SIN_CHAN 	1
 #define ADC_COS_CHAN 	0
 
@@ -38,6 +41,7 @@ extern int32_t oerr_total_ncos;
 //extern int16_t sin_mid;
 
 
+void set_encoder_read_type(uint16_t command);
 
 float theta_abs_rad();
 float theta_rel_rad();

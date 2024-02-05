@@ -8,14 +8,22 @@
 #include "settings.h"
 #include "trig_fixed.h"
 
-int32_t sin_mid = 2048;
-int32_t cos_mid = 2048;
-int32_t mul_cos = 1;
-int32_t div_cos = 1;
-int32_t mul_sin = 1;
-int32_t div_sin = 1;
-int32_t oerr_total_nsin = 0;
-int32_t oerr_total_ncos = 1;
+#define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
+#define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
+
+int16_t nv_spi_angle = 0;
+uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
+uint32_t nv_count = 0;
+uint8_t nv_parity=0;
+uint8_t nv_error=0;
+
+static uint16_t word_tx = 0;
+void set_encoder_read_type(uint16_t command)
+{
+	uint8_t * ptx = (uint8_t*)(&word_tx);
+	ptx[0] = (command & 0xFF00) >> 8;
+	ptx[1] = (command & 0x00FF);
+}
 
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
@@ -117,31 +125,35 @@ float theta_rel_rad()
 	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
 }
 
-/*use the global encoder max and min params to claculate gains
- * and midpoints for commutation encoder.*/
-void eval_encoder_params(void)
-{
-	sin_mid = (fds_mp.gl_sin_max + fds_mp.gl_sin_min)/2;
-	cos_mid = (fds_mp.gl_cos_max + fds_mp.gl_cos_min)/2;
-	mul_cos = (1<<14);
-	div_cos = (fds_mp.gl_cos_max - fds_mp.gl_cos_min)/2;
-	mul_sin = (1<<14);
-	div_sin = (fds_mp.gl_sin_max - fds_mp.gl_sin_min)/2;
-	oerr_total_nsin = sin_14b(-fds_mp.gl_oerr_total);
-	oerr_total_ncos = cos_14b(-fds_mp.gl_oerr_total);
-}
 
 int32_t theta_rel_14b(void)
 {
-	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-	sinVal = (sinVal*mul_sin)/div_sin;
-	cosVal = (cosVal*mul_cos)/div_cos;
-	/*
-	 * sin phase compensator term.
-	 */
-	sinVal = (sinVal*16384 - cosVal*oerr_total_nsin)/oerr_total_ncos;	//this is dangerous iff gl_oerr_total == PI_12B/2 (divide by 0 error). however this should be well outside the actual range of achievable values for this number
-	return atan2_14b(sinVal,cosVal) - fds_mp.align_offset_fixed;
+	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
+	TIM2->CNT = 0;
+	while(TIM2->CNT < 1);
+	nv_count = TIM2->CNT;
+
+	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
+	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+	uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
+	p_fb[0] = nv_spi_buf[1];	//bits 7-0
+	p_fb[1] = nv_spi_buf[0];	//bits 15-8
+	nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
+	nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
+	tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
+	if(tmp_flipbuf & (1<<13))
+		tmp_flipbuf |= (0b11 << 14);
+	nv_spi_angle = tmp_flipbuf;
+
+	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
+	TIM2->CNT = 0;
+	while(TIM2->CNT < 1);	//potentially optional
+	nv_count = TIM2->CNT;
+
+	//want: 2^14 * theta(radians, -pi to pi) so -2^14*pi to 2^14*pi
+	//are getting: -2^13 to 2^13. So that means we are getting (2^13/pi)*theta
+	// (2^13/pi)*theta * 2^14*2*pi / 2^14
+	return ((nv_spi_angle * TWO_PI_14B) >> 14) - fds_mp.align_offset_fixed;
 }
 
 int32_t theta_rel_12b(void)
