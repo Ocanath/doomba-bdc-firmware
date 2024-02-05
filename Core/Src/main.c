@@ -55,6 +55,8 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 volatile int16_t nv_spi_angle = 0;
 volatile uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
 volatile uint32_t nv_count = 0;
+volatile uint8_t nv_parity=0;
+volatile uint8_t nv_error=0;
 
 int main(void)
 {
@@ -177,6 +179,22 @@ int main(void)
 //		}
 //	}
 
+	fixed_PI_2_params_t pctl_vq = {
+			.kp = {.i32 = 60, .radix = 8},
+			.ki = {.i32 = 7, .radix = 10},
+			.x_integral_div = 100,
+			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
+			.x_sat = 1000,	//no integral efforts for now
+			.out_rshift = 0
+	};
+	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
+			.i32 = 25,	//no deriv effort either, for now
+			.radix = 5
+	};
+	uint32_t uart_tx_ts = 0;
+	uint32_t create_error_ts = 0;
+
+
 	#define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
 	#define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
 	#define READ_ANGLEUNC	0x7FFE
@@ -196,35 +214,40 @@ int main(void)
 		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
 		int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
 		uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
-		p_fb[0] = nv_spi_buf[1];
-		p_fb[1] = nv_spi_buf[0];
-		uint8_t parity = (tmp_flipbuf & (1 << 15)) >> 15;
-		uint8_t error = (tmp_flipbuf & (1 << 14)) >> 14;
-
-		nv_spi_angle = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
+		p_fb[0] = nv_spi_buf[1];	//bits 7-0
+		p_fb[1] = nv_spi_buf[0];	//bits 15-8
+		nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
+		nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
+		tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
+		if(tmp_flipbuf & (1<<13))
+			tmp_flipbuf |= (0b11 << 14);
+		nv_spi_angle = tmp_flipbuf;
 
 		HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 		TIM2->CNT = 0;
 		while(TIM2->CNT < 1);	//potentially optional
 		nv_count = TIM2->CNT;
 
-		HAL_Delay(1);
+		uint32_t tick = HAL_GetTick();
+		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+		{
+			uart_tx_ts = tick;
+
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+			pwb32[i32widx++] = 0;
+			pwb32[i32widx++] = nv_spi_angle;
+			pwb32[i32widx++] = HAL_GetTick();
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+
+
 	}
 
-	fixed_PI_2_params_t pctl_vq = {
-			.kp = {.i32 = 60, .radix = 8},
-			.ki = {.i32 = 7, .radix = 10},
-			.x_integral_div = 100,
-			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
-			.x_sat = 1000,	//no integral efforts for now
-			.out_rshift = 0
-	};
-	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
-			.i32 = 25,	//no deriv effort either, for now
-			.radix = 5
-	};
-	uint32_t uart_tx_ts = 0;
-	uint32_t create_error_ts = 0;
+
+
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
