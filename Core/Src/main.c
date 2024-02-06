@@ -119,14 +119,14 @@ int main(void)
 
 	fixed_PI_2_params_t pctl_vq = {
 			.kp = {.i32 = 60, .radix = 8},
-			.ki = {.i32 = 7, .radix = 10},
+			.ki = {.i32 = 17, .radix = 10},
 			.x_integral_div = 100,
 			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
 			.x_sat = 1000,	//no integral efforts for now
 			.out_rshift = 0
 	};
 	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
-			.i32 = 25,	//no deriv effort either, for now
+			.i32 = 15,	//no deriv effort either, for now
 			.radix = 5
 	};
 	uint32_t uart_tx_ts = 0;
@@ -157,12 +157,14 @@ int main(void)
 		uint32_t tick = HAL_GetTick();
 
 		int32_t qd = 0;
-		int32_t q = gl_theta_rem_m;
-		int32_t e = (qd-q) >> 2;	//go down to 12
+//		qd = (sin_12b(wrap_2pi_12b(tick))*PI_12B)/(1<<10);
+		qd = wrap_2pi_14b((tick * 1715)/1000);
+		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
+		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
 		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
 		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
 		vq -= damping;
-		vq = saturate(vq, 1000);
+		vq = saturate(vq, 2047);
 
 //		int32_t id_req = (sin_12b(wrap_2pi_12b(tick*10))*1200)/4096;
 //		uint32_t tsince = tick-create_error_ts;
@@ -174,9 +176,9 @@ int main(void)
 //		{
 //			create_error_ts = tick;
 //		}
-//		sinusoidal_fixed(1000,0);
-		vq = 1000;
-		foc_fixed(vq, 0);
+		sinusoidal_fixed(vq,0);
+//		vq = 1000;
+//		foc_fixed(vq, 0);
 
 		get_dtheta();
 

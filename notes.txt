@@ -1,0 +1,5 @@
+16V, iq = 1000/4096 Ams: 10.89W power consumption
+16V, iq = 1000/4096 TLE: 11.95W power consumption
+
+Noise in velocity estimate is significantly higher in TLE. Position control with FOC with same coeffiecients
+has much, much better damping behavior in AMS (V3) version. It's a better board... shit. guess i'm spending an extra $10/per
