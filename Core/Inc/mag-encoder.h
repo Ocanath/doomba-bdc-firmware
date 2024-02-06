@@ -62,6 +62,6 @@ float sin_fast(float theta);
 float cos_fast(float theta);
 float fmod_2pi(float in);
 float unwrap(float theta, float * prev_theta);
-void eval_encoder_params(void);
+//void eval_encoder_params(void);
 
 #endif /* MAG_ENCODER_H_ */

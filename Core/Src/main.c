@@ -70,7 +70,7 @@ int main(void)
 
 	load_flash_params();
 
-	set_encoder_read_type(READ_ANGLEUNC);
+	set_encoder_read_type(READ_ANGLECOM);
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
@@ -97,11 +97,10 @@ int main(void)
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
 	fds_mp.gl_oerr_total = estimate_orthogonality_error();
-	eval_encoder_params();
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
-	auto_calibrate_motor(2000, 700, 7.f,.0001);
+	auto_calibrate_motor(1000, 700, 7.f,.0001);
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
@@ -117,61 +116,6 @@ int main(void)
 	}
 #endif
 
-//	int32_t vq = 500;
-//	while(1)
-//	{
-//		uint32_t tick = HAL_GetTick();
-//
-//
-////		int32_t theta_m = tick;
-//		int32_t theta_m = theta_rel_fixed() + TWO_PI_12B;
-//
-//
-//		int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed);
-//		int32_t sin_val = sin_12b(theta_elec);
-//		int32_t cos_val = cos_12b(theta_elec);
-//
-//		int32_t iq_meas, id_meas;
-//		get_current(sin_val, cos_val, &iq_meas, &id_meas);
-//
-//		int32_t vd = 0;//ctl_PI_fixed(vd_in - id_meas, &fds_mp.id_pi);
-//
-//		int32_t alpha,beta,tA,tB,tC;
-//		inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta);
-//		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-//		TIMER_UPDATE_DUTY(tA,tB,tC);
-//
-//
-//
-////		if(m_huart2.bytes_to_send == 0)
-////		{
-////			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-////			int i32widx = 0;
-////	//		pwb32[i32widx++] = theta_elec;
-//////			pwb32[i32widx++] = tau;
-////			pwb32[i32widx++] = gl_theta_rem_m;
-////			pwb32[i32widx++] = gl_iq;
-////			pwb32[i32widx++] = gl_id;
-////
-////			int32_t s,c;
-////			get_sc_no_ortho_comp(&s,&c);
-////			pwb32[i32widx++] = s;
-////			pwb32[i32widx++] = c;
-////
-////			pwb32[i32widx++] = HAL_GetTick();
-////
-////			int pld_size = i32widx*sizeof(uint32_t);
-////			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-////			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-////		}
-//
-//
-//		if(tick-led_ts > 333)
-//		{
-//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-//			led_ts = tick;
-//		}
-//	}
 
 	fixed_PI_2_params_t pctl_vq = {
 			.kp = {.i32 = 60, .radix = 8},
@@ -186,35 +130,28 @@ int main(void)
 			.radix = 5
 	};
 	uint32_t uart_tx_ts = 0;
-	uint32_t create_error_ts = 0;
-
-
-
-	while(1)
-	{
-
-		int32_t angle = theta_rel_14b();
-
-		uint32_t tick = HAL_GetTick();
-		if(m_huart2.bytes_to_send == 0 )
-		{
-			uart_tx_ts = tick;
-
-			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-			int i32widx = 0;
-			pwb32[i32widx++] = 0;
-			pwb32[i32widx++] = angle;
-			pwb32[i32widx++] = HAL_GetTick();
-			int pld_size = i32widx*sizeof(uint32_t);
-			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-		}
-
-
-	}
-
-
-
+//	while(1)
+//	{
+//
+//		int32_t angle = theta_rel_14b();
+//
+//		uint32_t tick = HAL_GetTick();
+//		if(m_huart2.bytes_to_send == 0 )
+//		{
+//			uart_tx_ts = tick;
+//
+//			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+//			int i32widx = 0;
+//			pwb32[i32widx++] = 0;
+//			pwb32[i32widx++] = angle;
+//			pwb32[i32widx++] = HAL_GetTick();
+//			int pld_size = i32widx*sizeof(uint32_t);
+//			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+//			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+//		}
+//
+//
+//	}
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
@@ -238,6 +175,7 @@ int main(void)
 //			create_error_ts = tick;
 //		}
 //		sinusoidal_fixed(1000,0);
+		vq = 1000;
 		foc_fixed(vq, 0);
 
 		get_dtheta();

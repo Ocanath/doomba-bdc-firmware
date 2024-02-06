@@ -185,7 +185,6 @@ void obtain_encoder_midpoints()
 	fds_mp.gl_sin_min = s_min;
 	fds_mp.gl_cos_max = c_max;
 	fds_mp.gl_cos_min = c_min;
-	eval_encoder_params();
 }
 
 /*

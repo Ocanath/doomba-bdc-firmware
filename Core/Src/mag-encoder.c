@@ -11,7 +11,7 @@
 #define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
 #define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
 
-int16_t nv_spi_angle = 0;
+//int16_t nv_spi_angle = 0;
 uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
 uint32_t nv_count = 0;
 uint8_t nv_parity=0;
@@ -125,13 +125,9 @@ float theta_rel_rad()
 	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
 }
 
-
-int32_t theta_rel_14b(void)
+int32_t get_ams_angle(void)
 {
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
-	TIM2->CNT = 0;
-	while(TIM2->CNT < 1);
-	nv_count = TIM2->CNT;
 
 	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
 	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
@@ -143,17 +139,19 @@ int32_t theta_rel_14b(void)
 	tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
 	if(tmp_flipbuf & (1<<13))
 		tmp_flipbuf |= (0b11 << 14);
-	nv_spi_angle = tmp_flipbuf;
+	int16_t spi_angle = tmp_flipbuf;
 
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
-	TIM2->CNT = 0;
-	while(TIM2->CNT < 1);	//potentially optional
-	nv_count = TIM2->CNT;
+	return spi_angle;
+}
 
+int32_t theta_rel_14b(void)
+{
+	int16_t spi_angle = get_ams_angle();
 	//want: 2^14 * theta(radians, -pi to pi) so -2^14*pi to 2^14*pi
 	//are getting: -2^13 to 2^13. So that means we are getting (2^13/pi)*theta
-	// (2^13/pi)*theta * 2^14*2*pi / 2^14
-	return ((nv_spi_angle * TWO_PI_14B) >> 14) - fds_mp.align_offset_fixed;
+	// (2^13/pi)*theta * 2^14*pi / 2^13 = 2^14*theta!
+	return ((spi_angle * PI_14B) >> 13) - fds_mp.align_offset_fixed;
 }
 
 int32_t theta_rel_12b(void)
@@ -165,38 +163,28 @@ int32_t theta_rel_12b(void)
 /**/
 int32_t theta_abs_14b(void)
 {
-	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-	sinVal = (sinVal*mul_sin)/div_sin;
-	cosVal = (cosVal*mul_cos)/div_cos;
 	/*
 	 * sin phase compensator term.
 	 */
-	return atan2_14b(sinVal,cosVal);
+	return ((get_ams_angle() * PI_14B) >> 13);
 }
 
 /*return raw atan2 angle, no commutation offset or orthogonality/phase error comp*/
 int32_t theta_abs_12b(void)
 {
-	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-	sinVal = (sinVal*mul_sin)/div_sin;
-	cosVal = (cosVal*mul_cos)/div_cos;
-	return atan2_12b(sinVal,cosVal);
+	return (theta_abs_14b() >> 2);
 }
 
 /*
  * Expose sin and cos min-maxed-offsetted to rest of the sw, WITHOUT
  * ORTHO COMP! (important for *calculating* the ortho comp)
+ *
  * */
 void get_sc_no_ortho_comp(int32_t * c, int32_t * s)
 {
-	int32_t sinVal = ((int32_t)(dma_adc_raw[ADC_SIN_CHAN]))-sin_mid;
-	int32_t cosVal = ((int32_t)(dma_adc_raw[ADC_COS_CHAN]))-cos_mid;
-	sinVal = (sinVal*mul_sin)/div_sin;
-	cosVal = (cosVal*mul_cos)/div_cos;
-	*c = cosVal;
-	*s = sinVal;
+	int32_t ang = theta_abs_14b();
+	*c = cos_14b(ang);
+	*s = sin_14b(ang);
 }
 
 const float rad_to_deg = 180.0/PI;
