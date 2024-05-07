@@ -130,28 +130,6 @@ int main(void)
 			.radix = 5
 	};
 	uint32_t uart_tx_ts = 0;
-//	while(1)
-//	{
-//
-//		int32_t angle = theta_rel_14b();
-//
-//		uint32_t tick = HAL_GetTick();
-//		if(m_huart2.bytes_to_send == 0 )
-//		{
-//			uart_tx_ts = tick;
-//
-//			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-//			int i32widx = 0;
-//			pwb32[i32widx++] = 0;
-//			pwb32[i32widx++] = angle;
-//			pwb32[i32widx++] = HAL_GetTick();
-//			int pld_size = i32widx*sizeof(uint32_t);
-//			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-//			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-//		}
-//
-//
-//	}
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();

@@ -5,3 +5,4 @@
 ***.asv
 FixedpointTrigTest/*.exe 
 FixedpointTrigTest/*.csv
+Datalogging/__pycache__/
