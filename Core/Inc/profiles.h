@@ -47,6 +47,17 @@ typedef struct fixed_PI_params_t
 	uint8_t out_rshift;
 }fixed_PI_params_t;
 
+typedef union {
+	int8_t d8[sizeof(uint32_t)/sizeof(int8_t)];
+	uint8_t u8[sizeof(uint32_t)/sizeof(uint8_t)];
+	uint16_t u16[sizeof(uint32_t)/sizeof(uint16_t)];
+	int16_t i16[sizeof(uint32_t)/sizeof(int16_t)];
+	uint32_t u32;
+	int32_t i32;
+	float f32;	//sizeof(float) == sizeof(uint32_t) on this system
+}u32_fmt_t;
+
+
 typedef struct fds_motor_params_t
 {
 	/*CAN id. THIS. MUST. BE. FIRST.*/
@@ -54,11 +65,11 @@ typedef struct fds_motor_params_t
 
 	/*Properties of the motor which have to be measured and differ for each instance*/
 	int32_t align_offset_fixed;
-	int32_t gl_cos_min;
-	int32_t gl_cos_max;
-	int32_t gl_sin_min;
-	int32_t gl_sin_max;
-	int32_t gl_oerr_total;
+	int32_t is_flipped;	//misc 1-5 are encoder related, and obsolete. they do not apply when AMS encoder is used
+	u32_fmt_t misc2;
+	u32_fmt_t misc3;
+	u32_fmt_t misc4;
+	u32_fmt_t misc5;
 
 
 	/*Properties of the motor which are either inherent or do not change between instances

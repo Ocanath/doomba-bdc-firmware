@@ -57,11 +57,11 @@ fds_motor_params_t fds_mp =
 	.align_offset_fixed = 0,
 
 	/*These are not hand obtained ever, so no commands for them*/
-	.gl_cos_min = 0,
-	.gl_cos_max = 0,
-	.gl_sin_min = 0,
-	.gl_sin_max = 0,
-	.gl_oerr_total = 0,
+	.is_flipped = 1,
+	.misc2 = {{0}},
+	.misc3 = {{0}},
+	.misc4 = {{0}},
+	.misc5 = {{0}},
 
 	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
 	.elec_conv_ratio_fixed = 11,
@@ -119,6 +119,8 @@ void load_flash_params(void)
 	else
 		m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 	gl_ext_cmd_id = (0x7FF - fds_mp.module_number);	//load this ONCE on startup
+	if(fds_mp.is_flipped != 0)
+		fds_mp.is_flipped = 1;	//sanitize flag
 }
 
 void write_flash_params(void)

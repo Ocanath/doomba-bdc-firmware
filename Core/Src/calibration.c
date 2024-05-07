@@ -97,25 +97,6 @@ void print_calibration_parameters(void)
 	print_int_as_str(fds_mp.align_offset_fixed);
 	print_str("\r\n\0");
 
-	print_str("int32_t gl_cos_min = \0");
-	print_int_as_str(fds_mp.gl_cos_min);
-	print_str(";\r\n\0");
-
-	print_str("int32_t gl_cos_max = \0");
-	print_int_as_str(fds_mp.gl_cos_max);
-	print_str(";\r\n\0");
-
-	print_str("int32_t gl_sin_min = \0");
-	print_int_as_str(fds_mp.gl_sin_min);
-	print_str(";\r\n\0");
-
-	print_str("int32_t gl_sin_max = \0");
-	print_int_as_str(fds_mp.gl_sin_max);
-	print_str(";\r\n\0");
-
-	print_str("int32_t gl_oerr_total = \0");
-	print_int_as_str(fds_mp.gl_oerr_total);
-	print_str(";\r\n\0");
 }
 
 static float time_seconds()
@@ -179,12 +160,7 @@ void obtain_encoder_midpoints()
 
 	}
 	TIMER_UPDATE_DUTY(0,0,0);
-	//sin_mid = (s_max + s_min)/2;
-	//cos_mid = (c_max + c_min)/2;
-	fds_mp.gl_sin_max = s_max;
-	fds_mp.gl_sin_min = s_min;
-	fds_mp.gl_cos_max = c_max;
-	fds_mp.gl_cos_min = c_min;
+	//normally we do fs loading. now, this function is just convenience for open loop inverter check
 }
 
 /*

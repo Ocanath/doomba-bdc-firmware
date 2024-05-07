@@ -190,7 +190,13 @@ void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t s
 	int32_t ic = ((int16_t)ADC1->JDR3) - 1990;
 
 	int32_t ialpha,ibeta;
-	clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
+
+	//software equivalent of rewiring the two phases
+	if(fds_mp.is_flipped == 0)
+		clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
+	else
+		clarke_fixed(ib,ia,ic,&ialpha,&ibeta);
+
 	park_fixed(ialpha,ibeta,sth,cth,iq,id, shift);
 }
 
@@ -432,27 +438,52 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* p_tA, i
 	};
 
 	int32_t max_pwm = period_cnt - 5;
+	if(fds_mp.is_flipped == 0)
+	{
+		if(tA > max_pwm)
+			*p_tA = max_pwm;
+		else if(tA < 0)
+			*p_tA = 0;
+		else
+			*p_tA = tA;
 
-	if(tA > max_pwm)
-		*p_tA = max_pwm;
-	else if(tA < 0)
-		*p_tA = 0;
-	else
-		*p_tA = tA;
+		if(tB > max_pwm)
+			*p_tB = max_pwm;
+		else if(tB < 0)
+			*p_tB = 0;
+		else
+			*p_tB = tB;
 
-	if(tB > max_pwm)
-		*p_tB = max_pwm;
-	else if(tB < 0)
-		*p_tB = 0;
+		if(tC > max_pwm)
+			*p_tC = max_pwm;
+		else if(tC < 0)
+			*p_tC = 0;
+		else
+			*p_tC = tC;
+	}
 	else
-		*p_tB = tB;
+	{
+		if(tA > max_pwm)
+			*p_tB = max_pwm;
+		else if(tA < 0)
+			*p_tB = 0;
+		else
+			*p_tB = tA;
 
-	if(tC > max_pwm)
-		*p_tC = max_pwm;
-	else if(tC < 0)
-		*p_tC = 0;
-	else
-		*p_tC = tC;
+		if(tB > max_pwm)
+			*p_tA = max_pwm;
+		else if(tB < 0)
+			*p_tA = 0;
+		else
+			*p_tA = tB;
+
+		if(tC > max_pwm)
+			*p_tC = max_pwm;
+		else if(tC < 0)
+			*p_tC = 0;
+		else
+			*p_tC = tC;
+	}
 }
 
 /*
