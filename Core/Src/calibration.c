@@ -373,6 +373,8 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 	uint8_t exit = 0;
 	int passcount = 0;
 	align_offset = ((float)fds_mp.align_offset_fixed)/16384.f;
+	uint8_t block_sign_flip = 0;
+	float sign = 0;
 	while(exit == 0)
 	{
 
@@ -382,7 +384,6 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		float run2_speed = run_v(-vq,runtime, &run_dist_2);
 		TIMER_UPDATE_DUTY(500,500,500);
 
-		float sign = 0.f;
 		if(run_dist_1 > 0.f && run_dist_2 < 0.f)
 			sign = 1.f;		//the direction is how it should be. positive tau means positive encoder direction
 		else if (run_dist_1 < 0.f && run_dist_2 > 0.f)
@@ -393,16 +394,20 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 		double u = err/gain;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		fds_mp.align_offset_fixed = (int32_t)(align_offset*16384.f);
 
 
 		if(abs_f(u) < passthresh && ( (abs_f(run_dist_1) + abs_f(run_dist_2)) > 1.f))	//if the run speed difference is very small, it's a passable align offset
 		{
 			HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,1);	//count the number of passes
-			if(sign < 0)
+			if(sign < 0 && block_sign_flip == 0)
+			{
 				align_offset = fmod_2pi( (align_offset + PI) + PI ) - PI;	//
+			}
 			else
+			{
 				passcount++;
+				block_sign_flip = 1;
+			}
 		}
 		else
 		{
@@ -449,9 +454,10 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(1);
-	}
-	fds_mp.align_offset_fixed = (int32_t)(align_offset * 16384.f);
 
+
+		fds_mp.align_offset_fixed = (int32_t)(align_offset*16384.f);	//DO THIS BEFORE RUNNING OR THE FLIPPING WON'T WORK!
+	}
 }
 
 /*open loop track a mechanical angle. Helper/prog on a robust coarse align offset
