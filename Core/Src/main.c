@@ -117,6 +117,69 @@ int main(void)
 #endif
 
 
+
+
+	fixed_PI_2_params_t speed_controller = {
+			.kp = {.i32 = 500, .radix = 8},
+			.ki = {.i32 = 5, .radix = 4},
+			.x_integral_div = 1000,
+			.x = 0,
+			.x_sat = 3546,
+			.out_rshift = 0
+	};
+	uint32_t uart_tx_ts = 0;
+	int32_t qdot_targ = 462;
+	while(1)
+	{
+		uint32_t tick = HAL_GetTick();
+
+//		int32_t twrapped = wrap_2pi_12b(tick);
+//		int32_t qd = wrap_2pi_12b( ((twrapped*TWO_PI_12B)/1000)*5);
+//		int32_t q = theta_rel_14b() >> 2;
+//		int32_t e = wrap_2pi_12b(qd-q);	//go down to 12
+//		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
+//		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
+//		vq -= damping;
+//		vq = saturate(vq, 1000);
+
+		int32_t e = (qdot_targ - gl_dtheta_fixedpoint_rad_p_sec);
+		int32_t u = ctl_PI_fixed_2(e, &speed_controller);
+		u = saturate(u, 3546);
+
+		sinusoidal_fixed(u,0);
+//		sinusoidal_fixed(1257,0);
+//		foc_fixed(1000, 0);
+//		foc_fixed(u, 0);
+
+		get_dtheta();
+
+		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+		{
+			uart_tx_ts = tick;
+
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+			pwb32[i32widx++] = 0;
+			pwb32[i32widx++] = qdot_targ;
+			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+			pwb32[i32widx++] = u;
+			pwb32[i32widx++] = HAL_GetTick();
+
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+//		if(tick-led_ts > 500)
+//		{
+//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
+//			led_ts = tick;
+//		}
+	}
+
+
+
+
+
 	fixed_PI_2_params_t pctl_vq = {
 			.kp = {.i32 = 60, .radix = 8},
 			.ki = {.i32 = 17, .radix = 10},
@@ -129,7 +192,7 @@ int main(void)
 			.i32 = 15,	//no deriv effort either, for now
 			.radix = 5
 	};
-	uint32_t uart_tx_ts = 0;
+
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
