@@ -118,13 +118,28 @@ int main(void)
 	}
 #endif
 
-	uint32_t tx_ts = 0;
+	uint32_t can_tx_ts = 0;
+	uint32_t uart_tx_ts = 0;
+	fixed_PI_2_params_t pctl_vq = {
+			.kp = {.i32 = 60, .radix = 8},
+			.ki = {.i32 = 17, .radix = 10},
+			.x_integral_div = 100,
+			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
+			.x_sat = 1000,	//no integral efforts for now
+			.out_rshift = 0
+	};
+	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
+			.i32 = 15,	//no deriv effort either, for now
+			.radix = 5
+	};
+
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
-		if((tick - tx_ts) > 10)
+
+		if((tick - can_tx_ts) > 10)
 		{
-			tx_ts = tick;
+			can_tx_ts = tick;
 			can_tx_data.d[0] = 'H';
 			can_tx_data.d[1] = 'E';
 			can_tx_data.d[2] = 'L';
@@ -149,6 +164,80 @@ int main(void)
 			}
 		}
 
+
+		int32_t qd = 0;
+		//		qd = (sin_12b(wrap_2pi_12b(tick))*PI_12B)/(1<<10);
+		qd = wrap_2pi_14b((tick * 1715)/1000);
+		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
+		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
+		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
+		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
+		vq -= damping;
+		vq = saturate(vq, 2047);
+
+		//		int32_t id_req = (sin_12b(wrap_2pi_12b(tick*10))*1200)/4096;
+		//		uint32_t tsince = tick-create_error_ts;
+		//		if(tsince > 0 && tsince < 1000)
+		//		{
+		//			vq = 1000;
+		//		}
+		//		else if (tsince > 3000)
+		//		{
+		//			create_error_ts = tick;
+		//		}
+		sinusoidal_fixed(vq,0);
+		//		vq = 1000;
+		//		foc_fixed(vq, 0);
+
+		get_dtheta();
+
+		//		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
+
+
+		//		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
+		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+		{
+			uart_tx_ts = tick;
+
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+			pwb32[i32widx++] = qd;
+			pwb32[i32widx++] = gl_theta_rem_m;
+			pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
+			pwb32[i32widx++] = vq;
+			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+
+			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
+			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
+			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
+
+			//			pwb32[i32widx++] = theta_elec;
+			//			pwb32[i32widx++] = vq;
+			//			pwb32[i32widx++] = gl_iq;
+
+			//			pwb32[i32widx++] = 0;
+			//			pwb32[i32widx++] = id_req;
+			//			pwb32[i32widx++] = gl_id;
+			//			pwb32[i32widx++] = 300;
+			//			pwb32[i32widx++] = gl_iq;
+
+			//			int32_t s,c;
+			//			get_sc_no_ortho_comp(&s,&c);
+			//			pwb32[i32widx++] = s;
+			//			pwb32[i32widx++] = c;
+
+			pwb32[i32widx++] = HAL_GetTick();
+
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+
+		//		if(tick-led_ts > 500)
+		//		{
+		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
+		//			led_ts = tick;
+		//		}
 	}
 
 	//	while(1)
@@ -162,7 +251,7 @@ int main(void)
 			.x_sat = 3546,
 			.out_rshift = 0
 	};
-	uint32_t uart_tx_ts = 0;
+
 	int32_t qdot_targ = 462*2;
 	uint8_t do_speedloop = 0;
 	uint8_t do_foc_loop = 0;
@@ -237,102 +326,5 @@ int main(void)
 			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
 		}
 
-	}
-
-
-
-
-	fixed_PI_2_params_t pctl_vq = {
-			.kp = {.i32 = 60, .radix = 8},
-			.ki = {.i32 = 17, .radix = 10},
-			.x_integral_div = 100,
-			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
-			.x_sat = 1000,	//no integral efforts for now
-			.out_rshift = 0
-	};
-	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
-			.i32 = 15,	//no deriv effort either, for now
-			.radix = 5
-	};
-
-	while(1)
-	{
-		uint32_t tick = HAL_GetTick();
-
-		int32_t qd = 0;
-		//		qd = (sin_12b(wrap_2pi_12b(tick))*PI_12B)/(1<<10);
-		qd = wrap_2pi_14b((tick * 1715)/1000);
-		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
-		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
-		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
-		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
-		vq -= damping;
-		vq = saturate(vq, 2047);
-
-		//		int32_t id_req = (sin_12b(wrap_2pi_12b(tick*10))*1200)/4096;
-		//		uint32_t tsince = tick-create_error_ts;
-		//		if(tsince > 0 && tsince < 1000)
-		//		{
-		//			vq = 1000;
-		//		}
-		//		else if (tsince > 3000)
-		//		{
-		//			create_error_ts = tick;
-		//		}
-		sinusoidal_fixed(vq,0);
-		//		vq = 1000;
-		//		foc_fixed(vq, 0);
-
-		get_dtheta();
-
-		//		tau = (sin_12b(wrap_2pi_12b( (tick*TWO_PI_12B)/4096 ))*2000)/4096;
-
-
-		//		while(m_huart2.bytes_to_send != 0);	//spin until uart is ready again. blocking uart
-		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
-		{
-			uart_tx_ts = tick;
-
-			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-			int i32widx = 0;
-			pwb32[i32widx++] = qd;
-			pwb32[i32widx++] = gl_theta_rem_m;
-			pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
-			pwb32[i32widx++] = vq;
-			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
-
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-
-			//			pwb32[i32widx++] = theta_elec;
-			//			pwb32[i32widx++] = vq;
-			//			pwb32[i32widx++] = gl_iq;
-
-			//			pwb32[i32widx++] = 0;
-			//			pwb32[i32widx++] = id_req;
-			//			pwb32[i32widx++] = gl_id;
-			//			pwb32[i32widx++] = 300;
-			//			pwb32[i32widx++] = gl_iq;
-
-			//			int32_t s,c;
-			//			get_sc_no_ortho_comp(&s,&c);
-			//			pwb32[i32widx++] = s;
-			//			pwb32[i32widx++] = c;
-
-			pwb32[i32widx++] = HAL_GetTick();
-
-			int pld_size = i32widx*sizeof(uint32_t);
-			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-		}
-
-
-
-		//		if(tick-led_ts > 500)
-		//		{
-		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-		//			led_ts = tick;
-		//		}
 	}
 }
