@@ -140,7 +140,7 @@ void FDCAN_Config(void)
 		Error_Handler();
 	}
 
-	can_tx_header.Identifier = 0;
+	can_tx_header.Identifier = fds_mp.module_number;
 	can_tx_header.IdType = FDCAN_STANDARD_ID;
 	can_tx_header.TxFrameType = FDCAN_DATA_FRAME;
 	can_tx_header.DataLength = FDCAN_DLC_BYTES_8;

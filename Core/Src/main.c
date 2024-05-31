@@ -94,7 +94,6 @@ int main(void)
 	TIMER_UPDATE_DUTY(1773,1773,1773);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
 
-	uint32_t led_ts = 0;
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -137,6 +136,7 @@ int main(void)
 	{
 		uint32_t tick = HAL_GetTick();
 
+
 		if((tick - can_tx_ts) > 10)
 		{
 			can_tx_ts = tick;
@@ -149,18 +149,20 @@ int main(void)
 			can_tx_header.Identifier = 1;
 			HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
 		}
+
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.d);
 			if(can_rx_header.Identifier == fds_mp.module_number)
 			{
-				can_tx_data.d[0] = 'F';
-				can_tx_data.d[1] = 'U';
-				can_tx_data.d[2] = 'C';
-				can_tx_data.d[3] = 'K';
-				can_tx_data.d[4] = 'S';
-				can_tx_data.d[5] = ' ';
-				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
+				if(can_rx_header.Identifier == fds_mp.module_number)
+				{
+					can_tx_data.i32[0] = gl_theta_rem_m;
+					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
+					can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
+					can_tx_header.Identifier = fds_mp.module_number;
+					HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
+				}
 			}
 		}
 
