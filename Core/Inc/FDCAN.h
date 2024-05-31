@@ -82,9 +82,11 @@ extern uint16_t gl_ext_cmd_id;
 
 extern FDCAN_TxHeaderTypeDef   can_tx_header;
 extern FDCAN_RxHeaderTypeDef   can_rx_header;
+extern can_payload_t 			can_tx_data;
+extern can_payload_t 			can_rx_data;
 extern uint32_t			can_tx_mailbox;
 
-void CAN_Init(void);
+void FDCAN_Config(void);
 void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d);
 
 

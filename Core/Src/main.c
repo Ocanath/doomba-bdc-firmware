@@ -68,6 +68,8 @@ int main(void)
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
+	FDCAN_Config();
+
 	load_flash_params();
 
 	set_encoder_read_type(READ_ANGLECOM);
@@ -116,8 +118,18 @@ int main(void)
 	}
 #endif
 
+	uint32_t tx_ts = 0;
 	while(1)
 	{
+		uint32_t tick = HAL_GetTick();
+		if((tick - tx_ts) > 10)
+		{
+			tx_ts = tick;
+			can_tx_data.ui32[0] = tick;
+			can_tx_data.i16[2] = (int16_t)sin_12b(wrap_2pi_12b(tick));
+			can_tx_header.Identifier = (can_tx_header.Identifier + 1) % 0x7ff;
+			HAL_StatusTypeDef rc = HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
+		}
 
 	}
 
