@@ -146,7 +146,7 @@ int main(void)
 			can_tx_data.d[3] = 'L';
 			can_tx_data.d[4] = 'O';
 			can_tx_data.d[5] = ' ';
-			can_tx_header.Identifier = (can_tx_header.Identifier + 1) % 3;
+			can_tx_header.Identifier = 1;
 			HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
 		}
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
@@ -154,11 +154,11 @@ int main(void)
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.d);
 			if(can_rx_header.Identifier == fds_mp.module_number)
 			{
-				can_tx_data.d[0] = 'B';
-				can_tx_data.d[1] = 'I';
-				can_tx_data.d[2] = 'T';
-				can_tx_data.d[3] = 'C';
-				can_tx_data.d[4] = 'H';
+				can_tx_data.d[0] = 'F';
+				can_tx_data.d[1] = 'U';
+				can_tx_data.d[2] = 'C';
+				can_tx_data.d[3] = 'K';
+				can_tx_data.d[4] = 'S';
 				can_tx_data.d[5] = ' ';
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
 			}

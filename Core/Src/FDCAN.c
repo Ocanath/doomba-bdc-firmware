@@ -143,7 +143,7 @@ void FDCAN_Config(void)
 	can_tx_header.Identifier = 0;
 	can_tx_header.IdType = FDCAN_STANDARD_ID;
 	can_tx_header.TxFrameType = FDCAN_DATA_FRAME;
-	can_tx_header.DataLength = FDCAN_DLC_BYTES_6;
+	can_tx_header.DataLength = FDCAN_DLC_BYTES_8;
 	can_tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
 	can_tx_header.BitRateSwitch = FDCAN_BRS_OFF;
 	can_tx_header.FDFormat = FDCAN_CLASSIC_CAN;
