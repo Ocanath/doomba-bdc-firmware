@@ -4,11 +4,11 @@
  *  Created on: Mar 21, 2018
  *      Author: Ocanath
  */
+#include <FDCAN.h>
 #include "foc_commutation.h"
 #include "adc.h"
 //#include <math.h>
 #include "mag-encoder.h"
-#include "CAN.h"
 
 float mL = 0;
 float mR = 0;

@@ -5,8 +5,8 @@
  *      Author: Ocanath Robotman
  */
 
-#ifndef INC_CAN_H_
-#define INC_CAN_H_
+#ifndef INC_FDCAN_H_
+#define INC_FDCAN_H_
 #include "init.h"
 #include "fds.h"
 
@@ -88,4 +88,4 @@ void CAN_Init(void);
 void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d);
 
 
-#endif /* INC_CAN_H_ */
+#endif /* INC_FDCAN_H_ */

@@ -17,7 +17,7 @@
  *      	Upon receiving this message ID, the motor will also respond with its current position on the bus.
  *
  */
-#include "CAN.h"
+#include <FDCAN.h>
 
 #define DEFAULT_V_REPORT_RADIX	4
 #define DEFAULT_IQ_RSHIFT		3	//estimated max value of iq is in the ~17bit domain. shift 3 to get it between 14-15bit

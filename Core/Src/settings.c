@@ -4,9 +4,9 @@
  *  Created on: Sep 9, 2018
  *      Author: Ocanath
  */
+#include <FDCAN.h>
 #include "settings.h"
 #include "trig_fixed.h"
-#include "CAN.h"
 
 /*
  * NOTE:

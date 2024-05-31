@@ -1,7 +1,7 @@
+#include <FDCAN.h>
 #include "foc_fixed.h"
 #include "mag-encoder.h"
 #include "init.h"
-#include "CAN.h"
 #include "m_uart.h"
 #include "PPP.h"
 

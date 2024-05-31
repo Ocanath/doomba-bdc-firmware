@@ -4,10 +4,10 @@
  *  Created on: Oct 26, 2021
  *      Author: Ocanath Robotman
  */
+#include <FDCAN.h>
 #include "foc_fixed.h"
 #include "init.h"
 #include "settings.h"
-#include "CAN.h"
 #include "m_uart.h"
 #include "calibration_fixed.h"
 #include "adc.h"

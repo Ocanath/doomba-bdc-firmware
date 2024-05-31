@@ -1,3 +1,4 @@
+#include <FDCAN.h>
 #include "main.h"
 #include "init.h"
 #include "adc.h"
@@ -5,7 +6,6 @@
 #include "settings.h"
 #include "calibration.h"
 #include "calibration_fixed.h"
-#include "CAN.h"
 #include "foc_fixed.h"
 #include "m_uart.h"
 #include "PPP.h"
@@ -100,7 +100,7 @@ int main(void)
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
-	auto_calibrate_motor(1000, 700, 7.f,.0001);
+	auto_calibrate_motor(3000, 700, 7.f,.001);
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
@@ -116,8 +116,13 @@ int main(void)
 	}
 #endif
 
+	while(1)
+	{
 
+	}
 
+//	while(1)
+//		sinusoidal_fixed(3546,0);
 
 	fixed_PI_2_params_t speed_controller = {
 			.kp = {.i32 = 500, .radix = 8},
@@ -128,8 +133,10 @@ int main(void)
 			.out_rshift = 0
 	};
 	uint32_t uart_tx_ts = 0;
-	int32_t qdot_targ = 462;
-	while(1)
+	int32_t qdot_targ = 462*2;
+	uint8_t do_speedloop = 0;
+	uint8_t do_foc_loop = 0;
+	while(do_speedloop)
 	{
 		uint32_t tick = HAL_GetTick();
 
@@ -175,7 +182,32 @@ int main(void)
 //			led_ts = tick;
 //		}
 	}
+	while(do_foc_loop)
+	{
+		uint32_t tick = HAL_GetTick();
 
+		int32_t iqref = 1000;
+		foc_fixed(iqref, 0);
+		get_dtheta();
+
+		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+		{
+			uart_tx_ts = tick;
+
+			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			int i32widx = 0;
+			pwb32[i32widx++] = 0;
+			pwb32[i32widx++] = iqref;
+			pwb32[i32widx++] = gl_iq;
+			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+			pwb32[i32widx++] = tick;
+
+			int pld_size = i32widx*sizeof(uint32_t);
+			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+		}
+
+	}
 
 
 

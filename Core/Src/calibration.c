@@ -4,11 +4,11 @@
  *  Created on: Apr 29, 2019
  *      Author: Ocanath
  */
+#include <FDCAN.h>
 #include "calibration.h"
 #include "mag-encoder.h"
 #include "foc_commutation.h"
 #include "foc_fixed.h"
-#include "CAN.h"
 #include "calibration_fixed.h"
 #include "m_uart.h"
 #include "PPP.h"
