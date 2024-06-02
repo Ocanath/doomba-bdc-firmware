@@ -121,7 +121,7 @@ int main(void)
 	uint32_t uart_tx_ts = 0;
 	fixed_PI_2_params_t pctl_vq = {
 			.kp = {.i32 = 60, .radix = 8},
-			.ki = {.i32 = 17, .radix = 10},
+			.ki = {.i32 = 0, .radix = 10},
 			.x_integral_div = 100,
 			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
 			.x_sat = 1000,	//no integral efforts for now
@@ -142,10 +142,10 @@ int main(void)
 		{
 			can_tx_ts = tick;
 			trigger_tx = 0;
-
-			can_tx_data.i32[0] = gl_theta_rem_m;
-			can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
-			can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
+			//negation due to V2-V3 encoder sign differences
+			can_tx_data.i32[0] = -gl_theta_rem_m;
+			can_tx_data.i16[2] = -(int16_t)(gl_iq >> gl_iq_rshift);
+			can_tx_data.i16[3] = -(int16_t)gl_dtheta_fixedpoint_rad_p_sec;
 			can_tx_header.Identifier = fds_mp.module_number;
 			HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
 		}
@@ -156,7 +156,7 @@ int main(void)
 			if(can_rx_header.Identifier == 1)
 			{
 				trigger_tx = 1;
-				qd_can = can_rx_data.i32[0];
+				qd_can = -can_rx_data.i32[0];
 			}
 
 //			//reply to messages directed at us with our message contents.
