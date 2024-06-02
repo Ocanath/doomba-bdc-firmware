@@ -131,39 +131,43 @@ int main(void)
 			.i32 = 15,	//no deriv effort either, for now
 			.radix = 5
 	};
-
+	uint8_t trigger_tx = 1;
+	int32_t qd_can = 0;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
 
-		if((tick - can_tx_ts) > 10)
+		if((tick - can_tx_ts) > 10 || trigger_tx != 0)
 		{
 			can_tx_ts = tick;
-			can_tx_data.d[0] = 'H';
-			can_tx_data.d[1] = 'E';
-			can_tx_data.d[2] = 'L';
-			can_tx_data.d[3] = 'L';
-			can_tx_data.d[4] = 'O';
-			can_tx_data.d[5] = ' ';
-			can_tx_header.Identifier = 1;
+			trigger_tx = 0;
+
+			can_tx_data.i32[0] = gl_theta_rem_m;
+			can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
+			can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
+			can_tx_header.Identifier = fds_mp.module_number;
 			HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
 		}
 
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.d);
-			if(can_rx_header.Identifier == fds_mp.module_number)
+			if(can_rx_header.Identifier == 1)
 			{
-				if(can_rx_header.Identifier == fds_mp.module_number)
-				{
-					can_tx_data.i32[0] = gl_theta_rem_m;
-					can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
-					can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
-					can_tx_header.Identifier = fds_mp.module_number;
-					HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
-				}
+				trigger_tx = 1;
+				qd_can = can_rx_data.i32[0];
 			}
+
+//			//reply to messages directed at us with our message contents.
+//			if(can_rx_header.Identifier == fds_mp.module_number)
+//			{
+//				can_tx_data.i32[0] = gl_theta_rem_m;
+//				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
+//				can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
+//				can_tx_header.Identifier = fds_mp.module_number;
+//				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
+//			}
 		}
 
 
