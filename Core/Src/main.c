@@ -171,9 +171,9 @@ int main(void)
 		}
 
 
-		int32_t qd = 0;
+		int32_t qd = qd_can;
 		//		qd = (sin_12b(wrap_2pi_12b(tick))*PI_12B)/(1<<10);
-		qd = wrap_2pi_14b((tick * 1715)/1000);
+//		qd = wrap_2pi_14b((tick * 1715)/1000);
 		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
 		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
 		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
