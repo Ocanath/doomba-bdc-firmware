@@ -91,14 +91,11 @@ int main(void)
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port,ENABLE_Pin,1);
 	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin, 1);
 
-	TIMER_UPDATE_DUTY(1773,1773,1773);
+	TIMER_UPDATE_DUTY(500,500,500);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
-
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
-	fds_mp.gl_oerr_total = estimate_orthogonality_error();
-	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
 	auto_calibrate_motor(3000, 700, 7.f,.001);
@@ -131,7 +128,7 @@ int main(void)
 			.i32 = 15,	//no deriv effort either, for now
 			.radix = 5
 	};
-
+	uint32_t led_ts = 0;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
