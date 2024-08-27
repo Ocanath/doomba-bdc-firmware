@@ -139,7 +139,7 @@ int main(void)
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.d);
-			if(can_rx_header.Identifier == 2)	//obey commands from specific device
+			if(can_rx_header.Identifier == fds_mp.module_number)	//obey commands from specific device
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
 				qd_can = can_rx_data.i32[0];
