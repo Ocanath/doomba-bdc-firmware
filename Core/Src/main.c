@@ -97,7 +97,7 @@ int main(void)
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
-	fds_mp.gl_oerr_total = estimate_orthogonality_error();
+//	fds_mp.gl_oerr_total = estimate_orthogonality_error();
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
@@ -116,6 +116,8 @@ int main(void)
 		}
 	}
 #endif
+//	while(1)
+//		sinusoidal_fixed(3546,0);
 
 	uint32_t uart_tx_ts = 0;
 
@@ -151,6 +153,10 @@ int main(void)
 
 		}
 		else if(gl_ext_cmd_flags.control_mode == SINUSOIDAL_MODE)
+		{
+
+		}
+		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
 		{
 
 		}
