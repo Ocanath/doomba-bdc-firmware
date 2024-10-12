@@ -36,8 +36,8 @@ can_payload_t 			can_rx_data = {0};
 uint32_t				can_tx_mailbox;
 
 ext_cmd_flags_t gl_ext_cmd_flags = {
-		.en_blink_led = 1,
-		.use_uart_encoder = 1,
+		.en_blink_led = 0,
+		.use_uart_encoder = 0,
 		.control_mode = PCTL_VQ
 };
 

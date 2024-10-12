@@ -116,8 +116,8 @@ int main(void)
 		}
 	}
 #endif
-	while(1)
-		sinusoidal_fixed(3546,0);	//000003E2
+//	while(1)
+//		sinusoidal_fixed(3546,0);	//000003E2
 
 	uint32_t uart_tx_ts = 0;
 	int32_t can_command_value = 0;
