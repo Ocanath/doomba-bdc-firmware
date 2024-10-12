@@ -97,7 +97,7 @@ int main(void)
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
-//	fds_mp.gl_oerr_total = estimate_orthogonality_error();
+	//	fds_mp.gl_oerr_total = estimate_orthogonality_error();
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef GET_INIT_OFFSET
@@ -116,12 +116,12 @@ int main(void)
 		}
 	}
 #endif
-//	while(1)
-//		sinusoidal_fixed(3546,0);
+	while(1)
+		sinusoidal_fixed(3546,0);	//000003E2
 
 	uint32_t uart_tx_ts = 0;
-
 	int32_t can_command_value = 0;
+	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
@@ -133,6 +133,7 @@ int main(void)
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
 				can_command_value = can_rx_data.i32[0];
+				can_cmd_exp_ts = tick;
 
 				can_tx_data.i32[0] = gl_theta_rem_m;
 				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
@@ -150,67 +151,94 @@ int main(void)
 		/*Do the control modes*/
 		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
 		{
-
+			foc_fixed(can_command_value, 0);
+			if((tick - can_cmd_exp_ts) > 500)
+				can_command_value = 0;
 		}
 		else if(gl_ext_cmd_flags.control_mode == SINUSOIDAL_MODE)
 		{
-
+			sinusoidal_fixed(can_command_value, 0);
+			if((tick - can_cmd_exp_ts) > 500)
+				can_command_value = 0;
 		}
 		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
 		{
-
+//			openloop_runvalue+=3;
+			int32_t theta_wrapped = wrap_2pi_14b(can_command_value);
+			int32_t sin_val = sin_14b(theta_wrapped);
+			int32_t cos_val = cos_14b(theta_wrapped);
+			int32_t alpha,beta,tA,tB,tC;
+			inverse_park_fixed(350, 0, sin_val,cos_val,&alpha,&beta, 14);
+			svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+			TIMER_UPDATE_DUTY(tA,tB,tC);
 		}
-		else if(gl_ext_cmd_flags.control_mode == PCTL_VQ)
+		else
 		{
-			int32_t qd = can_command_value;
-			int32_t q = wrap_2pi_14b(gl_theta_rem_m);
-			int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
-			int32_t vq = ctl_PI_fixed_2(e, &mctl_vq.kpki);
-			int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * mctl_vq.kd.i32) >> mctl_vq.kd.radix;
-			vq -= damping;
-			vq = saturate(vq, mctl_vq.out_sat);
-			sinusoidal_fixed(vq,0);
-
-
-
-			if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+			if(gl_ext_cmd_flags.use_uart_encoder != 0)
 			{
-				uart_tx_ts = tick;
-
-				uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-				int i32widx = 0;
-				pwb32[i32widx++] = qd;
-				pwb32[i32widx++] = gl_theta_rem_m;
-				pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
-				pwb32[i32widx++] = vq;
-				pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
-
-				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-
-				//			pwb32[i32widx++] = theta_elec;
-				//			pwb32[i32widx++] = vq;
-				//			pwb32[i32widx++] = gl_iq;
-
-				//			pwb32[i32widx++] = 0;
-				//			pwb32[i32widx++] = id_req;
-				//			pwb32[i32widx++] = gl_id;
-				//			pwb32[i32widx++] = 300;
-				//			pwb32[i32widx++] = gl_iq;
-
-				//			int32_t s,c;
-				//			get_sc_no_ortho_comp(&s,&c);
-				//			pwb32[i32widx++] = s;
-				//			pwb32[i32widx++] = c;
-
-				pwb32[i32widx++] = HAL_GetTick();
-
-				int pld_size = i32widx*sizeof(uint32_t);
-				int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-				m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+				if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
+				{
+					foc_fixed(iq_pctl, 0);
+				}
+				else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
+				{
+					sinusoidal_fixed(vq_pctl, 0);
+				}
 			}
+			else
+			{
+				if(gl_ext_cmd_flags.control_mode == PCTL_VQ)
+				{
+					int32_t qd = can_command_value;
+					int32_t q = wrap_2pi_14b(gl_theta_rem_m);
+					int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
+					int32_t vq = ctl_PI_fixed_2(e, &mctl_vq.kpki);
+					int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * mctl_vq.kd.i32) >> mctl_vq.kd.radix;
+					vq -= damping;
+					vq = saturate(vq, mctl_vq.out_sat);
+					sinusoidal_fixed(vq,0);
 
+
+
+					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+					{
+						uart_tx_ts = tick;
+
+						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+						int i32widx = 0;
+						pwb32[i32widx++] = qd;
+						pwb32[i32widx++] = gl_theta_rem_m;
+						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
+						pwb32[i32widx++] = vq;
+						pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+
+						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
+						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
+						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
+
+						//			pwb32[i32widx++] = theta_elec;
+						//			pwb32[i32widx++] = vq;
+						//			pwb32[i32widx++] = gl_iq;
+
+						//			pwb32[i32widx++] = 0;
+						//			pwb32[i32widx++] = id_req;
+						//			pwb32[i32widx++] = gl_id;
+						//			pwb32[i32widx++] = 300;
+						//			pwb32[i32widx++] = gl_iq;
+
+						//			int32_t s,c;
+						//			get_sc_no_ortho_comp(&s,&c);
+						//			pwb32[i32widx++] = s;
+						//			pwb32[i32widx++] = c;
+
+						pwb32[i32widx++] = HAL_GetTick();
+
+						int pld_size = i32widx*sizeof(uint32_t);
+						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+					}
+				}
+			}
 		}
 
 
