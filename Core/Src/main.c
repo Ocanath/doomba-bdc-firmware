@@ -151,60 +151,74 @@ int main(void)
 				can_tx_header.Identifier = fds_mp.module_number;
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
+			else if (can_rx_header.Identifier == 0x7FF - fds_mp.module_number)
+			{
+				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
+			}
 		}
+		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
+		{
 
-		int32_t qd = can_command_value;
-		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
-		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
-		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
-		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
-		vq -= damping;
-		vq = saturate(vq, 2047);
-		sinusoidal_fixed(vq,0);
+		}
+		else if(gl_ext_cmd_flags.control_mode == SINUSOIDAL_MODE)
+		{
 
+		}
+		else if(gl_ext_cmd_flags.control_mode == PCTL_VQ)
+		{
+			int32_t qd = can_command_value;
+			int32_t q = wrap_2pi_14b(gl_theta_rem_m);
+			int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
+			int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
+			int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
+			vq -= damping;
+			vq = saturate(vq, 2047);
+			sinusoidal_fixed(vq,0);
+
+
+
+			if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+			{
+				uart_tx_ts = tick;
+
+				uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+				int i32widx = 0;
+				pwb32[i32widx++] = qd;
+				pwb32[i32widx++] = gl_theta_rem_m;
+				pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
+				pwb32[i32widx++] = vq;
+				pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+
+				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
+				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
+				//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
+
+				//			pwb32[i32widx++] = theta_elec;
+				//			pwb32[i32widx++] = vq;
+				//			pwb32[i32widx++] = gl_iq;
+
+				//			pwb32[i32widx++] = 0;
+				//			pwb32[i32widx++] = id_req;
+				//			pwb32[i32widx++] = gl_id;
+				//			pwb32[i32widx++] = 300;
+				//			pwb32[i32widx++] = gl_iq;
+
+				//			int32_t s,c;
+				//			get_sc_no_ortho_comp(&s,&c);
+				//			pwb32[i32widx++] = s;
+				//			pwb32[i32widx++] = c;
+
+				pwb32[i32widx++] = HAL_GetTick();
+
+				int pld_size = i32widx*sizeof(uint32_t);
+				int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+				m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+			}
+
+		}
 
 
 		get_dtheta();
-
-
-		if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
-		{
-			uart_tx_ts = tick;
-
-			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-			int i32widx = 0;
-			pwb32[i32widx++] = qd;
-			pwb32[i32widx++] = gl_theta_rem_m;
-			pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
-			pwb32[i32widx++] = vq;
-			pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
-
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-			//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-
-			//			pwb32[i32widx++] = theta_elec;
-			//			pwb32[i32widx++] = vq;
-			//			pwb32[i32widx++] = gl_iq;
-
-			//			pwb32[i32widx++] = 0;
-			//			pwb32[i32widx++] = id_req;
-			//			pwb32[i32widx++] = gl_id;
-			//			pwb32[i32widx++] = 300;
-			//			pwb32[i32widx++] = gl_iq;
-
-			//			int32_t s,c;
-			//			get_sc_no_ortho_comp(&s,&c);
-			//			pwb32[i32widx++] = s;
-			//			pwb32[i32widx++] = c;
-
-			pwb32[i32widx++] = HAL_GetTick();
-
-			int pld_size = i32widx*sizeof(uint32_t);
-			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-		}
-
 		//		if(tick-led_ts > 500)
 		//		{
 		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
