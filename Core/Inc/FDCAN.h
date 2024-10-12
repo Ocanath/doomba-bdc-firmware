@@ -69,7 +69,7 @@ typedef struct ext_cmd_flags_t
 
 typedef struct pctl_params_t
 {
-	fixed_PI_params_t kpki;
+	fixed_PI_2_params_t kpki;
 	i32_t kd;
 	int32_t out_sat;
 }pctl_params_t;

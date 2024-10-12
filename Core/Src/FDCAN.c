@@ -56,16 +56,19 @@ pctl_params_t mctl_iq = {
 };
 /*Initialize params for position control using sinusoidal as 0*/
 pctl_params_t mctl_vq = {
-		.kpki =
-		{
-				.kp = {.i32 = 0, .radix = 0},
-				.ki = {.i32 = 0, .radix = 0},
-				.x = 0,
-				.x_sat = 0,
+		.kpki = {
+				.kp = {.i32 = 40, .radix = 8},
+				.ki = {.i32 = 0, .radix = 10},
+				.x_integral_div = 130,
+				.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
+				.x_sat = 1000,	//no integral efforts for now
 				.out_rshift = 0
 		},
-		.kd = {.i32 = 0, .radix = 0},
-		.out_sat = 0,
+		.kd = {	//filter this will help for pos control. Need to do fixed point IIR
+				.i32 = 5,	//no deriv effort either, for now
+				.radix = 5
+		},
+		.out_sat = 2047,
 };
 
 

@@ -33,7 +33,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
-			int32_t iq = ctl_PI_fixed( wrap_2pi_12b(input_val - q), &mctl_iq.kpki);
+			int32_t iq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &mctl_iq.kpki);
 			iq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_iq.kd.i32) >> mctl_iq.kd.radix;
 			iq = iq * (1 << gl_iq_rshift);
 			iq = saturate(iq, mctl_iq.out_sat);
@@ -43,7 +43,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
-			int32_t vq = ctl_PI_fixed( wrap_2pi_12b(input_val - q), &mctl_vq.kpki);
+			int32_t vq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &mctl_vq.kpki);
 			vq -= (gl_dtheta_fixedpoint_rad_p_sec*mctl_vq.kd.i32) >> mctl_vq.kd.radix;
 			vq = saturate(vq, mctl_vq.out_sat);
 			vq_pctl = vq;
@@ -118,21 +118,8 @@ int main(void)
 #endif
 
 	uint32_t uart_tx_ts = 0;
-	fixed_PI_2_params_t pctl_vq = {
-			.kp = {.i32 = 40, .radix = 8},
-			.ki = {.i32 = 0, .radix = 10},
-			.x_integral_div = 130,
-			.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
-			.x_sat = 1000,	//no integral efforts for now
-			.out_rshift = 0
-	};
-	i32_t pctl_kd_vq = {	//filter this will help for pos control. Need to do fixed point IIR
-			.i32 = 5,	//no deriv effort either, for now
-			.radix = 5
-	};
 
 	int32_t can_command_value = 0;
-
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
@@ -156,6 +143,9 @@ int main(void)
 				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
 			}
 		}
+
+
+		/*Do the control modes*/
 		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
 		{
 
@@ -169,10 +159,10 @@ int main(void)
 			int32_t qd = can_command_value;
 			int32_t q = wrap_2pi_14b(gl_theta_rem_m);
 			int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
-			int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
-			int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
+			int32_t vq = ctl_PI_fixed_2(e, &mctl_vq.kpki);
+			int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * mctl_vq.kd.i32) >> mctl_vq.kd.radix;
 			vq -= damping;
-			vq = saturate(vq, 2047);
+			vq = saturate(vq, mctl_vq.out_sat);
 			sinusoidal_fixed(vq,0);
 
 
@@ -185,7 +175,7 @@ int main(void)
 				int i32widx = 0;
 				pwb32[i32widx++] = qd;
 				pwb32[i32widx++] = gl_theta_rem_m;
-				pwb32[i32widx++] = pctl_vq.x >> pctl_vq.ki.radix;
+				pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
 				pwb32[i32widx++] = vq;
 				pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
 
