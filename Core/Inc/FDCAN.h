@@ -21,7 +21,7 @@ typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ} control_mode_t;	//foc
 
 typedef union
 {
-	uint8_t d[PAYLOAD_SIZE_CAN];
+	uint8_t u8[PAYLOAD_SIZE_CAN];
 	int32_t i32[PAYLOAD_SIZE_CAN/sizeof(int32_t)];	//all types are even multiples of 8, and sizeof evals at compile time so this is safe
 	uint32_t ui32[PAYLOAD_SIZE_CAN/sizeof(uint32_t)];
 	int16_t i16[PAYLOAD_SIZE_CAN/sizeof(int16_t)];

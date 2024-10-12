@@ -131,37 +131,38 @@ int main(void)
 			.radix = 5
 	};
 
-	int32_t qd_can = 0;
+	int32_t can_command_value = 0;
+
 	while(1)
 	{
 		uint32_t tick = HAL_GetTick();
 
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
-			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.d);
+			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
 			if(can_rx_header.Identifier == fds_mp.module_number)	//obey commands from specific device
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
-				qd_can = can_rx_data.i32[0];
+				can_command_value = can_rx_data.i32[0];
 
 				can_tx_data.i32[0] = gl_theta_rem_m;
 				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
 				can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
 				can_tx_header.Identifier = fds_mp.module_number;
-				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.d);
+				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
 		}
 
-
-		int32_t qd = qd_can;
+		int32_t qd = can_command_value;
 		int32_t q = wrap_2pi_14b(gl_theta_rem_m);
 		int32_t e = wrap_2pi_14b(qd-q) >> 2;	//go down to 12
 		int32_t vq = ctl_PI_fixed_2(e, (fixed_PI_2_params_t*)(&pctl_vq));
 		int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * pctl_kd_vq.i32) >> pctl_kd_vq.radix;
 		vq -= damping;
 		vq = saturate(vq, 2047);
-
 		sinusoidal_fixed(vq,0);
+
+
 
 		get_dtheta();
 
