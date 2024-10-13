@@ -93,7 +93,17 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(1773,1773,1773);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
-
+	/*
+	 *	Rembember!!!!!
+	 *	1. OPTION BYTES disable boot0 pin or everything will appear fucked up even though it's fine
+	 *	2. use get encoder midpoint to check the inverter
+	 *	3. Plug the correct elec conversion coefficient into the flash memory if it is not default correct (11 polepairs)
+	 *	3.1 Plug the correct CAN id into entry 0
+	 *	3.2 Plug best guess FOC control gains into relevant entries
+	 *	4. use autocal to cal IFF 3 is good. Live expressions are your friend for this
+	 *	5. check the settings in STM32CubeProgrammer
+	 *	6. profit?
+	 */
 
 #ifdef GET_ENCODER_MIDPOINT
 	obtain_encoder_midpoints();
@@ -163,14 +173,7 @@ int main(void)
 		}
 		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
 		{
-//			openloop_runvalue+=3;
-			int32_t theta_wrapped = wrap_2pi_14b(can_command_value);
-			int32_t sin_val = sin_14b(theta_wrapped);
-			int32_t cos_val = cos_14b(theta_wrapped);
-			int32_t alpha,beta,tA,tB,tC;
-			inverse_park_fixed(350, 0, sin_val,cos_val,&alpha,&beta, 14);
-			svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-			TIMER_UPDATE_DUTY(tA,tB,tC);
+			openloop_fixed(can_command_value);
 		}
 		else
 		{

@@ -141,6 +141,17 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	gl_id = id_meas;
 }
 
+void openloop_fixed(int32_t angle_targ_prewrapping)
+{
+	int32_t theta_wrapped = wrap_2pi_14b(angle_targ_prewrapping);
+	int32_t sin_val = sin_14b(theta_wrapped);
+	int32_t cos_val = cos_14b(theta_wrapped);
+	int32_t alpha,beta,tA,tB,tC;
+	inverse_park_fixed(350, 0, sin_val,cos_val,&alpha,&beta, 14);
+	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
+	TIMER_UPDATE_DUTY(tA,tB,tC);
+}
+
 /*
  * */
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
