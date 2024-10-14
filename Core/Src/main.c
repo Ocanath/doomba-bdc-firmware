@@ -104,6 +104,12 @@ int main(void)
 	 *	5. check the settings in STM32CubeProgrammer
 	 *	6. profit?
 	 */
+#ifdef LOCK_FOR_POLEPAIR_COUNT
+	while(1)
+	{
+		openloop_fixed(0,1500);
+	}
+#endif
 #ifdef TEST_INVERTER
 	uint32_t angle = 0;
 	while(1)
@@ -117,19 +123,9 @@ int main(void)
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
-	//	volatile int32_t error = openloop_eang_pctl(0,0xFFFFFFFF);
-	TIMER_UPDATE_DUTY(500,500,500);
-	for(uint32_t end_ts = HAL_GetTick() + 5000; HAL_GetTick() < end_ts;)
-	{
-		//		if(error < 714 && error > -714)	//714 is 10 degrees
-		{
-			//indicate pass
-			test_foc();
-		}
-	}
+	while(1)
+		sinusoidal_fixed(3546,0);	//000003E2
 #endif
-//	while(1)
-//		sinusoidal_fixed(3546,0);	//000003E2
 
 	uint32_t uart_tx_ts = 0;
 	int32_t can_command_value = 0;
