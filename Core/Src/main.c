@@ -104,11 +104,13 @@ int main(void)
 	 *	5. check the settings in STM32CubeProgrammer
 	 *	6. profit?
 	 */
-
-#ifdef GET_ENCODER_MIDPOINT
-	obtain_encoder_midpoints();
-	//	fds_mp.gl_oerr_total = estimate_orthogonality_error();
-	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+#ifdef TEST_INVERTER
+	uint32_t angle = 0;
+	while(1)
+	{
+		angle++;
+		openloop_fixed(angle, 450);
+	}
 #endif
 #ifdef GET_INIT_OFFSET
 	auto_calibrate_motor(3000, 700, 7.f,.001);
@@ -173,7 +175,7 @@ int main(void)
 		}
 		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
 		{
-			openloop_fixed(can_command_value);
+			openloop_fixed(can_command_value, 350);
 		}
 		else
 		{

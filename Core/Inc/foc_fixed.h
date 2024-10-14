@@ -46,6 +46,7 @@ int32_t saturate(int32_t v, int32_t sat);
 int32_t unwrap_32_overflow(int32_t theta, int32_t * prev_theta, int32_t * rotations);
 void get_dtheta(void);
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p);
-void openloop_fixed(int32_t angle_targ_prewrapping);
+void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq);
+
 
 #endif // ! FOC_FIXED_H
