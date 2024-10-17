@@ -7,7 +7,8 @@
 
 #define TWO_PI_12B              25736	
 #define PI_12B                  12868
-
+#define PI_14B 					51472
+#define TWO_PI_14B 				102944
 
 int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed)
 {
@@ -60,21 +61,25 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t t
 	return unwrapped;
 }
 
+int64_t unwrap_counted_wrapped_angle(int32_t angle, int32_t two_pi, int32_t count)
+{
+	// int64_t output = angle + (MAX_INT32 - MAX_INT32 % two_pi)
+}
+
 int main(void)
 {
-	int32_t prev_theta = (0x7FFFFFFF-4*TWO_PI_12B);
+	int32_t prev_theta = (0x7FFFFFFF-4*TWO_PI_14B);
 	int32_t ovfl_cnt = 0;
 	// for(int64_t i = -0x7FFFFFFFFFFFFFFF; i < 0x7FFFFFFFFFFFFFFF; i+= 1000000)
-	printf("Unwrapped, 2^31-1, weird shit, modulo wrapper bound, big unwrapped, time\n");
+	printf("Unwrapped, 2^31-1, modulo wrapper bound, count, time\n");
 	const int32_t upperbound = 0x7FFFFFFF;
-	const int32_t lowerwrapbound = upperbound - PI_12B;
-	for(int64_t i = 0; i < 8*TWO_PI_12B; i+= 1)
+	for(int64_t i = 0; i < 8*TWO_PI_14B; i+= 1)
 	{
-		int32_t theta = wrap_2pi_fixed((int32_t)i, TWO_PI_12B);
-		int32_t unwrapped_theta = unwrap_angle_32b_overflow(theta, &prev_theta, TWO_PI_12B, &ovfl_cnt);
+		int32_t theta = wrap_2pi_fixed((int32_t)i, TWO_PI_14B);
+		int32_t unwrapped_theta = unwrap_angle_32b_overflow(theta, &prev_theta, TWO_PI_14B, &ovfl_cnt);
 		// if( i > 0x7FFFFFFF && i % 1000000 == 0)
 		// printf("%d, %d, %d, %lld\n", unwrapped_theta, theta, ovfl_cnt, i);
-		printf("%ld, %ld, %ld, %ld, %ld, %lld\n", unwrapped_theta, upperbound, lowerwrapbound, 0x7FFFFFFF - (0x7FFFFFFF % PI_12B), ovfl_cnt, i);
+		printf("%ld, %ld, %ld, %ld, %lld\n", unwrapped_theta, upperbound, 0x7FFFFFFF - (0x7FFFFFFF % PI_14B), ovfl_cnt, i);
 	}
 }
 

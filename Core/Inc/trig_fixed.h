@@ -22,6 +22,7 @@ int32_t cos_12b(int32_t theta);
 int32_t cos_14b(int32_t theta);
 int32_t wrap_2pi_12b(int32_t in);
 int32_t wrap_2pi_14b(int32_t in);
+int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed);
 int32_t sqrt_i32(int32_t v);
 int64_t sqrt_i64(int64_t v);
 
