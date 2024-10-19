@@ -191,7 +191,7 @@ int main(void)
 				{
 					int32_t qd = can_command_value;
 					int32_t q = gl_theta_rem_m;
-					int32_t e = wrap_2pi_14b(qd-q);
+					int32_t e = qd-q;
 					int32_t vq = ctl_PI_fixed_2(e, &mctl_vq.kpki);
 					int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * mctl_vq.kd.i32) >> mctl_vq.kd.radix;
 					vq -= damping;
