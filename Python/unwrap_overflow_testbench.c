@@ -50,6 +50,10 @@ int32_t check_overflow32(int32_t a, int32_t b)
 		return 0;
 }
 
+
+/*
+	'rewrap' the angle by unwrapping it in rotations but rewrapping it to the maximum possible multiple of pi with the given radix in a 32 bit container
+ */
 int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t * ovfl_cnt)
 {
 	int ovfl = check_overflow32(theta, -*prev_theta);
@@ -67,6 +71,18 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t t
 	*prev_theta = unwrapped;
 	return unwrapped;
 }
+
+/*
+Take an angle and unwrap it in rotations, but rewrap it in some larger multiple of rotations
+ */
+int32_t rewrap_angle_32b(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t multiple, int32_t * ovfl_cnt)
+{
+	int32_t dif_wrapped = wrap_2pi_fixed(theta - *prev_theta, two_pi_fixed);
+	int32_t unwrapped = wrap_2pi_fixed(*prev_theta + dif_wrapped, two_pi_fixed*multiple);
+	*prev_theta = unwrapped;
+	return unwrapped;
+}
+
 
 int64_t unwrap_counted_wrapped_angle(int32_t angle, int32_t two_pi, int32_t count)
 {
