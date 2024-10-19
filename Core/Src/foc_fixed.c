@@ -562,8 +562,15 @@ int32_t check_overflow32(int32_t a, int32_t b)
 int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t * ovfl_cnt)
 {
 	int ovfl = check_overflow32(theta, -*prev_theta);
-	*prev_theta = *prev_theta - ovfl*two_pi_fixed;
-	*ovfl_cnt += ovfl;
+	if(ovfl < 0)
+	{
+		*prev_theta = *prev_theta - ovfl*two_pi_fixed/2;
+	}
+	else
+	{
+		*prev_theta = *prev_theta - ovfl*two_pi_fixed;
+	}
+	*ovfl_cnt -= ovfl;
 	int32_t dif_wrapped = wrap_2pi_fixed(theta - *prev_theta, two_pi_fixed);
 	int32_t unwrapped = *prev_theta + dif_wrapped;
 	*prev_theta = unwrapped;

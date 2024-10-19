@@ -141,7 +141,7 @@ int32_t get_elec_conversion_ratio(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
-		gl_theta_rem_m = unwrap_32_overflow(theta_m, &prev_theta_m, &gl_theta_rotations);
+		gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_12B, &gl_theta_rotations);
 
 		if(gl_theta_rem_m >= TWO_PI_12B+10)
 		{
