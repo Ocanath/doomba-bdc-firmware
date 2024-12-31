@@ -198,45 +198,43 @@ int main(void)
 					vq = saturate(vq, mctl_vq.out_sat);
 					sinusoidal_fixed(vq,0);
 
-
-
-					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
-					{
-						uart_tx_ts = tick;
-
-						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-						int i32widx = 0;
-						pwb32[i32widx++] = qd;
-						pwb32[i32widx++] = gl_theta_rem_m;
-						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
-						pwb32[i32widx++] = vq;
-						pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
-
-						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-
-						//			pwb32[i32widx++] = theta_elec;
-						//			pwb32[i32widx++] = vq;
-						//			pwb32[i32widx++] = gl_iq;
-
-						//			pwb32[i32widx++] = 0;
-						//			pwb32[i32widx++] = id_req;
-						//			pwb32[i32widx++] = gl_id;
-						//			pwb32[i32widx++] = 300;
-						//			pwb32[i32widx++] = gl_iq;
-
-						//			int32_t s,c;
-						//			get_sc_no_ortho_comp(&s,&c);
-						//			pwb32[i32widx++] = s;
-						//			pwb32[i32widx++] = c;
-
-						pwb32[i32widx++] = HAL_GetTick();
-
-						int pld_size = i32widx*sizeof(uint32_t);
-						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-					}
+//					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
+//					{
+//						uart_tx_ts = tick;
+//
+//						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+//						int i32widx = 0;
+//						pwb32[i32widx++] = qd;
+//						pwb32[i32widx++] = gl_theta_rem_m;
+//						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
+//						pwb32[i32widx++] = vq;
+//						pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+//
+//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
+//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
+//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
+//
+//						//			pwb32[i32widx++] = theta_elec;
+//						//			pwb32[i32widx++] = vq;
+//						//			pwb32[i32widx++] = gl_iq;
+//
+//						//			pwb32[i32widx++] = 0;
+//						//			pwb32[i32widx++] = id_req;
+//						//			pwb32[i32widx++] = gl_id;
+//						//			pwb32[i32widx++] = 300;
+//						//			pwb32[i32widx++] = gl_iq;
+//
+//						//			int32_t s,c;
+//						//			get_sc_no_ortho_comp(&s,&c);
+//						//			pwb32[i32widx++] = s;
+//						//			pwb32[i32widx++] = c;
+//
+//						pwb32[i32widx++] = HAL_GetTick();
+//
+//						int pld_size = i32widx*sizeof(uint32_t);
+//						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+//						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+//					}
 				}
 			}
 		}
