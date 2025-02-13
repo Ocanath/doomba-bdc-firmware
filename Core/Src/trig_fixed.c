@@ -303,6 +303,15 @@ int32_t wrap_2pi_12b(int32_t in)
         return result;
 }
 
+int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed)
+{
+	int32_t pi_fixed = two_pi_fixed / 2;
+    int32_t result = ((in + pi_fixed) % two_pi_fixed) - pi_fixed;
+    if (in < -pi_fixed) //if( (in + pi_fixed) < 0 )
+        return two_pi_fixed + result;
+    else
+        return result;
+}
 
 /*This function performs 'wrapping' operations on input angles. Can have arbitrary scale.
 The conditionals are there to capture the fact that mod() in matlab has different behavior than % operator

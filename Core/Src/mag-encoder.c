@@ -16,6 +16,7 @@ uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
 uint32_t nv_count = 0;
 uint8_t nv_parity=0;
 uint8_t nv_error=0;
+int16_t gl_spi_angle = 0;
 
 static uint16_t word_tx = 0;
 void set_encoder_read_type(uint16_t command)
@@ -147,11 +148,11 @@ int32_t get_ams_angle(void)
 
 int32_t theta_rel_14b(void)
 {
-	int16_t spi_angle = get_ams_angle();
+	gl_spi_angle = get_ams_angle();
 	//want: 2^14 * theta(radians, -pi to pi) so -2^14*pi to 2^14*pi
 	//are getting: -2^13 to 2^13. So that means we are getting (2^13/pi)*theta
 	// (2^13/pi)*theta * 2^14*pi / 2^13 = 2^14*theta!
-	return ((spi_angle * PI_14B) >> 13) - fds_mp.align_offset_fixed;
+	return ((gl_spi_angle * PI_14B) >> 13) - fds_mp.align_offset_fixed;
 }
 
 int32_t theta_rel_12b(void)

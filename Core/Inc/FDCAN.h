@@ -17,11 +17,11 @@
 extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
 extern int32_t gl_iq_rshift;
 
-typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ} control_mode_t;	//foc with velocity?
+typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} control_mode_t;	//foc with velocity?
 
 typedef union
 {
-	uint8_t d[PAYLOAD_SIZE_CAN];
+	uint8_t u8[PAYLOAD_SIZE_CAN];
 	int32_t i32[PAYLOAD_SIZE_CAN/sizeof(int32_t)];	//all types are even multiples of 8, and sizeof evals at compile time so this is safe
 	uint32_t ui32[PAYLOAD_SIZE_CAN/sizeof(uint32_t)];
 	int16_t i16[PAYLOAD_SIZE_CAN/sizeof(int16_t)];
@@ -69,7 +69,7 @@ typedef struct ext_cmd_flags_t
 
 typedef struct pctl_params_t
 {
-	fixed_PI_params_t kpki;
+	fixed_PI_2_params_t kpki;
 	i32_t kd;
 	int32_t out_sat;
 }pctl_params_t;
