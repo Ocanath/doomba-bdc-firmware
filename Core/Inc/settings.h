@@ -35,6 +35,6 @@ extern float enc_mid_voltage_amp;
 extern uint32_t ser_num;
 
 void load_flash_params(void);
-
+void check_idpi_xdiv_param(void);
 
 #endif /* SETTINGS_H_ */

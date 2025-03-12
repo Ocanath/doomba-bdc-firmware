@@ -33,7 +33,6 @@ extern const int32_t overflow_val;
 		TIM1->CR1 &= ~TIM_CR1_UDIS;
 
 /*clarke, park, inverse park, inverse clarke (svm)*/
-int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p);
 void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta);
 void park_fixed(int32_t alpha, int32_t beta, int32_t sin_theta, int32_t cos_theta, int32_t * iq, int32_t * id, uint8_t shift);
 void inverse_park_fixed(int32_t iq, int32_t id, int32_t  sth, int32_t cth, int32_t * ialpha, int32_t* ibeta, uint8_t shift);
@@ -46,7 +45,6 @@ int32_t saturate(int32_t v, int32_t sat);
 int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t * ovfl_cnt);
 void get_dtheta(void);
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p);
-void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq);
-
+void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd);
 
 #endif // ! FOC_FIXED_H

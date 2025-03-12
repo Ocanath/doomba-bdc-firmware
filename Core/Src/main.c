@@ -70,6 +70,7 @@ int main(void)
 	FDCAN_Config();
 
 	load_flash_params();
+	check_idpi_xdiv_param();
 
 	set_encoder_read_type(READ_ANGLECOM);
 
@@ -118,6 +119,10 @@ int main(void)
 	}
 #endif
 #ifdef GET_INIT_OFFSET
+//	openloop_fixed(0, 0, 500);
+//	uint32_t st = HAL_GetTick();
+//	while(HAL_GetTick() - st < 100);
+//	fds_mp.align_offset_fixed = theta_abs_14b();	//rough value obtained, now fine tuned w autocal
 	auto_calibrate_motor(3000, 700, 7.f,.001);
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
@@ -170,7 +175,7 @@ int main(void)
 		}
 		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
 		{
-			openloop_fixed(can_command_value, 350);
+			openloop_fixed(can_command_value, 350, 0);
 		}
 		else
 		{

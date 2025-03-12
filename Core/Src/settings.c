@@ -76,7 +76,7 @@ fds_motor_params_t fds_mp =
 				.i32 = 0,
 				.radix = 0
 		},
-		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_integral_div = 1,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
 		.x_sat = 0,
 		.out_rshift = 31
 	},
@@ -89,7 +89,7 @@ fds_motor_params_t fds_mp =
 				.i32 = 0,
 				.radix = 31
 		},
-		.x = 0,
+		.x_integral_div = 1,
 		.x_sat = 0,
 		.out_rshift = 31
 	}
@@ -123,6 +123,19 @@ void load_flash_params(void)
 		fds_mp.is_flipped = 1;	//sanitize flag
 }
 
+
+/*
+ * Initialization helper function to sanitize the x_integral_div parameter, in order to ensure that it does not cause a divide by zero error when transferring from one representation to another.
+ * */
+void check_idpi_xdiv_param(void)
+{
+	if(fds_mp.id_pi.x_integral_div == 0)
+		fds_mp.id_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
+	if(fds_mp.iq_pi.x_integral_div == 0)
+		fds_mp.iq_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
+}
+
+
 void write_flash_params(void)
 {
 	fds_mp.elec_conv_ratio_fixed = 7;
@@ -136,7 +149,7 @@ void write_flash_params(void)
 						.i32 = 10000,
 						.radix = 7
 		},
-		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_integral_div = 1,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
 		.x_sat = MAX_VQ,
 		.out_rshift = 9
 	};
@@ -149,7 +162,7 @@ void write_flash_params(void)
 						.i32 = 10000,
 						.radix = 7
 		},
-		.x = 0,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+		.x_integral_div = 1,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
 		.x_sat = MAX_VQ,
 		.out_rshift = 9
 	};

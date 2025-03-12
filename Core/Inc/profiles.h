@@ -42,7 +42,7 @@ typedef struct fixed_PI_params_t
 {
 	i32_t kp;
 	i32_t ki;
-	int32_t x;
+	int32_t x_integral_div;	//no x in this structure. replace X from previous implementation with xdiv, and use external x parameter
 	int32_t x_sat;
 	uint8_t out_rshift;
 }fixed_PI_params_t;

@@ -38,6 +38,9 @@ int32_t gl_theta_rem_m = 0;
 int32_t gl_theta_rotations = 0;
 int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
 int32_t gl_dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
+int32_t gl_x_iqpi = 0;	//x for iq pi controller
+int32_t gl_x_idpi = 0;	//x for id pi controller
+
 
 /*Previous Theta for position estimator.*/
 static int32_t prev_theta_m=0;
@@ -86,16 +89,16 @@ int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p)
 /*
  * x is state variable for integral delay
  */
-int32_t ctl_PI_fixed(int32_t error, fixed_PI_params_t * p)
+int32_t ctl_PI_fixed_3(int32_t error, fixed_PI_params_t * p, int32_t * x)
 {
 	//NOTE: out_rshift applied TWICE, to avoid x overflow, while maintaining thesame radix when adding x and effort to get u.
-	int32_t u = p->x + (((p->kp.i32*error) >> p->kp.radix) >> p->out_rshift);
-	p->x = p->x + (((p->ki.i32*error) >> p->ki.radix) >> p->out_rshift);
-	int32_t sat = p->x_sat;
-	if(p->x > sat)
-		p->x = sat;
-	if(p->x < -sat)
-		p->x = -sat;
+	*x = *x + ((p->ki.i32*error)/p->x_integral_div);	//accumulate x with controlled slope: two controls are div scaling factor, and frequency of control law updates
+	int32_t sat = p->x_sat << (p->out_rshift + p->ki.radix);
+	if(*x > sat)
+		*x = sat;
+	if(*x < -sat)
+		*x = -sat;
+	int32_t u = ((*x >> p->ki.radix) + ((p->kp.i32*error) >> p->kp.radix)) >> p->out_rshift;	//one application of outshift
 	return u;
 }
 
@@ -113,7 +116,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t vd = ctl_PI_fixed(vd_in - id_meas, &fds_mp.id_pi);
+	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &fds_mp.id_pi, &gl_x_idpi);
 
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
@@ -135,13 +138,13 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	gl_id = id_meas;
 }
 
-void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq)
+void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 {
 	int32_t theta_wrapped = wrap_2pi_14b(angle_targ_prewrapping);
 	int32_t sin_val = sin_14b(theta_wrapped);
 	int32_t cos_val = cos_14b(theta_wrapped);
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq, 0, sin_val,cos_val,&alpha,&beta, 14);
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 }
@@ -161,8 +164,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t vq = ctl_PI_fixed(iq_targ -iq_meas, &fds_mp.iq_pi);
-	int32_t vd = ctl_PI_fixed(id_targ -id_meas, &fds_mp.id_pi);
+	int32_t vq = ctl_PI_fixed_3(iq_targ -iq_meas, &fds_mp.iq_pi, &gl_x_iqpi);
+	int32_t vd = ctl_PI_fixed_3(id_targ -id_meas, &fds_mp.id_pi, &gl_x_idpi);
 
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);

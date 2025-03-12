@@ -250,22 +250,26 @@ void buffer_data(uint8_t * d, int size_d, uint8_t * buf, int * bidx)
  * */
 void current_sensors_fitness_test(void)
 {
-	fixed_PI_params_t g_f_a = {
+	fixed_PI_2_params_t g_f_a = {
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)
+			.x_integral_div = 1,
 			.x = 0,
 			.x_sat = 700,
 			.out_rshift = 12
 	};
-	fixed_PI_params_t g_f_b = {
+	fixed_PI_2_params_t g_f_b = {
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)			.x = 0,
+			.x_integral_div = 1,
+			.x = 0,
 			.x_sat = 700,
 			.out_rshift = 12
 	};
-	fixed_PI_params_t g_f_c = {
+	fixed_PI_2_params_t g_f_c = {
 			.kp = {.i32 = 9830, .radix = 3},		// (3 << 12, 10)
 			.ki = {.i32 = 4194, .radix = 10},		//(1 << 12, 1000)			.x = 0,
+			.x_integral_div = 1,
 			.x = 0,
 			.x_sat = 700,
 			.out_rshift = 12
@@ -290,9 +294,9 @@ void current_sensors_fitness_test(void)
 
 		/*Track sinusoidal currents*/
 		int32_t va, vb, vc;
-		va = ctl_PI_fixed(iref_a - ia, &g_f_a);
-		vb = ctl_PI_fixed(iref_b - ib, &g_f_b);
-		vc = ctl_PI_fixed(iref_c - ic, &g_f_c);
+		va = ctl_PI_fixed_2(iref_a - ia, &g_f_a);
+		vb = ctl_PI_fixed_2(iref_b - ib, &g_f_b);
+		vc = ctl_PI_fixed_2(iref_c - ic, &g_f_c);
 
 		/*Our control efforts are really voltages relative to *each other*. That means we can center them about a neutral reference point without changing their effect
 		 * on the plant*/
