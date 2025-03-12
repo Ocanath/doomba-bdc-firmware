@@ -16,6 +16,8 @@ int32_t input_val = 0;
 static volatile int32_t vq_pctl = 0;
 static volatile int32_t iq_pctl = 0;
 
+uint8_t gl_save_flag = 0;		//static volatile?
+
 
 
 /**
@@ -51,6 +53,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 	}
 }
+
 
 int main(void)
 {
@@ -127,8 +130,18 @@ int main(void)
 	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
+	//tune id/iq gains for high speed performance here, and save parameters
 	while(1)
+	{
 		sinusoidal_fixed(3546,0);	//000003E2
+
+		if(gl_save_flag != 0)
+		{
+			TIMER_UPDATE_DUTY(500,500,500);
+			m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+			gl_save_flag = 0;
+		}
+	}
 #endif
 
 	uint32_t uart_tx_ts = 0;
