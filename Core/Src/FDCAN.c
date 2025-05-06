@@ -57,9 +57,9 @@ pctl_params_t mctl_iq = {
 /*Initialize params for position control using sinusoidal as 0*/
 pctl_params_t mctl_vq = {
 		.kpki = {
-				.kp = {.i32 = 40, .radix = 8},
-				.ki = {.i32 = 0, .radix = 10},
-				.x_integral_div = 130,
+				.kp = {.i32 = 50, .radix = 8},
+				.ki = {.i32 = 3, .radix = 10},
+				.x_integral_div = 10,
 				.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
 				.x_sat = 1000,	//no integral efforts for now
 				.out_rshift = 0
@@ -68,7 +68,7 @@ pctl_params_t mctl_vq = {
 				.i32 = 5,	//no deriv effort either, for now
 				.radix = 5
 		},
-		.out_sat = 2047,
+		.out_sat = 0,
 };
 
 

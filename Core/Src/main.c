@@ -110,7 +110,7 @@ int main(void)
 #ifdef LOCK_FOR_POLEPAIR_COUNT
 	while(1)
 	{
-		openloop_fixed(0,1500);
+		openloop_fixed(0,0, 450);
 	}
 #endif
 #ifdef TEST_INVERTER
@@ -118,7 +118,7 @@ int main(void)
 	while(1)
 	{
 		angle++;
-		openloop_fixed(angle, 450);
+		openloop_fixed(angle, 0, 450);
 	}
 #endif
 #ifdef GET_INIT_OFFSET
@@ -133,7 +133,7 @@ int main(void)
 	//tune id/iq gains for high speed performance here, and save parameters
 	while(1)
 	{
-		sinusoidal_fixed(3546,0);	//000003E2
+		sinusoidal_fixed(300,0);	//000003E2
 
 		if(gl_save_flag != 0)
 		{
@@ -144,7 +144,6 @@ int main(void)
 	}
 #endif
 
-	uint32_t uart_tx_ts = 0;
 	int32_t can_command_value = 0;
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
