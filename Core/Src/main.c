@@ -20,6 +20,30 @@ uint8_t gl_save_flag = 0;		//static volatile?
 
 
 
+void start_pwm(void)
+{
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+}
+void stop_pwm(void)
+{
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
+	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+
+}
+
+
 /**
  */
 void m_uart_rx_cplt_callback(uart_it_t * h)
@@ -82,14 +106,8 @@ int main(void)
 	//disable adc dma interrupts. The adc itself should only have overrun interrupt enabled
 	hdma_adc1.Instance->CCR &= ~(1 << 2);	//disable half transfer complete interrupt
 	hdma_adc1.Instance->CCR &= ~(1 << 1);	//disable transfer complete interrupt
-
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+	
+	start_pwm();
 
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port,ENABLE_Pin,1);
 	HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin, 1);
