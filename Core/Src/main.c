@@ -208,8 +208,8 @@ int main(void)
 			}
 			else if (can_rx_header.Identifier == 0x7FF - fds_mp->module_number)
 			{
-			    frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
-				parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
+			    dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
+			    dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
 			}
 		}
 
