@@ -36,7 +36,7 @@ void dowse_for_align_offset(void)
 		uint32_t tick = (HAL_GetTick()-start_tick);
 
 		uint32_t tbasis = tick/15;
-		fds_mp.align_offset_fixed = wrap_2pi_12b(tbasis);
+		fds_mp->align_offset_fixed = wrap_2pi_12b(tbasis);
 
 		sinusoidal_fixed(500,0);
 		get_dtheta();
@@ -45,7 +45,7 @@ void dowse_for_align_offset(void)
 		if(avq > max_abs_dq)
 		{
 			max_abs_dq = avq;
-//			aoff_of_dqmax = fds_mp.align_offset_fixed;
+//			aoff_of_dqmax = fds_mp->align_offset_fixed;
 		}
 
 		if(tick >= avg_v_ts)
@@ -65,9 +65,9 @@ void dowse_for_align_offset(void)
 
 			fmt.v = dif;
 			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-			fmt.v = fds_mp.align_offset_fixed;
+			fmt.v = fds_mp->align_offset_fixed;
 			buffer_data(fmt.d, sizeof(int32_t), buf, &bidx);
-//			fmt.v = fds_mp.align_offset_fixed;
+//			fmt.v = fds_mp->align_offset_fixed;
 //			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
 
 			m_uart_tx_start((uart_it_t*)&m_huart2, buf, 2*sizeof(int32_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));
@@ -167,13 +167,13 @@ int32_t get_elec_conversion_ratio(void)
 //		else if (dist1 < 0 && dist2 > 0)
 //			sign = -1;
 //		if(sign < 0 && abs64(dist1) > 24576 && abs64(dist2) > 24576 )
-//			fds_mp.align_offset_fixed = -fds_mp.align_offset_fixed;
+//			fds_mp->align_offset_fixed = -fds_mp->align_offset_fixed;
 //
 //		int64_t err = run1_speed-run2_speed;
 //		int64_t u = (err* (1 << 16) )/7;	//apply a 12 bit leftshift and apply control effort reduction
 //		if(sign < 0)
 //			u = -u;
-//		fds_mp.align_offset_fixed = (u + fds_mp.align_offset_fixed) >> 32;	//remove bitshifts applied in run_v and in the control effort calculation
+//		fds_mp->align_offset_fixed = (u + fds_mp->align_offset_fixed) >> 32;	//remove bitshifts applied in run_v and in the control effort calculation
 //
 //		if(abs64(u) < 6)	//pass criteria .0001
 //		{
@@ -220,7 +220,7 @@ void auto_calibrate_fixed(void)
 		double u = err/7.0;	//scale control effort down (k gain)
 
 		align_offset += u*sign;	//adjust the align offset to converge on a value that matches the run speeds (zeros the difference)
-		fds_mp.align_offset_fixed = (int32_t)(align_offset * 4096.f);
+		fds_mp->align_offset_fixed = (int32_t)(align_offset * 4096.f);
 		if(abs_f(u) < 0.0001f)	//if the run speed difference is very small, it's a passable align offset
 		{
 			passcount++;

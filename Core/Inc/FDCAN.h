@@ -9,6 +9,7 @@
 #define INC_FDCAN_H_
 #include "init.h"
 #include "fds.h"
+#include "dartt_params.h"
 
 #define PAYLOAD_SIZE_CAN 8
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
@@ -17,7 +18,6 @@
 extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
 extern int32_t gl_iq_rshift;
 
-typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} control_mode_t;	//foc with velocity?
 
 typedef union
 {

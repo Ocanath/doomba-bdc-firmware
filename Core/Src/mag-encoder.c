@@ -152,7 +152,7 @@ int32_t theta_rel_14b(void)
 	//want: 2^14 * theta(radians, -pi to pi) so -2^14*pi to 2^14*pi
 	//are getting: -2^13 to 2^13. So that means we are getting (2^13/pi)*theta
 	// (2^13/pi)*theta * 2^14*pi / 2^13 = 2^14*theta!
-	return ((gl_spi_angle * PI_14B) >> 13) - fds_mp.align_offset_fixed;
+	return ((gl_spi_angle * PI_14B) >> 13) - fds_mp->align_offset_fixed;
 }
 
 int32_t theta_rel_12b(void)

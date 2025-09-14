@@ -123,8 +123,8 @@ void FDCAN_Config(void)
 	sFilterConfig.FilterIndex = 0;
 	sFilterConfig.FilterType = FDCAN_FILTER_MASK;
 	sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
-	sFilterConfig.FilterID1 = (0x7FF - fds_mp.module_number);
-	sFilterConfig.FilterID2 = fds_mp.module_number;
+	sFilterConfig.FilterID1 = (0x7FF - fds_mp->module_number);
+	sFilterConfig.FilterID2 = fds_mp->module_number;
 	if (HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) != HAL_OK)
 	{
 		Error_Handler();
@@ -143,7 +143,7 @@ void FDCAN_Config(void)
 		Error_Handler();
 	}
 
-	can_tx_header.Identifier = fds_mp.module_number;
+	can_tx_header.Identifier = fds_mp->module_number;
 	can_tx_header.IdType = FDCAN_STANDARD_ID;
 	can_tx_header.TxFrameType = FDCAN_DATA_FRAME;
 	can_tx_header.DataLength = FDCAN_DLC_BYTES_8;

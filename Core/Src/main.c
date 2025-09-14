@@ -9,6 +9,7 @@
 #include "foc_fixed.h"
 #include "m_uart.h"
 #include "PPP.h"
+#include "dartt_params.h"
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
@@ -78,6 +79,15 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
+void handle_fs_update_request(void)
+{
+	if(gl_dp.update_fs != 0)
+	{
+		TIMER_UPDATE_DUTY(500,500,500);
+		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		gl_dp.update_fs = 0;
+	}
+}
 
 int main(void)
 {
@@ -128,7 +138,8 @@ int main(void)
 #ifdef LOCK_FOR_POLEPAIR_COUNT
 	while(1)
 	{
-		openloop_fixed(0,0, 450);
+		openloop_fixed(0,0, gl_dp.cal_openloop_voltage);
+		handle_fs_update_request();
 	}
 #endif
 #ifdef TEST_INVERTER
@@ -136,29 +147,23 @@ int main(void)
 	while(1)
 	{
 		angle++;
-		openloop_fixed(angle, 0, 450);
+		openloop_fixed(angle, 0, gl_dp.cal_openloop_voltage);
 	}
 #endif
 #ifdef GET_INIT_OFFSET
 //	openloop_fixed(0, 0, 500);
 //	uint32_t st = HAL_GetTick();
 //	while(HAL_GetTick() - st < 100);
-//	fds_mp.align_offset_fixed = theta_abs_14b();	//rough value obtained, now fine tuned w autocal
-	auto_calibrate_motor(3000, 700, 7.f,.001);
-	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+//	fds_mp->align_offset_fixed = theta_abs_14b();	//rough value obtained, now fine tuned w autocal
+	auto_calibrate_motor(gl_dp.cal_voltage, 700, 7.f,.001);
+	m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
 #endif
 #ifdef TEST_FOC
 	//tune id/iq gains for high speed performance here, and save parameters
 	while(1)
 	{
-		sinusoidal_fixed(300,0);	//000003E2
-
-		if(gl_save_flag != 0)
-		{
-			TIMER_UPDATE_DUTY(500,500,500);
-			m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
-			gl_save_flag = 0;
-		}
+		sinusoidal_fixed(gl_dp.cal_voltage, 0);	//000003E2
+		handle_fs_update_request();
 	}
 #endif
 
@@ -171,7 +176,7 @@ int main(void)
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
-			if(can_rx_header.Identifier == fds_mp.module_number)	//obey commands from specific device
+			if(can_rx_header.Identifier == fds_mp->module_number)	//obey commands from specific device
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
 				can_command_value = can_rx_data.i32[0];
@@ -180,10 +185,10 @@ int main(void)
 				can_tx_data.i32[0] = gl_theta_rem_m;
 				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
 				can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
-				can_tx_header.Identifier = fds_mp.module_number;
+				can_tx_header.Identifier = fds_mp->module_number;
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
-			else if (can_rx_header.Identifier == 0x7FF - fds_mp.module_number)
+			else if (can_rx_header.Identifier == 0x7FF - fds_mp->module_number)
 			{
 				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
 			}

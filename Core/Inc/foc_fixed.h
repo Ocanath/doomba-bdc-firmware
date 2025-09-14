@@ -46,5 +46,6 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t t
 void get_dtheta(void);
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p);
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd);
+int32_t get_theta_m(void);
 
 #endif // ! FOC_FIXED_H

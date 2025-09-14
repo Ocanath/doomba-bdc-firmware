@@ -43,7 +43,7 @@ int32_t gl_x_idpi = 0;	//x for id pi controller
 
 
 /*Previous Theta for position estimator.*/
-static int32_t prev_theta_m=0;
+static int32_t prev_theta_m = 0;
 
 /*This function estimates velocity. It executes
  * synchronously with the estimation of rotor angles,
@@ -102,12 +102,20 @@ int32_t ctl_PI_fixed_3(int32_t error, fixed_PI_params_t * p, int32_t * x)
 	return u;
 }
 
+
+int32_t get_theta_m(void)
+{
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
+	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
+	return gl_theta_rem_m;
+}
+
 /*
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {
 	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_elec = wrap_2pi_14b(theta_m * (fds_mp->elec_conv_ratio_fixed) + phase_adv_12b);
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
@@ -116,19 +124,19 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &fds_mp.id_pi, &gl_x_idpi);
+	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= fds_mp.gl_prop_delayloop_interval)
+	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp->gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
@@ -154,7 +162,7 @@ void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 void foc_fixed(int32_t iq_targ, int32_t id_targ)
 {
 	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_elec = wrap_2pi_14b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
@@ -164,8 +172,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t vq = ctl_PI_fixed_3(iq_targ -iq_meas, &fds_mp.iq_pi, &gl_x_iqpi);
-	int32_t vd = ctl_PI_fixed_3(id_targ -id_meas, &fds_mp.id_pi, &gl_x_idpi);
+	int32_t vq = ctl_PI_fixed_3(iq_targ -iq_meas, &(fds_mp->iq_pi), &gl_x_iqpi);
+	int32_t vd = ctl_PI_fixed_3(id_targ -id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
 	vq = saturate(vq,MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
@@ -176,12 +184,12 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= fds_mp.gl_prop_delayloop_interval)
+	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp->gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
@@ -200,7 +208,7 @@ void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t s
 	int32_t ialpha,ibeta;
 
 	//software equivalent of rewiring the two phases
-	if(fds_mp.is_flipped == 0)
+	if(fds_mp->is_flipped == 0)
 		clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
 	else
 		clarke_fixed(ib,ia,ic,&ialpha,&ibeta);
@@ -270,7 +278,7 @@ const int32_t half_period_val = COMM_PWM_PERIOD/2;
 void voltage_3rd_harmonic(int32_t mag)
 {
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
 
@@ -278,12 +286,12 @@ void voltage_3rd_harmonic(int32_t mag)
 	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
-	if(count >= fds_mp.gl_prop_delayloop_interval)
+	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp->gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
@@ -293,7 +301,7 @@ void voltage_3rd_harmonic(int32_t mag)
 void volage_pure_sinusoidal(int32_t m)
 {
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
-	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp.elec_conv_ratio_fixed + phase_adv_12b);
+	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
 	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
 
@@ -308,12 +316,12 @@ void volage_pure_sinusoidal(int32_t m)
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
 
-	if(count >= fds_mp.gl_prop_delayloop_interval)
+	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
 		/*This breaks if the rotor moves quickly enough. Consider reducing calculation period, downscaling
 		 * the velocity estimate, or using implementation of a fixed point unwrap subroutine.*/
 		v_12b = wrap_2pi_12b(theta_m - prev_mtheta_12b);	//no scaling factor. Only works if the rotor does not rotate by more than a full rotation between estimates.
-		phase_adv_12b = v_12b/fds_mp.gl_prop_delay_const_12b;
+		phase_adv_12b = v_12b/fds_mp->gl_prop_delay_const_12b;
 		prev_mtheta_12b = theta_m;
 		count = 0;
 	}
@@ -446,7 +454,7 @@ void svm_fixed(int32_t alpha, int32_t beta, int32_t period_cnt, int32_t* p_tA, i
 	};
 
 	int32_t max_pwm = period_cnt - 5;
-	if(fds_mp.is_flipped == 0)
+	if(fds_mp->is_flipped == 0)
 	{
 		if(tA > max_pwm)
 			*p_tA = max_pwm;
@@ -579,4 +587,6 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t t
 	*prev_theta = unwrapped;
 	return unwrapped;
 }
+
+
 

@@ -90,11 +90,11 @@ void print_calibration_parameters(void)
 	print_str("\0033\0143\0");
 
 	print_str("MODULE_NUMBER is: \0");
-	print_int_as_str((int32_t)fds_mp.module_number);
+	print_int_as_str((int32_t)fds_mp->module_number);
 	print_str("\r\n\r\n\0");
 
 	print_str("#define ALIGN_OFFSET \0");
-	print_int_as_str(fds_mp.align_offset_fixed);
+	print_int_as_str(fds_mp->align_offset_fixed);
 	print_str("\r\n\0");
 
 }
@@ -179,17 +179,17 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	 * the motor speed) to the controller, which is likely big enough that the simple 'P'
 	 * dynamics is not sufficient to stabilize.
 	 * */
-	int32_t bkp_interval = fds_mp.gl_prop_delayloop_interval;	//backup before clobber
-	int32_t bkp_div = fds_mp.gl_prop_delay_const_12b;
-	fds_mp.gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
-	fds_mp.gl_prop_delay_const_12b = 0x7FFFFFFF;
-	fixed_PI_params_t bkp_idctlp = fds_mp.id_pi;
-	fds_mp.id_pi.kp.i32 = 0;
-	fds_mp.id_pi.ki.i32 = 0;
-	fds_mp.id_pi.out_rshift = 32;
-	fds_mp.id_pi.out_rshift = 32;
-	fds_mp.id_pi.x_sat = 0;
-	fds_mp.id_pi.x_sat = 0;
+	int32_t bkp_interval = fds_mp->gl_prop_delayloop_interval;	//backup before clobber
+	int32_t bkp_div = fds_mp->gl_prop_delay_const_12b;
+	fds_mp->gl_prop_delayloop_interval = 0x7FFFFFFF;	//turn off phase advancement by clobbering these constants
+	fds_mp->gl_prop_delay_const_12b = 0x7FFFFFFF;
+	fixed_PI_params_t bkp_idctlp = fds_mp->id_pi;
+	fds_mp->id_pi.kp.i32 = 0;
+	fds_mp->id_pi.ki.i32 = 0;
+	fds_mp->id_pi.out_rshift = 32;
+	fds_mp->id_pi.out_rshift = 32;
+	fds_mp->id_pi.x_sat = 0;
+	fds_mp->id_pi.x_sat = 0;
 
 	int32_t vqstart = 0;
 	for(uint32_t stop_ts = HAL_GetTick() + 50; HAL_GetTick()<stop_ts;) //spin up to reach steady state velocity
@@ -236,9 +236,9 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 	*run_distance = run_end-run_start;
 	float run_time_f = (float)run_time;//stay in ms, to keep our gain small and avoid floating point errors
 
-	fds_mp.gl_prop_delayloop_interval = bkp_interval;
-	fds_mp.gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
-	fds_mp.id_pi = bkp_idctlp;
+	fds_mp->gl_prop_delayloop_interval = bkp_interval;
+	fds_mp->gl_prop_delay_const_12b = bkp_div;	//restore phase advancement before and exit}
+	fds_mp->id_pi = bkp_idctlp;
 
 	return abs_f(*run_distance/run_time_f);
 }
@@ -262,7 +262,7 @@ int32_t elock_angle(int32_t vq, int32_t vd, int32_t theta)
 	inverse_park_fixed(vq, vd, sth, cth, &alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&ta,&tb,&tc);
 	TIMER_UPDATE_DUTY(ta,tb,tc);
-	return wrap_2pi_12b(theta_rel_12b() * fds_mp.elec_conv_ratio_fixed);
+	return wrap_2pi_12b(theta_rel_12b() * (fds_mp->elec_conv_ratio_fixed));
 }
 
 /*
@@ -306,7 +306,7 @@ int32_t openloop_eang_pctl(int32_t ang, int32_t vq, uint32_t exp_ts)
 	{
 
 		elock_angle(0, vq, (int32_t)(theta_e*4096.f));
-		int32_t theta_m = wrap_2pi_12b(theta_rel_12b()*fds_mp.elec_conv_ratio_fixed);
+		int32_t theta_m = wrap_2pi_12b(theta_rel_12b()*fds_mp->elec_conv_ratio_fixed);
 
 		float error = ((float)(wrap_2pi_12b(ang - theta_m)))/4096.f;
 		float effort = error/500.f;
@@ -372,7 +372,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //	can_payload_t can_rx_data = {0};
 	uint8_t exit = 0;
 	int passcount = 0;
-	align_offset = ((float)fds_mp.align_offset_fixed)/16384.f;
+	align_offset = ((float)fds_mp->align_offset_fixed)/16384.f;
 	uint8_t block_sign_flip = 0;
 	float sign = 0;
 	while(exit == 0)
@@ -435,7 +435,7 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
-			pwb32[i32widx++] = fds_mp.align_offset_fixed;
+			pwb32[i32widx++] = fds_mp->align_offset_fixed;
 //			pwb32[i32widx++] = gl_iq;
 //			pwb32[i32widx++] = gl_id;
 			pwb32[i32widx++] = HAL_GetTick();
@@ -449,14 +449,14 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 			exit = 1;
 
 
-//		can_tx_data.i32[0] = fds_mp.align_offset_fixed;
+//		can_tx_data.i32[0] = fds_mp->align_offset_fixed;
 //		HAL_CAN_AddTxMessage(&hcan, &can_tx_header, can_tx_data.d, &can_tx_mailbox);
 
 		TIMER_UPDATE_DUTY(0,0,0);
 		HAL_Delay(1);
 
 
-		fds_mp.align_offset_fixed = (int32_t)(align_offset*16384.f);	//DO THIS BEFORE RUNNING OR THE FLIPPING WON'T WORK!
+		fds_mp->align_offset_fixed = (int32_t)(align_offset*16384.f);	//DO THIS BEFORE RUNNING OR THE FLIPPING WON'T WORK!
 	}
 }
 

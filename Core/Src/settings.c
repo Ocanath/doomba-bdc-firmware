@@ -7,6 +7,7 @@
 #include <FDCAN.h>
 #include "settings.h"
 #include "trig_fixed.h"
+#include "dartt_params.h"
 
 /*
  * NOTE:
@@ -49,51 +50,7 @@ float enc_mid_voltage_amp = .09;
  * use STM32CubeProgrammer with size set to the page size (0x800)
  * and the page address set to page 31 (or the last page), i.e. 0x80000F800
  * */
-fds_motor_params_t fds_mp =
-{
-	.module_number = 0,
-
-	/*The all important align offset*/
-	.align_offset_fixed = 0,
-
-	/*These are not hand obtained ever, so no commands for them*/
-	.is_flipped = 1,
-	.misc2 = {{0}},
-	.misc3 = {{0}},
-	.misc4 = {{0}},
-	.misc5 = {{0}},
-
-	/*every single one of these values needs a command. i might run out of room with an 8bit header...*/
-	.elec_conv_ratio_fixed = 11,
-	.gl_prop_delayloop_interval = 100,
-	.gl_prop_delay_const_12b = 0x7FFFFFFF,
-	.iq_pi = {
-		.kp = {
-				.i32 = 0,
-				.radix = 0
-		},
-		.ki = {
-				.i32 = 0,
-				.radix = 0
-		},
-		.x_integral_div = 1,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
-		.x_sat = 0,
-		.out_rshift = 31
-	},
-	.id_pi = {
-		.kp = {
-				.i32 = 0,
-				.radix = 31
-		},
-		.ki = {
-				.i32 = 0,
-				.radix = 31
-		},
-		.x_integral_div = 1,
-		.x_sat = 0,
-		.out_rshift = 31
-	}
-};
+fds_motor_params_t * fds_mp = &gl_dp.fds_mp;
 
 
 
@@ -115,12 +72,12 @@ const float gl_prop_delay_const = 900.f;
 void load_flash_params(void)
 {
 	if(is_page_empty(sizeof(fds_mp)/sizeof(uint32_t)) == 0)
-		m_read_flash((uint32_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
+		m_read_flash((uint32_t*)fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
 	else
-		m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
-	gl_ext_cmd_id = (0x7FF - fds_mp.module_number);	//load this ONCE on startup
-	if(fds_mp.is_flipped != 0)
-		fds_mp.is_flipped = 1;	//sanitize flag
+		m_write_flash((uint64_t*)fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+	gl_ext_cmd_id = (0x7FF - fds_mp->module_number);	//load this ONCE on startup
+	if(fds_mp->is_flipped != 0)
+		fds_mp->is_flipped = 1;	//sanitize flag
 }
 
 
@@ -129,18 +86,18 @@ void load_flash_params(void)
  * */
 void check_idpi_xdiv_param(void)
 {
-	if(fds_mp.id_pi.x_integral_div == 0)
-		fds_mp.id_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
-	if(fds_mp.iq_pi.x_integral_div == 0)
-		fds_mp.iq_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
+	if(fds_mp->id_pi.x_integral_div == 0)
+		fds_mp->id_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
+	if(fds_mp->iq_pi.x_integral_div == 0)
+		fds_mp->iq_pi.x_integral_div = 1;	//pick the value with no effect on calculation between original and new
 }
 
 
 void write_flash_params(void)
 {
-	fds_mp.elec_conv_ratio_fixed = 7;
-	fds_mp.align_offset_fixed = 1222;
-	fds_mp.iq_pi = (fixed_PI_params_t){
+	fds_mp->elec_conv_ratio_fixed = 7;
+	fds_mp->align_offset_fixed = 1222;
+	fds_mp->iq_pi = (fixed_PI_params_t){
 		.kp = {
 				.i32 = 10000,
 				.radix = 3
@@ -153,7 +110,7 @@ void write_flash_params(void)
 		.x_sat = MAX_VQ,
 		.out_rshift = 9
 	};
-	fds_mp.id_pi = (fixed_PI_params_t){
+	fds_mp->id_pi = (fixed_PI_params_t){
 		.kp = {
 				.i32 = 5000,
 				.radix = 5
@@ -166,6 +123,6 @@ void write_flash_params(void)
 		.x_sat = MAX_VQ,
 		.out_rshift = 9
 	};
-	m_write_flash((uint64_t*)&fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+	m_write_flash((uint64_t*)fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
 }
 
