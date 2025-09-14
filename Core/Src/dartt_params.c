@@ -14,15 +14,15 @@ dartt_params_t gl_dp =
 		/*Initialize params for position control using FOC as 0*/
 		.mctl_iq = {
 	               .kpki = {
-	                               .kp = {.i32 = 50, .radix = 8},
-	                               .ki = {.i32 = 3, .radix = 10},
-	                               .x_integral_div = 10,
+	                               .kp = {.i32 = 300, .radix = 8},
+	                               .ki = {.i32 = 3, .radix = 11},
+	                               .x_integral_div = 15,
 	                               .x = 0, //no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
 	                               .x_sat = 1000,  //no integral efforts for now
 	                               .out_rshift = 0
 	               },
 	              .kd = { //filter this will help for pos control. Need to do fixed point IIR
-	                               .i32 = 5,       //no deriv effort either, for now
+	                               .i32 = 50,       //no deriv effort either, for now
 	                               .radix = 5
 	               },
 	               .out_sat = 0,
