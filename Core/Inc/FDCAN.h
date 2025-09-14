@@ -7,9 +7,9 @@
 
 #ifndef INC_FDCAN_H_
 #define INC_FDCAN_H_
+#include "dartt_mctl_params.h"
 #include "init.h"
 #include "fds.h"
-#include "dartt_params.h"
 
 #define PAYLOAD_SIZE_CAN 8
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be

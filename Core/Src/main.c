@@ -9,8 +9,8 @@
 #include "foc_fixed.h"
 #include "m_uart.h"
 #include "PPP.h"
-#include "dartt_params.h"
 #include "dartt.h"
+#include "dartt_mctl_params.h"
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 

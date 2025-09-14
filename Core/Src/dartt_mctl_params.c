@@ -4,10 +4,10 @@
  *  Created on: Sep 13, 2025
  *      Author: Ocanath Robotman
  */
-#include "dartt_params.h"
+#include "dartt_mctl_params.h"
 
 
-dartt_params_t gl_dp =
+dartt_mctl_params_t gl_dp =
 {
 
 
