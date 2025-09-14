@@ -19,19 +19,21 @@ Hit 'run' on the debugging session. You should immediately see the values of the
 ### Inverter Check
 To check the inverter is functioning properly, first set the `do_open_loop_test` flag to `1`, then set the `load_dartt_flags` to `1`. In this controller, many flag checks are masked behind `load_dartt_flags` to save on compute during commutation, so this second load is required. The motor should spin in open loop for 10 seconds. Adjust the `open_loop_vd` value up or down as required to get good motion, if desired.
 
-### Polepair Count
+### Polepair Count, ID lock
 To get the number of pole pairs, set the `control_mode` to `4` or `OPEN_LOOP_MODE`. Manually rotate the motor - you should feel distinct 'cogs' or 'clicks' from the poles passing over the magnetized stator. The number of these cogs per one full rotation is the number of pole-pairs. 
 
 Set `elec_conv_ratio_fixed` to the number of pole pairs. If on V7-R3, set `align_offset_fixed` to the value in the `((gl_spi_angle*PI_14B)>>13)` row.
 
 Finally, update the filesystem by setting `update_fs = 1` followed by `load_dartt_flags = 1`.
 
+IMPORTANT NOTE: It is recommended to use some value of `align_offset_fixed` which is far away from zero. This appears to yield superior numerical stability in the commutation loop.
 
 ### Commutation Test
 
 The next step is to attempt to commute the motor. Set the command word to a small value (say, `command_word = 100`). Set the `control_mode` to `1`. The motor should start spinning gently. If it does not, try manually backdriving it. If the phases are wrong, backdriving will feel similar to the cogging experienced during the polepair count, except with many more 'cogs' per rotation. To resolve this issue, change the `is_flipped` flag to the opposite of whatever it currently is (`0` or `1`).
 
 If the above doesn't work, there may be a hardware issue. Setting the polepair count, align offset, and flipped flag correctly, should cause the motor to spin when the control mode and command word are set.
+
 
 ### Autocalibration
 
