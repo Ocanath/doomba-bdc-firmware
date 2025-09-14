@@ -10,6 +10,7 @@
 #include "m_uart.h"
 #include "PPP.h"
 #include "dartt_params.h"
+#include "dartt.h"
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
@@ -113,6 +114,28 @@ void dartt_autocalibrate(void)
 		gl_dp.auto_calibrate_align_offset = 0;
 	}
 }
+payload_layer_msg_t gl_can_rx_pld_msg = {};
+
+buffer_t can_rx_alias =
+{
+		.buf = &can_rx_data.u8[0],
+		.size = sizeof(can_payload_t),
+		.len = sizeof(can_payload_t)
+};
+
+buffer_t can_tx_alias =
+{
+		.buf = &can_tx_data.u8[0],
+		.size = sizeof(can_payload_t),
+		.len = 0
+};
+
+buffer_t gl_dp_alias =
+{
+		.buf = (unsigned char *)(&gl_dp),
+		.size = sizeof(gl_dp),
+		.len = sizeof(gl_dp)
+};
 
 int main(void)
 {
@@ -170,7 +193,8 @@ int main(void)
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
-			if(can_rx_header.Identifier == fds_mp->module_number)	//obey commands from specific device
+			can_rx_alias.len = can_rx_header.DataLength;
+			if(can_rx_header.Identifier == fds_mp->module_number)	//motor command - dartt specifies custom implementation
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
 				gl_dp.command_word = can_rx_data.i32[0];
@@ -184,7 +208,8 @@ int main(void)
 			}
 			else if (can_rx_header.Identifier == 0x7FF - fds_mp->module_number)
 			{
-//				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
+			    frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
+				parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
 			}
 		}
 
