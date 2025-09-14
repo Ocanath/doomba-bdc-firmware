@@ -44,9 +44,8 @@ dartt_params_t gl_dp =
 		               .out_sat = 0,
 		},
 
-
-		.cal_openloop_voltage = 100,
-		.cal_voltage = 1000,
+		.open_loop_vq = 0,
+		.open_loop_vd = 100,
 
 		.en_blink_led = 0,
 		.use_uart_encoder = 0,
@@ -98,6 +97,9 @@ dartt_params_t gl_dp =
 					.out_rshift = 31
 				}
 		},
-
+		.autocalibration_voltage = 500,
+		.load_dartt_flags = 0,	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
+		.do_open_loop_test = 0,	//commute motor
+		.auto_calibrate_align_offset = 0,
 		.update_fs = 0
 };

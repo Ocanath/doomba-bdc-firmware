@@ -79,13 +79,38 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	}
 }
 
-void handle_fs_update_request(void)
+void dartt_handle_fs_update_request(void)
 {
 	if(gl_dp.update_fs != 0)
 	{
+		gl_dp.update_fs = 0;
 		TIMER_UPDATE_DUTY(500,500,500);
 		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-		gl_dp.update_fs = 0;
+	}
+}
+
+void dartt_openloop_test(void)
+{
+	if(gl_dp.do_open_loop_test)
+	{
+		gl_dp.do_open_loop_test = 0;
+		uint32_t angle = 0;
+		uint32_t exp_ts = HAL_GetTick();
+		while((HAL_GetTick() - exp_ts) < 10000)
+		{
+			angle++;
+			openloop_fixed(angle, 0, gl_dp.open_loop_vd);	//NOTE: use vd. lock to vd gives approximate align offset.
+		}
+	}
+}
+
+void dartt_autocalibrate(void)
+{
+	if(gl_dp.auto_calibrate_align_offset)
+	{
+		gl_dp.auto_calibrate_align_offset = 0;
+		auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
+		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
 	}
 }
 
@@ -135,37 +160,6 @@ int main(void)
 	 *	5. check the settings in STM32CubeProgrammer
 	 *	6. profit?
 	 */
-#ifdef LOCK_FOR_POLEPAIR_COUNT
-	while(1)
-	{
-		openloop_fixed(0,0, gl_dp.cal_openloop_voltage);
-		handle_fs_update_request();
-	}
-#endif
-#ifdef TEST_INVERTER
-	uint32_t angle = 0;
-	while(1)
-	{
-		angle++;
-		openloop_fixed(angle, 0, gl_dp.cal_openloop_voltage);
-	}
-#endif
-#ifdef GET_INIT_OFFSET
-//	openloop_fixed(0, 0, 500);
-//	uint32_t st = HAL_GetTick();
-//	while(HAL_GetTick() - st < 100);
-//	fds_mp->align_offset_fixed = theta_abs_14b();	//rough value obtained, now fine tuned w autocal
-	auto_calibrate_motor(gl_dp.cal_voltage, 700, 7.f,.001);
-	m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-#endif
-#ifdef TEST_FOC
-	//tune id/iq gains for high speed performance here, and save parameters
-	while(1)
-	{
-		sinusoidal_fixed(gl_dp.cal_voltage, 0);	//000003E2
-		handle_fs_update_request();
-	}
-#endif
 
 //	int32_t can_command_value = 0;
 	uint32_t can_cmd_exp_ts = 0;
@@ -210,7 +204,7 @@ int main(void)
 		}
 		else if (gl_dp.control_mode == OPEN_LOOP_MODE)
 		{
-			openloop_fixed(gl_dp.command_word, 350, 0);
+			openloop_fixed(gl_dp.command_word, gl_dp.open_loop_vq, gl_dp.open_loop_vd);
 		}
 		else
 		{
@@ -251,8 +245,15 @@ int main(void)
 				}
 			}
 		}
+		if(gl_dp.load_dartt_flags)	//wrapper to all flag handlers for slow or blocking ops. also a double guard for filesystem - you can write
+		{
+			gl_dp.load_dartt_flags = 0;
 
-		handle_fs_update_request();
+			dartt_handle_fs_update_request();
+			dartt_openloop_test();
+			dartt_autocalibrate();
+		}
+
 
 		get_dtheta();
 		//		if(tick-led_ts > 500)
@@ -262,6 +263,12 @@ int main(void)
 		//		}
 	}
 }
+
+
+
+
+
+
 
 
 

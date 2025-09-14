@@ -21,8 +21,8 @@ typedef struct dartt_params_t
 	pctl_params_t mctl_vq;
 
 
-	int32_t cal_openloop_voltage;
-	int32_t cal_voltage;
+	int32_t open_loop_vq;
+	int32_t open_loop_vd;
 
 	uint8_t en_blink_led;
 	uint8_t use_uart_encoder;
@@ -30,6 +30,10 @@ typedef struct dartt_params_t
 	uint8_t led_state;
 
 	fds_motor_params_t fds_mp;
+	int32_t autocalibration_voltage;
+	uint32_t load_dartt_flags;	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
+	uint32_t do_open_loop_test;	//commute motor
+	uint32_t auto_calibrate_align_offset;
 	uint32_t update_fs;	//use uint32_t because it'll get padded anyway
 }dartt_params_t;
 
