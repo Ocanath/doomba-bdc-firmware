@@ -18,7 +18,7 @@
 //#define FLIP_TAU
 //#define LOCK_FOR_POLEPAIR_COUNT
 //#define TEST_INVERTER
-#define GET_INIT_OFFSET
+//#define GET_INIT_OFFSET
 //#define TEST_FOC
 
 //#define GIMBAL_MOTOR

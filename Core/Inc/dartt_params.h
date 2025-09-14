@@ -8,12 +8,17 @@
 #ifndef INC_DARTT_PARAMS_H_
 #define INC_DARTT_PARAMS_H_
 #include "profiles.h"
+#include "pctl.h"
 
 typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} control_mode_t;	//foc with velocity?
 
 typedef struct dartt_params_t
 {
 
+
+
+	pctl_params_t mctl_iq;
+	pctl_params_t mctl_vq;
 
 
 	int32_t cal_openloop_voltage;

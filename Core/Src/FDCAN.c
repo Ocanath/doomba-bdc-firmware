@@ -41,35 +41,6 @@ ext_cmd_flags_t gl_ext_cmd_flags = {
 		.control_mode = PCTL_VQ
 };
 
-/*Initialize params for position control using FOC as 0*/
-pctl_params_t mctl_iq = {
-		.kpki =
-		{
-				.kp = {.i32 = 0, .radix = 0},
-				.ki = {.i32 = 0, .radix = 0},
-				.x = 0,
-				.x_sat = 0,
-				.out_rshift = 0
-		},
-		.kd = {.i32 = 0, .radix = 0},
-		.out_sat = 0,
-};
-/*Initialize params for position control using sinusoidal as 0*/
-pctl_params_t mctl_vq = {
-		.kpki = {
-				.kp = {.i32 = 50, .radix = 8},
-				.ki = {.i32 = 3, .radix = 10},
-				.x_integral_div = 10,
-				.x = 0,	//no reason to init this to another value (unless you want the motor to jump when you start pctl... like a psycho...)
-				.x_sat = 1000,	//no integral efforts for now
-				.out_rshift = 0
-		},
-		.kd = {	//filter this will help for pos control. Need to do fixed point IIR
-				.i32 = 5,	//no deriv effort either, for now
-				.radix = 5
-		},
-		.out_sat = 0,
-};
 
 
 
@@ -212,31 +183,31 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 		gl_ext_cmd_flags.control_mode = PCTL_IQ;
 		break;
 	case CHANGE_PCTL_IQ_KP_VALUE:
-		mctl_iq.kpki.kp.i32 = fmt.v;
+		gl_dp.mctl_iq.kpki.kp.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_IQ_KP_RADIX:
-		mctl_iq.kpki.kp.radix = d[1];
+		gl_dp.mctl_iq.kpki.kp.radix = d[1];
 		break;
 	case CHANGE_PCTL_IQ_KI_VALUE:
-		mctl_iq.kpki.ki.i32 = fmt.v;
+		gl_dp.mctl_iq.kpki.ki.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_IQ_KI_RADIX:
-		mctl_iq.kpki.ki.radix = d[1];
+		gl_dp.mctl_iq.kpki.ki.radix = d[1];
 		break;
 	case CHANGE_PCTL_IQ_KD_VALUE:
-		mctl_iq.kd.i32 = fmt.v;
+		gl_dp.mctl_iq.kd.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_IQ_KD_RADIX:
-		mctl_iq.kd.radix = d[1];
+		gl_dp.mctl_iq.kd.radix = d[1];
 		break;
 	case CHANGE_PCTL_IQ_XSAT:
-		mctl_iq.kpki.x_sat = fmt.v;
+		gl_dp.mctl_iq.kpki.x_sat = fmt.v;
 		break;
 	case CHANGE_PCTL_IQ_OUTSAT:
-		mctl_iq.out_sat = ((uint32_t)fmt.v) << gl_iq_rshift;
+		gl_dp.mctl_iq.out_sat = ((uint32_t)fmt.v) << gl_iq_rshift;
 		break;
 	case CHANGE_PCTL_IQ_OUT_RSHIFT:
-		mctl_iq.kpki.out_rshift = d[1];
+		gl_dp.mctl_iq.kpki.out_rshift = d[1];
 		break;
 
 		/*THIS SECTION IS FOR VQ POS CONTROL MODE*/
@@ -244,31 +215,31 @@ void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d)
 		gl_ext_cmd_flags.control_mode = PCTL_VQ;
 		break;
 	case CHANGE_PCTL_VQ_KP_VALUE:
-		mctl_vq.kpki.kp.i32 = fmt.v;
+		gl_dp.mctl_vq.kpki.kp.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_KP_RADIX:
-		mctl_vq.kpki.kp.radix = fmt.v;
+		gl_dp.mctl_vq.kpki.kp.radix = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_KI_VALUE:
-		mctl_vq.kpki.ki.i32 = fmt.v;
+		gl_dp.mctl_vq.kpki.ki.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_KI_RADIX:
-		mctl_vq.kpki.ki.radix = d[1];
+		gl_dp.mctl_vq.kpki.ki.radix = d[1];
 		break;
 	case CHANGE_PCTL_VQ_KD_VALUE:
-		mctl_vq.kd.i32 = fmt.v;
+		gl_dp.mctl_vq.kd.i32 = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_KD_RADIX:
-		mctl_vq.kd.radix = d[1];
+		gl_dp.mctl_vq.kd.radix = d[1];
 		break;
 	case CHANGE_PCTL_VQ_XSAT:
-		mctl_vq.kpki.x_sat = fmt.v;
+		gl_dp.mctl_vq.kpki.x_sat = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_OUTSAT:
-		mctl_vq.out_sat = fmt.v;
+		gl_dp.mctl_vq.out_sat = fmt.v;
 		break;
 	case CHANGE_PCTL_VQ_OUT_RSHIFT:
-		mctl_vq.kpki.out_rshift = d[1];
+		gl_dp.mctl_vq.kpki.out_rshift = d[1];
 		break;
 
 	}

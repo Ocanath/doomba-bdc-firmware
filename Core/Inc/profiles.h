@@ -8,6 +8,7 @@
 #ifndef INC_PROFILES_H_
 #define INC_PROFILES_H_
 #include "stdint.h"
+#include "pctl.h"
 
 #define AEROSKY_MC4225 		0
 #define MULTISTAR_MS4822 	1
@@ -22,21 +23,7 @@
 
 #define MAX_VQ 3546	// (sqrt(3)/2) * 4096
 
-typedef struct i32_t
-{
-	int32_t i32;
-	int32_t radix;	//'decimal' point. true value is i32/2^radix
-}i32_t;
 
-typedef struct fixed_PI_2_params_t
-{
-	i32_t kp;
-	i32_t ki;
-	int32_t x_integral_div;
-	int32_t x;
-	int32_t x_sat;
-	uint8_t out_rshift;
-}fixed_PI_2_params_t;
 
 typedef struct fixed_PI_params_t
 {

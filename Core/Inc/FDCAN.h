@@ -15,6 +15,8 @@
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
 //ready to receive them
 
+
+
 extern int32_t gl_v_uS_conv;	//used to calculate expression of rotor velocity in (2^radix)*radians/sec
 extern int32_t gl_iq_rshift;
 
@@ -67,15 +69,6 @@ typedef struct ext_cmd_flags_t
 	control_mode_t control_mode;
 }ext_cmd_flags_t;
 
-typedef struct pctl_params_t
-{
-	fixed_PI_2_params_t kpki;
-	i32_t kd;
-	int32_t out_sat;
-}pctl_params_t;
-
-extern pctl_params_t mctl_iq;
-extern pctl_params_t mctl_vq;
 
 extern ext_cmd_flags_t gl_ext_cmd_flags;
 extern uint16_t gl_ext_cmd_id;
