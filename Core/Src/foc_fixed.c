@@ -148,6 +148,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 {
+	get_theta_m();
 	int32_t theta_wrapped = wrap_2pi_14b(angle_targ_prewrapping);
 	int32_t sin_val = sin_14b(theta_wrapped);
 	int32_t cos_val = cos_14b(theta_wrapped);

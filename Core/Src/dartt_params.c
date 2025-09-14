@@ -72,29 +72,29 @@ dartt_params_t gl_dp =
 				.gl_prop_delay_const_12b = 0x7FFFFFFF,
 				.iq_pi = {
 					.kp = {
-							.i32 = 0,
-							.radix = 0
+							.i32 = 50,
+							.radix = 8
 					},
 					.ki = {
-							.i32 = 0,
-							.radix = 0
+							.i32 = 3,
+							.radix = 10
 					},
-					.x_integral_div = 1,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
-					.x_sat = 0,
-					.out_rshift = 31
+					.x_integral_div = 10,	//this does NOT need a command tho, helper variable. KEEP INITIALIZATION TO 0 (or it'll clamp to x_sat before the controller wrangles it as the worst case scenario)
+					.x_sat = 1000,
+					.out_rshift = 0
 				},
 				.id_pi = {
 					.kp = {
-							.i32 = 0,
-							.radix = 31
+							.i32 = 50,
+							.radix = 8
 					},
 					.ki = {
-							.i32 = 0,
-							.radix = 31
+							.i32 = 3,
+							.radix = 10
 					},
-					.x_integral_div = 1,
-					.x_sat = 0,
-					.out_rshift = 31
+					.x_integral_div = 10,
+					.x_sat = 1000,
+					.out_rshift = 0
 				}
 		},
 		.autocalibration_voltage = 500,

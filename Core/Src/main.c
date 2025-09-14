@@ -83,9 +83,9 @@ void dartt_handle_fs_update_request(void)
 {
 	if(gl_dp.update_fs != 0)
 	{
-		gl_dp.update_fs = 0;
 		TIMER_UPDATE_DUTY(500,500,500);
 		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		gl_dp.update_fs = 0;
 	}
 }
 
@@ -93,7 +93,6 @@ void dartt_openloop_test(void)
 {
 	if(gl_dp.do_open_loop_test)
 	{
-		gl_dp.do_open_loop_test = 0;
 		uint32_t angle = 0;
 		uint32_t exp_ts = HAL_GetTick();
 		while((HAL_GetTick() - exp_ts) < 10000)
@@ -101,6 +100,7 @@ void dartt_openloop_test(void)
 			angle++;
 			openloop_fixed(angle, 0, gl_dp.open_loop_vd);	//NOTE: use vd. lock to vd gives approximate align offset.
 		}
+		gl_dp.do_open_loop_test = 0;
 	}
 }
 
@@ -108,9 +108,9 @@ void dartt_autocalibrate(void)
 {
 	if(gl_dp.auto_calibrate_align_offset)
 	{
-		gl_dp.auto_calibrate_align_offset = 0;
 		auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
 		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		gl_dp.auto_calibrate_align_offset = 0;
 	}
 }
 
