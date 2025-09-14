@@ -56,7 +56,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 	{
 		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
 			uart_encoder_data.d[i] = h->rx_buf[i];
-		if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
+		if(gl_dp.control_mode == PCTL_IQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -66,7 +66,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			iq = saturate(iq, gl_dp.mctl_iq.out_sat);
 			iq_pctl = iq;
 		}
-		else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
+		else if (gl_dp.control_mode == PCTL_VQ)
 		{
 			int32_t q = (int32_t)uart_encoder_data.v;
 
@@ -167,7 +167,7 @@ int main(void)
 	}
 #endif
 
-	int32_t can_command_value = 0;
+//	int32_t can_command_value = 0;
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
@@ -179,7 +179,7 @@ int main(void)
 			if(can_rx_header.Identifier == fds_mp->module_number)	//obey commands from specific device
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
-				can_command_value = can_rx_data.i32[0];
+				gl_dp.command_word = can_rx_data.i32[0];
 				can_cmd_exp_ts = tick;
 
 				can_tx_data.i32[0] = gl_theta_rem_m;
@@ -190,46 +190,46 @@ int main(void)
 			}
 			else if (can_rx_header.Identifier == 0x7FF - fds_mp->module_number)
 			{
-				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
+//				handle_ext_cmd(&gl_ext_cmd_flags, can_rx_data.u8);
 			}
 		}
 
 
 		/*Do the control modes*/
-		if(gl_ext_cmd_flags.control_mode == FOC_MODE)
+		if(gl_dp.control_mode == FOC_MODE)
 		{
-			foc_fixed(can_command_value, 0);
-			if((tick - can_cmd_exp_ts) > 500)
-				can_command_value = 0;
+			foc_fixed(gl_dp.command_word, 0);
+//			if((tick - can_cmd_exp_ts) > 500)
+//				gl_dp.command_word = 0;
 		}
-		else if(gl_ext_cmd_flags.control_mode == SINUSOIDAL_MODE)
+		else if(gl_dp.control_mode == SINUSOIDAL_MODE)
 		{
-			sinusoidal_fixed(can_command_value, 0);
-			if((tick - can_cmd_exp_ts) > 500)
-				can_command_value = 0;
+			sinusoidal_fixed(gl_dp.command_word, 0);
+//			if((tick - can_cmd_exp_ts) > 500)
+//				gl_dp.command_word = 0;
 		}
-		else if (gl_ext_cmd_flags.control_mode == OPEN_LOOP_MODE)
+		else if (gl_dp.control_mode == OPEN_LOOP_MODE)
 		{
-			openloop_fixed(can_command_value, 350, 0);
+			openloop_fixed(gl_dp.command_word, 350, 0);
 		}
 		else
 		{
-			if(gl_ext_cmd_flags.use_uart_encoder != 0)
+			if(gl_dp.use_uart_encoder != 0)
 			{
-				if(gl_ext_cmd_flags.control_mode == PCTL_IQ)
+				if(gl_dp.control_mode == PCTL_IQ)
 				{
 					foc_fixed(iq_pctl, 0);
 				}
-				else if (gl_ext_cmd_flags.control_mode == PCTL_VQ)
+				else if (gl_dp.control_mode == PCTL_VQ)
 				{
 					sinusoidal_fixed(vq_pctl, 0);
 				}
 			}
 			else
 			{
-				if(gl_ext_cmd_flags.control_mode == PCTL_VQ)
+				if(gl_dp.control_mode == PCTL_VQ)
 				{
-					int32_t qd = can_command_value;
+					int32_t qd = gl_dp.command_word;
 					int32_t q = gl_theta_rem_m;
 					int32_t e = wrap_2pi_14b(qd-q);
 					int32_t vq = ctl_PI_fixed_2(e, &gl_dp.mctl_vq.kpki);
@@ -237,6 +237,33 @@ int main(void)
 					vq -= damping;
 					vq = saturate(vq, gl_dp.mctl_vq.out_sat);
 					sinusoidal_fixed(vq,0);
+				}
+				else if(gl_dp.control_mode == PCTL_IQ)
+				{
+					int32_t qd = gl_dp.command_word;
+					int32_t q = gl_theta_rem_m;
+					int32_t e = wrap_2pi_14b(qd-q);
+					int32_t iq = ctl_PI_fixed_2(e, &gl_dp.mctl_iq.kpki);
+					int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
+					iq -= damping;
+					iq = saturate(iq, gl_dp.mctl_iq.out_sat);
+					foc_fixed(iq,0);
+				}
+			}
+		}
+
+		handle_fs_update_request();
+
+		get_dtheta();
+		//		if(tick-led_ts > 500)
+		//		{
+		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
+		//			led_ts = tick;
+		//		}
+	}
+}
+
+
 
 //					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
 //					{
@@ -275,16 +302,4 @@ int main(void)
 //						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
 //						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
 //					}
-				}
-			}
-		}
 
-
-		get_dtheta();
-		//		if(tick-led_ts > 500)
-		//		{
-		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-		//			led_ts = tick;
-		//		}
-	}
-}

@@ -15,7 +15,7 @@ typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} contr
 typedef struct dartt_params_t
 {
 
-
+	int32_t command_word;
 
 	pctl_params_t mctl_iq;
 	pctl_params_t mctl_vq;
