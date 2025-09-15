@@ -9,6 +9,16 @@
 
 dartt_mctl_params_t gl_dp =
 {
+		.command_word = 0,
+
+		.theta_rem_m = 0,	//position 32bit in 14bit ticks
+		.iq = 0,	//q axis current
+		.dtheta_fixedpoint_rad_p_sec = 0,	//velocity in fixedpoint rad/sec
+		.id = 0,	//d axis current
+		.theta_rotations = 0,	//overflow counter? idr
+		.ia = 0,	//phase current a
+		.ib = 0,	//phase current b
+		.ic = 0, //phase current c
 
 
 		/*Initialize params for position control using FOC as 0*/
