@@ -134,7 +134,7 @@ buffer_t gl_dp_alias =
 {
 		.buf = (unsigned char *)(&gl_dp),
 		.size = sizeof(gl_dp),
-		.len = sizeof(gl_dp)
+		.len = 0
 };
 
 int main(void)
@@ -157,6 +157,7 @@ int main(void)
 	load_flash_params();
 	check_idpi_xdiv_param();
 
+	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
 	set_encoder_read_type(READ_ANGLECOM);
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
@@ -193,7 +194,7 @@ int main(void)
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
 			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
-			can_rx_alias.len = can_rx_header.DataLength;
+			can_rx_alias.len = (can_rx_header.DataLength >> 16) & 0xF;
 			if(can_rx_header.Identifier == fds_mp->module_number)	//motor command - dartt specifies custom implementation
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
@@ -206,7 +207,7 @@ int main(void)
 				can_tx_header.Identifier = fds_mp->module_number;
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
-			else if (can_rx_header.Identifier == 0x7FF - fds_mp->module_number)
+			else if (can_rx_header.Identifier == dartt_misc_address)
 			{
 			    dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
 			    dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
