@@ -10,8 +10,9 @@
 #include "dartt_mctl_params.h"
 #include "init.h"
 #include "fds.h"
+#include "dartt.h"
 
-#define PAYLOAD_SIZE_CAN 8
+#define PAYLOAD_SIZE_CAN 64
 //no matter what, the HAL backend loads 8 bytes of CAN data from registers. So you better be
 //ready to receive them
 
@@ -71,6 +72,8 @@ extern FDCAN_RxHeaderTypeDef   can_rx_header;
 extern can_payload_t 			can_tx_data;
 extern can_payload_t 			can_rx_data;
 extern uint32_t			can_tx_mailbox;
+
+int send_fdcan_frame(uint16_t id, buffer_t * buffer);
 
 void FDCAN_Config(void);
 //void handle_ext_cmd(ext_cmd_flags_t * flags, uint8_t * d);

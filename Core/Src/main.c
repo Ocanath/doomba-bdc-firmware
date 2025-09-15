@@ -116,20 +116,23 @@ void dartt_autocalibrate(void)
 }
 payload_layer_msg_t gl_can_rx_pld_msg = {};
 
+//rx alias buffer
 buffer_t can_rx_alias =
 {
 		.buf = &can_rx_data.u8[0],
-		.size = sizeof(can_payload_t),
-		.len = sizeof(can_payload_t)
-};
-
-buffer_t can_tx_alias =
-{
-		.buf = &can_tx_data.u8[0],
-		.size = sizeof(can_payload_t),
+		.size = sizeof(can_rx_data),
 		.len = 0
 };
 
+//tx alias buffer
+buffer_t can_tx_alias =
+{
+		.buf = &can_tx_data.u8[0],
+		.size = sizeof(can_rx_data),
+		.len = 0
+};
+
+//dartt params buffer alias
 buffer_t gl_dp_alias =
 {
 		.buf = (unsigned char *)(&gl_dp),
@@ -185,7 +188,6 @@ int main(void)
 	 *	6. profit?
 	 */
 
-//	int32_t can_command_value = 0;
 	uint32_t can_cmd_exp_ts = 0;
 	while(1)
 	{
@@ -204,13 +206,17 @@ int main(void)
 				can_tx_data.i32[0] = gl_theta_rem_m;
 				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
 				can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
-				can_tx_header.Identifier = fds_mp->module_number;
+				can_tx_header.Identifier = MASTER_MOTOR_ADDRESS;
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
 			else if (can_rx_header.Identifier == dartt_misc_address)
 			{
 			    dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
 			    dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
+			    if(can_tx_alias.len != 0)
+			    {
+			    	send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
+			    }
 			}
 		}
 
