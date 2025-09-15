@@ -62,7 +62,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			int32_t q = (int32_t)uart_encoder_data.v;
 
 			int32_t iq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &gl_dp.mctl_iq.kpki);
-			iq -= (gl_dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
+			iq -= (gl_dp.dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
 			iq = iq * (1 << gl_iq_rshift);
 			iq = saturate(iq, gl_dp.mctl_iq.out_sat);
 			iq_pctl = iq;
@@ -72,7 +72,7 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 			int32_t q = (int32_t)uart_encoder_data.v;
 
 			int32_t vq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &gl_dp.mctl_vq.kpki);
-			vq -= (gl_dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_vq.kd.i32) >> gl_dp.mctl_vq.kd.radix;
+			vq -= (gl_dp.dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_vq.kd.i32) >> gl_dp.mctl_vq.kd.radix;
 			vq = saturate(vq, gl_dp.mctl_vq.out_sat);
 			vq_pctl = vq;
 		}
@@ -203,9 +203,9 @@ int main(void)
 				gl_dp.command_word = can_rx_data.i32[0];
 				can_cmd_exp_ts = tick;
 
-				can_tx_data.i32[0] = gl_theta_rem_m;
-				can_tx_data.i16[2] = (int16_t)(gl_iq >> gl_iq_rshift);
-				can_tx_data.i16[3] = (int16_t)gl_dtheta_fixedpoint_rad_p_sec;
+				can_tx_data.i32[0] = gl_dp.theta_rem_m;
+				can_tx_data.i16[2] = (int16_t)(gl_dp.iq >> gl_iq_rshift);
+				can_tx_data.i16[3] = (int16_t)gl_dp.dtheta_fixedpoint_rad_p_sec;
 				can_tx_header.Identifier = MASTER_MOTOR_ADDRESS;
 				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
 			}
@@ -256,10 +256,10 @@ int main(void)
 				if(gl_dp.control_mode == PCTL_VQ)
 				{
 					int32_t qd = gl_dp.command_word;
-					int32_t q = gl_theta_rem_m;
+					int32_t q = gl_dp.theta_rem_m;
 					int32_t e = wrap_2pi_14b(qd-q);
 					int32_t vq = ctl_PI_fixed_2(e, &gl_dp.mctl_vq.kpki);
-					int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * gl_dp.mctl_vq.kd.i32) >> gl_dp.mctl_vq.kd.radix;
+					int32_t damping = (gl_dp.dtheta_fixedpoint_rad_p_sec * gl_dp.mctl_vq.kd.i32) >> gl_dp.mctl_vq.kd.radix;
 					vq -= damping;
 					vq = saturate(vq, gl_dp.mctl_vq.out_sat);
 					sinusoidal_fixed(vq,0);
@@ -267,10 +267,10 @@ int main(void)
 				else if(gl_dp.control_mode == PCTL_IQ)
 				{
 					int32_t qd = gl_dp.command_word;
-					int32_t q = gl_theta_rem_m;
+					int32_t q = gl_dp.theta_rem_m;
 					int32_t e = wrap_2pi_14b(qd-q);
 					int32_t iq = ctl_PI_fixed_2(e, &gl_dp.mctl_iq.kpki);
-					int32_t damping = (gl_dtheta_fixedpoint_rad_p_sec * gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
+					int32_t damping = (gl_dp.dtheta_fixedpoint_rad_p_sec * gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
 					iq -= damping;
 					iq = saturate(iq, gl_dp.mctl_iq.out_sat);
 					foc_fixed(iq,0);
@@ -311,10 +311,10 @@ int main(void)
 //						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
 //						int i32widx = 0;
 //						pwb32[i32widx++] = qd;
-//						pwb32[i32widx++] = gl_theta_rem_m;
+//						pwb32[i32widx++] = gl_dp.theta_rem_m;
 //						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
 //						pwb32[i32widx++] = vq;
-//						pwb32[i32widx++] = gl_dtheta_fixedpoint_rad_p_sec;
+//						pwb32[i32widx++] = gl_dp.dtheta_fixedpoint_rad_p_sec;
 //
 //						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
 //						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
@@ -322,13 +322,13 @@ int main(void)
 //
 //						//			pwb32[i32widx++] = theta_elec;
 //						//			pwb32[i32widx++] = vq;
-//						//			pwb32[i32widx++] = gl_iq;
+//						//			pwb32[i32widx++] = gl_dp.iq;
 //
 //						//			pwb32[i32widx++] = 0;
 //						//			pwb32[i32widx++] = id_req;
-//						//			pwb32[i32widx++] = gl_id;
+//						//			pwb32[i32widx++] = gl_dp.id;
 //						//			pwb32[i32widx++] = 300;
-//						//			pwb32[i32widx++] = gl_iq;
+//						//			pwb32[i32widx++] = gl_dp.iq;
 //
 //						//			int32_t s,c;
 //						//			get_sc_no_ortho_comp(&s,&c);

@@ -41,7 +41,7 @@ void dowse_for_align_offset(void)
 		sinusoidal_fixed(500,0);
 		get_dtheta();
 
-		int32_t avq = abs_i32(gl_dtheta_fixedpoint_rad_p_sec);
+		int32_t avq = abs_i32(gl_dp.dtheta_fixedpoint_rad_p_sec);
 		if(avq > max_abs_dq)
 		{
 			max_abs_dq = avq;
@@ -51,8 +51,8 @@ void dowse_for_align_offset(void)
 		if(tick >= avg_v_ts)
 		{
 			avg_v_ts = tick + 50;
-			dif = (gl_theta_rem_m - prev_gl_theta_rem_m);
-			prev_gl_theta_rem_m = gl_theta_rem_m;
+			dif = (gl_dp.theta_rem_m - prev_gl_theta_rem_m);
+			prev_gl_theta_rem_m = gl_dp.theta_rem_m;
 		}
 
 		if(tick >= uart_tx_ts)
@@ -97,10 +97,10 @@ int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist)
 {
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
 		sinusoidal_fixed(v,0);	//todo: replace this with a voltage control mode call
-	int64_t run_start = gl_theta_rotations*PI_12B + gl_theta_rem_m;
+	int64_t run_start = gl_dp.theta_rotations*PI_12B + gl_dp.theta_rem_m;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
 		sinusoidal_fixed(v,0);
-	int64_t run_end = gl_theta_rotations*TWO_PI_12B + gl_theta_rem_m;
+	int64_t run_end = gl_dp.theta_rotations*TWO_PI_12B + gl_dp.theta_rem_m;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
 	*dist = run_end-run_start;
@@ -141,9 +141,9 @@ int32_t get_elec_conversion_ratio(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
-		gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_12B, &gl_theta_rotations);
+		gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_12B, &gl_dp.theta_rotations);
 
-		if(gl_theta_rem_m >= TWO_PI_12B+10)
+		if(gl_dp.theta_rem_m >= TWO_PI_12B+10)
 		{
 			one_m_rev = 1;
 		}

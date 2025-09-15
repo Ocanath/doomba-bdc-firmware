@@ -32,11 +32,6 @@ uint32_t count = 0;
 
 
 /*Shared variables (current, unwrapped theta)*/
-int32_t gl_iq = 0;
-int32_t gl_id = 0;
-int32_t gl_theta_rem_m = 0;
-int32_t gl_theta_rotations = 0;
-int32_t gl_dtheta_fixedpoint_rad_p_sec = 0;
 int32_t gl_dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 int32_t gl_x_iqpi = 0;	//x for iq pi controller
 int32_t gl_x_idpi = 0;	//x for id pi controller
@@ -64,11 +59,11 @@ void get_dtheta(void)
 	if(cnt >= VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US)
 	{
 
-		int32_t dtheta = gl_theta_rem_m - gl_dtheta_prev_theta;
-		gl_dtheta_prev_theta = gl_theta_rem_m;
+		int32_t dtheta = gl_dp.theta_rem_m - gl_dtheta_prev_theta;
+		gl_dtheta_prev_theta = gl_dp.theta_rem_m;
 		cnt = TIM2->CNT;	//read one final time for best accuracy
 		TIM2->CNT = 0;
-		gl_dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / cnt);
+		gl_dp.dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / cnt);
 	}
 }
 
@@ -106,8 +101,8 @@ int32_t ctl_PI_fixed_3(int32_t error, fixed_PI_params_t * p, int32_t * x)
 int32_t get_theta_m(void)
 {
 	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
-	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
-	return gl_theta_rem_m;
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	return gl_dp.theta_rem_m;
 }
 
 /*
@@ -119,7 +114,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
-	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
@@ -142,8 +137,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	}
 	count++;
 
-	gl_iq = iq_meas;
-	gl_id = id_meas;
+	gl_dp.iq = iq_meas;
+	gl_dp.id = id_meas;
 }
 
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
@@ -167,7 +162,7 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
-	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
 
 
 	int32_t iq_meas, id_meas;
@@ -196,23 +191,23 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	}
 	count++;
 
-	gl_iq = iq_meas;
-	gl_id = id_meas;
+	gl_dp.iq = iq_meas;
+	gl_dp.id = id_meas;
 }
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t shift)
 {
-	int32_t ia = ((int16_t)ADC1->JDR1) - 1990;
-	int32_t ib = ((int16_t)ADC1->JDR2) - 1990;
-	int32_t ic = ((int16_t)ADC1->JDR3) - 1990;
+	gl_dp.ia = ((int16_t)ADC1->JDR1) - 1990;
+	gl_dp.ib = ((int16_t)ADC1->JDR2) - 1990;
+	gl_dp.ic = ((int16_t)ADC1->JDR3) - 1990;
 
 	int32_t ialpha,ibeta;
 
 	//software equivalent of rewiring the two phases
 	if(fds_mp->is_flipped == 0)
-		clarke_fixed(ia,ib,ic,&ialpha,&ibeta);
+		clarke_fixed(gl_dp.ia, gl_dp.ib, gl_dp.ic,&ialpha,&ibeta);
 	else
-		clarke_fixed(ib,ia,ic,&ialpha,&ibeta);
+		clarke_fixed(gl_dp.ib, gl_dp.ia, gl_dp.ic, &ialpha, &ibeta);
 
 	park_fixed(ialpha,ibeta,sth,cth,iq,id, shift);
 }
@@ -281,7 +276,7 @@ void voltage_3rd_harmonic(int32_t mag)
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
-	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
 
 	int32_t tA,tB,tC;
 	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
@@ -304,7 +299,7 @@ void volage_pure_sinusoidal(int32_t m)
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
-	gl_theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
 
 	int32_t theta2 = wrap_2pi_12b(theta_elec+pi_by_3);
 	int32_t theta3 = wrap_2pi_12b(theta_elec+two_pi_by_3);

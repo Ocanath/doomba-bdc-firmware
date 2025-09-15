@@ -208,7 +208,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 				vqstart = vq;
 		}
 	}
-	float run_start = ((float)gl_theta_rem_m)/16384.f;
+	float run_start = ((float)gl_dp.theta_rem_m)/16384.f;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)
 		sinusoidal_fixed(vq,0);
 
@@ -230,7 +230,7 @@ float run_v(int32_t vq, uint32_t run_time, float * run_distance)
 				vq = 0;
 		}
 	}
-	float run_end = ((float)gl_theta_rem_m)/16384.f;
+	float run_end = ((float)gl_dp.theta_rem_m)/16384.f;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
 	*run_distance = run_end-run_start;
@@ -436,8 +436,8 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
 			pwb32[i32widx++] = fds_mp->align_offset_fixed;
-//			pwb32[i32widx++] = gl_iq;
-//			pwb32[i32widx++] = gl_id;
+//			pwb32[i32widx++] = gl_dp.iq;
+//			pwb32[i32widx++] = gl_dp.id;
 			pwb32[i32widx++] = HAL_GetTick();
 			int pld_size = i32widx*sizeof(uint32_t);
 			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
