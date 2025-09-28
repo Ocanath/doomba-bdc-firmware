@@ -85,7 +85,7 @@ int send_fdcan_frame(uint16_t id, buffer_t * buffer)
 	HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, buffer->buf);
 	//don't block
 
-	return SERIAL_PROTOCOL_SUCCESS;
+	return DARTT_PROTOCOL_SUCCESS;
 }
 
 
