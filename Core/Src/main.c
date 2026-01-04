@@ -161,7 +161,6 @@ int main(void)
 	check_idpi_xdiv_param();
 
 	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
-	set_encoder_read_type(READ_ANGLECOM);
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)

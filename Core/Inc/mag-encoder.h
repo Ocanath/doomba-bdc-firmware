@@ -41,8 +41,6 @@ extern int16_t gl_spi_angle;
 //extern int16_t sin_mid;
 
 
-void set_encoder_read_type(uint16_t command);
-
 float theta_abs_rad();
 float theta_rel_rad();
 float theta_abs_deg();

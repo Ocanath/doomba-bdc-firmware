@@ -11,20 +11,16 @@
 #define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
 #define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
 
+#define NBYTES_KTH7112	3	//SSI encoder KTH7112 series requires 16bit angle and 8 bit crc
+
 //int16_t nv_spi_angle = 0;
-uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
+uint8_t nv_spi_tx_buf[NBYTES_KTH7112] = {};
+uint8_t nv_spi_rx_buf[NBYTES_KTH7112] = {};
 uint32_t nv_count = 0;
 uint8_t nv_parity=0;
 uint8_t nv_error=0;
 int16_t gl_spi_angle = 0;
 
-static uint16_t word_tx = 0;
-void set_encoder_read_type(uint16_t command)
-{
-	uint8_t * ptx = (uint8_t*)(&word_tx);
-	ptx[0] = (command & 0xFF00) >> 8;
-	ptx[1] = (command & 0x00FF);
-}
 
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
@@ -126,21 +122,16 @@ float theta_rel_rad()
 	return atan2_approx((float)sinVal,(float)cosVal) - align_offset;
 }
 
+
+
 int32_t get_ams_angle(void)
 {
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
 
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
-	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
-	uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
-	p_fb[0] = nv_spi_buf[1];	//bits 7-0
-	p_fb[1] = nv_spi_buf[0];	//bits 15-8
-	nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
-	nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
-	tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
-	if(tmp_flipbuf & (1<<13))
-		tmp_flipbuf |= (0b11 << 14);
-	int16_t spi_angle = tmp_flipbuf;
+	HAL_SPI_TransmitReceive(&hspi1, nv_spi_tx_buf, nv_spi_rx_buf, NBYTES_KTH7112, 10);
+	uint16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+	tmp_flipbuf = ( ((uint16_t)nv_spi_rx_buf[1]) << 8) | ((uint16_t)nv_spi_rx_buf[0]);
+	int16_t spi_angle = (int16_t)(tmp_flipbuf / 4);		//rightshift by 2 to go from 16bit to 14bit.
 
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 	return spi_angle;
