@@ -11,7 +11,7 @@
 #define ADDR_ANGLEUNC 	0x3FFE	//address of register containing uncompensated angle data
 #define ADDR_ANGLECOM	0x3FFF	//address of register containing compensated angle data
 
-#define NBYTES_KTH7112	3	//SSI encoder KTH7112 series requires 16bit angle and 8 bit crc
+#define NBYTES_KTH7112	4	//SSI encoder KTH7112 series requires 16bit angle and 8 bit crc
 
 //int16_t nv_spi_angle = 0;
 uint8_t nv_spi_tx_buf[NBYTES_KTH7112] = {};
@@ -130,8 +130,8 @@ int32_t get_ams_angle(void)
 
 	HAL_SPI_TransmitReceive(&hspi1, nv_spi_tx_buf, nv_spi_rx_buf, NBYTES_KTH7112, 10);
 	uint16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
-	tmp_flipbuf = ( ((uint16_t)nv_spi_rx_buf[1]) << 8) | ((uint16_t)nv_spi_rx_buf[0]);
-	int16_t spi_angle = (int16_t)(tmp_flipbuf / 4);		//rightshift by 2 to go from 16bit to 14bit.
+	tmp_flipbuf = ( ((uint16_t)nv_spi_rx_buf[1]) << 8) | ((uint16_t)nv_spi_rx_buf[2]);
+	int16_t spi_angle = (int16_t)(tmp_flipbuf);		//rightshift by 2 to go from 16bit to 14bit.
 
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 	return spi_angle;
