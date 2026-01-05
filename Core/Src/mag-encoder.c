@@ -19,8 +19,7 @@ uint8_t nv_spi_rx_buf[NBYTES_KTH7112] = {};
 uint32_t nv_count = 0;
 uint8_t nv_parity=0;
 uint8_t nv_error=0;
-int16_t gl_spi_angle = 0;
-
+int32_t gl_spi_angle = 0;
 
 //#define HIGH_ACCURACY_SIN
 float theta_m_prev;
@@ -129,9 +128,9 @@ int32_t get_ams_angle(void)
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
 
 	HAL_SPI_TransmitReceive(&hspi1, nv_spi_tx_buf, nv_spi_rx_buf, NBYTES_KTH7112, 10);
-	uint16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
-	tmp_flipbuf = ( ((uint16_t)nv_spi_rx_buf[1]) << 8) | ((uint16_t)nv_spi_rx_buf[2]);
-	int16_t spi_angle = (int16_t)(tmp_flipbuf);		//rightshift by 2 to go from 16bit to 14bit.
+	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+	tmp_flipbuf = ( ((int16_t)nv_spi_rx_buf[1]) << 8) | ((int16_t)nv_spi_rx_buf[2]);
+	int32_t spi_angle = (int32_t)(tmp_flipbuf);		//rightshift by 2 to go from 16bit to 14bit.
 
 	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 	return spi_angle;
@@ -140,10 +139,11 @@ int32_t get_ams_angle(void)
 int32_t theta_rel_14b(void)
 {
 	gl_spi_angle = get_ams_angle();
+
 	//want: 2^14 * theta(radians, -pi to pi) so -2^14*pi to 2^14*pi
-	//are getting: -2^13 to 2^13. So that means we are getting (2^13/pi)*theta
-	// (2^13/pi)*theta * 2^14*pi / 2^13 = 2^14*theta!
-	return ((gl_spi_angle * PI_14B) >> 13) - fds_mp->align_offset_fixed;
+	//are getting: -2^15 to 2^15. So that means we are getting (2^15/pi)*theta
+	// (2^15/pi)*theta * 2^14*pi / 2^15 = 2^14*theta!
+	return ((gl_spi_angle * PI_14B) / 32768) - fds_mp->align_offset_fixed;
 }
 
 int32_t theta_rel_12b(void)

@@ -36,7 +36,7 @@ extern int32_t mul_sin;
 extern int32_t div_sin;
 extern int32_t oerr_total_nsin;
 extern int32_t oerr_total_ncos;
-extern int16_t gl_spi_angle;
+extern int32_t gl_spi_angle;
 //extern int16_t cos_mid;
 //extern int16_t sin_mid;
 
