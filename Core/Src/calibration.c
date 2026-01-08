@@ -12,6 +12,7 @@
 #include "calibration_fixed.h"
 #include "m_uart.h"
 #include "PPP.h"
+#include "uart_buffers.h"
 
 /*for use in plotting uart. restricted scope to this file. global for threading multiple plots*/
 static uint32_t uart_tx_ts = 0;
@@ -440,8 +441,21 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //			pwb32[i32widx++] = gl_dp.id;
 			pwb32[i32widx++] = HAL_GetTick();
 			int pld_size = i32widx*sizeof(uint32_t);
-			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
+//			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
+			ppp_buffer_t unstuffed =
+			{
+					.buf = &gl_working_buf[0],
+					.size = sizeof(gl_working_buf),
+					.length = pld_size
+			};
+			ppp_buffer_t stuffed =
+			{
+					.buf = gl_ppp_stuffed_buf,
+					.size = sizeof(gl_ppp_stuffed_buf),
+					.length = 0
+			};
+			PPP_stuff(&unstuffed, &stuffed);
+			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed.length);
 		}
 
 
