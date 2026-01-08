@@ -284,6 +284,7 @@ int main(void)
 			dartt_handle_fs_update_request();
 			dartt_openloop_test();
 			dartt_autocalibrate();
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, gl_dp.led_state);
 		}
 
 
