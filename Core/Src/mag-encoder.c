@@ -16,7 +16,7 @@ uint8_t nv_spi_buf[sizeof(uint16_t)] = {0};
 uint32_t nv_count = 0;
 uint8_t nv_parity=0;
 uint8_t nv_error=0;
-int16_t gl_spi_angle = 0;
+int32_t gl_spi_angle = 0;
 
 static uint16_t word_tx = 0;
 void set_encoder_read_type(uint16_t command)
