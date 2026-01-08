@@ -125,6 +125,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
+	gl_dp.vq = vq_in;
+	gl_dp.vd = vd;
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
@@ -147,10 +149,18 @@ void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 	int32_t theta_wrapped = wrap_2pi_14b(angle_targ_prewrapping);
 	int32_t sin_val = sin_14b(theta_wrapped);
 	int32_t cos_val = cos_14b(theta_wrapped);
+
+	int32_t iq_meas, id_meas;
+	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
+
 	int32_t alpha,beta,tA,tB,tC;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
+	gl_dp.vq = vq;
+	gl_dp.vd = vd;
+	gl_dp.iq = iq_meas;
+	gl_dp.id = id_meas;
 }
 
 /*
@@ -179,6 +189,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
+	gl_dp.vq = vq;
+	gl_dp.vd = vd;
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{

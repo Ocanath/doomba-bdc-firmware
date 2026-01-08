@@ -111,5 +111,7 @@ dartt_mctl_params_t gl_dp =
 		.load_dartt_flags = 0,	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
 		.do_open_loop_test = 0,	//commute motor
 		.auto_calibrate_align_offset = 0,
-		.update_fs = 0
+		.update_fs = 0,
+		.vq = 0,
+		.vd = 0
 };
