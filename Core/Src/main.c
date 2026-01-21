@@ -123,7 +123,6 @@ int main(void)
 	MX_ADC1_Init();
 	MX_FDCAN1_Init();
 	MX_TIM1_Init();
-	MX_USART1_UART_Init();
 	MX_USART2_UART_Init();
 	MX_TIM2_Init();
 	MX_SPI1_Init();
@@ -182,16 +181,37 @@ int main(void)
 			}
 			else if (can_rx_header.Identifier == dartt_misc_address)
 			{
-			    dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
-			    dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
-			    if(can_tx_alias.len != 0)
+			    int rc = dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
+			    if(rc == DARTT_PROTOCOL_SUCCESS)
+			    {
+			    	dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
+			    }
+			    if(can_tx_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
 			    {
 			    	send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
 			    }
 			}
 		}
 
-		//todo: add dartt over uart interface with DMA based UART
+		/*Handle DARTT over UART*/
+		if(m_huart2.rx_decoded.length != 0)
+		{
+			if(m_huart2.rx_decoded.buf[0] == dartt_misc_address)
+			{
+				int rc = dartt_frame_to_payload(&m_huart2.rx_decode_alias, TYPE_SERIAL_MESSAGE, PAYLOAD_ALIAS, &m_huart2.rx_pld_msg);
+				if(rc == DARTT_PROTOCOL_SUCCESS)
+				{
+					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_SERIAL_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
+				}
+				if(m_huart2.tx_buf_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
+				{
+					m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
+					cobs_encode_single_buffer(&m_huart2.tx_mem);
+					m_uart_dma_transmit(&m_huart2);
+				}
+			}
+			m_huart2.rx_decoded.length = 0;
+		}
 
 		/*Do the control modes*/
 		if(gl_dp.control_mode == FOC_MODE)
