@@ -45,6 +45,7 @@ typedef struct dartt_mctl_params_t
 	uint32_t do_open_loop_test;	//commute motor
 	uint32_t auto_calibrate_align_offset;
 	uint32_t update_fs;	//use uint32_t because it'll get padded anyway
+	uint32_t tick;	//millisecond tick
 }dartt_mctl_params_t;
 
 extern dartt_mctl_params_t gl_dp;

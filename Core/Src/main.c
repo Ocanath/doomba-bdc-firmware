@@ -7,7 +7,7 @@
 #include "calibration.h"
 #include "calibration_fixed.h"
 #include "foc_fixed.h"
-#include "m_uart.h"
+#include "m_dma_uart.h"
 #include "PPP.h"
 #include "dartt.h"
 #include "dartt_mctl_params.h"
@@ -50,34 +50,7 @@ void stop_pwm(void)
  */
 void m_uart_rx_cplt_callback(uart_it_t * h)
 {
-	int8_t sum = 0;
-	for(int i = 0; i < h->bytes_received; i++)
-		sum += (int8_t)h->rx_buf[i];
-	if(sum == 0)
-	{
-		for(int i = 0; i < sizeof(int16_t); i++)	//load unchecked data, in case we want to use that
-			uart_encoder_data.d[i] = h->rx_buf[i];
-		if(gl_dp.control_mode == PCTL_IQ)
-		{
-			int32_t q = (int32_t)uart_encoder_data.v;
 
-			int32_t iq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &gl_dp.mctl_iq.kpki);
-			iq -= (gl_dp.dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_iq.kd.i32) >> gl_dp.mctl_iq.kd.radix;
-			iq = iq * (1 << gl_iq_rshift);
-			iq = saturate(iq, gl_dp.mctl_iq.out_sat);
-			iq_pctl = iq;
-		}
-		else if (gl_dp.control_mode == PCTL_VQ)
-		{
-			int32_t q = (int32_t)uart_encoder_data.v;
-
-			int32_t vq = ctl_PI_fixed_2( wrap_2pi_12b(input_val - q), &gl_dp.mctl_vq.kpki);
-			vq -= (gl_dp.dtheta_fixedpoint_rad_p_sec*gl_dp.mctl_vq.kd.i32) >> gl_dp.mctl_vq.kd.radix;
-			vq = saturate(vq, gl_dp.mctl_vq.out_sat);
-			vq_pctl = vq;
-		}
-
-	}
 }
 
 void dartt_handle_fs_update_request(void)
@@ -188,10 +161,9 @@ int main(void)
 	 *	6. profit?
 	 */
 
-	uint32_t can_cmd_exp_ts = 0;
+
 	while(1)
 	{
-		uint32_t tick = HAL_GetTick();
 
 		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
 		{
@@ -201,7 +173,6 @@ int main(void)
 			{
 				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
 				gl_dp.command_word = can_rx_data.i32[0];
-				can_cmd_exp_ts = tick;
 
 				can_tx_data.i32[0] = gl_dp.theta_rem_m;
 				can_tx_data.i16[2] = (int16_t)(gl_dp.iq >> gl_iq_rshift);
@@ -220,6 +191,7 @@ int main(void)
 			}
 		}
 
+		//todo: add dartt over uart interface with DMA based UART
 
 		/*Do the control modes*/
 		if(gl_dp.control_mode == FOC_MODE)

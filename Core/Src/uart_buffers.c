@@ -6,6 +6,9 @@
  */
 #include "uart_buffers.h"
 
-uint8_t gl_working_buf[PRESTUFF_BUF_SIZE] = {0};
-uint8_t gl_ppp_stuffed_buf[STUFF_BUF_SIZE] = {0};
+
+uint8_t gl_uart_tx_buf[UART_BUF_SIZE] = {};
+uint8_t gl_uart_rx_buf[UART_BUF_SIZE] = {};
+uint8_t gl_uart_rx_decoded_buf[UART_BUF_SIZE] = {};
+
 

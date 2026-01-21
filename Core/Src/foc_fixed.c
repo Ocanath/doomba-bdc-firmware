@@ -2,7 +2,7 @@
 #include "foc_fixed.h"
 #include "mag-encoder.h"
 #include "init.h"
-#include "m_uart.h"
+#include "m_dma_uart.h"
 #include "PPP.h"
 
 #define MAX_INT32 	0x7FFFFFFF

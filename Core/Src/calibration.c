@@ -10,7 +10,7 @@
 #include "foc_commutation.h"
 #include "foc_fixed.h"
 #include "calibration_fixed.h"
-#include "m_uart.h"
+#include "m_dma_uart.h"
 #include "PPP.h"
 #include "uart_buffers.h"
 
@@ -22,8 +22,8 @@ enum {EXIT_CALIBRATION = 0xDE};
 void print_float(float v)
 {
 	uint8_t * ptr = (uint8_t * )(&v);
-	m_uart_tx_start((uart_it_t*)(&m_huart2), ptr, sizeof(float));
-	while(m_huart2.bytes_to_send != 0);
+	m_uart_tx_start((uart_it_t*)(&m_huart2), ptr, sizeof(float)); //note - broken due to transition to DMA
+	while(m_uart_bytes_to_send(&m_huart2) != 0);
 }
 
 /*cheap helper function to avoid needing to use sprintf...*/
@@ -75,8 +75,8 @@ void print_str(const char * str)
 {
 	int strlen;
 	for(strlen=0;str[strlen] != 0; strlen++);
-	m_uart_tx_start((uart_it_t*)(&m_huart2), (uint8_t*)str, strlen);
-	while(m_huart2.bytes_to_send != 0);
+	m_uart_tx_start((uart_it_t*)(&m_huart2), (uint8_t*)str, strlen); //note - broken due to transition to DMA
+	while(m_uart_bytes_to_send(&m_huart2) != 0);
 }
 
 void print_int_as_str(int32_t in)
@@ -431,31 +431,18 @@ void auto_calibrate_motor(int32_t run_vq, uint32_t runtime, float gain, float pa
 //				}
 //			}
 //		}
-		if(m_huart2.bytes_to_send == 0)
+		if(m_uart_bytes_to_send(&m_huart2) == 0)
 		{
-			uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
+			uint32_t * pwb32 = (uint32_t*)(&m_huart2.tx_mem.buf[0]);
 			int i32widx = 0;
 	//		pwb32[i32widx++] = theta_elec;
 			pwb32[i32widx++] = fds_mp->align_offset_fixed;
 //			pwb32[i32widx++] = gl_dp.iq;
 //			pwb32[i32widx++] = gl_dp.id;
 			pwb32[i32widx++] = HAL_GetTick();
-			int pld_size = i32widx*sizeof(uint32_t);
-//			int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-			ppp_buffer_t unstuffed =
-			{
-					.buf = &gl_working_buf[0],
-					.size = sizeof(gl_working_buf),
-					.length = pld_size
-			};
-			ppp_buffer_t stuffed =
-			{
-					.buf = gl_ppp_stuffed_buf,
-					.size = sizeof(gl_ppp_stuffed_buf),
-					.length = 0
-			};
-			PPP_stuff(&unstuffed, &stuffed);
-			m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed.length);
+			m_huart2.tx_mem.length = i32widx*sizeof(uint32_t);
+			cobs_encode_single_buffer(&m_huart2.tx_mem);
+			m_uart_dma_transmit(&m_huart2);
 		}
 
 

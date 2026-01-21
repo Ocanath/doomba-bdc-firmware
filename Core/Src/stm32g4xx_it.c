@@ -23,8 +23,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "init.h"
-#include "m_uart.h"
+#include "m_dma_uart.h"
 #include "foc_fixed.h"
+#include "dartt_mctl_params.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -182,12 +183,37 @@ void PendSV_Handler(void)
 }
 
 /**
+  * @brief This function is called to increment a global variable "uwTick"
+  *        used as application time base.
+  * @note In the default implementation, this variable is incremented each 1ms
+  *       in SysTick ISR.
+  * @note This function is declared as __weak to be overwritten in case of other
+  *      implementations in user file.
+  * @retval None
+  */
+void HAL_IncTick(void)
+{
+  gl_dp.tick++;
+}
+
+/**
+  * @brief Provides a tick value in millisecond.
+  * @note This function is declared as __weak to be overwritten in case of other
+  *       implementations in user file.
+  * @retval tick value
+  */
+uint32_t HAL_GetTick(void)
+{
+  return gl_dp.tick;
+}
+
+/**
   * @brief This function handles System tick timer.
   */
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+//	gl_dp.tick += HAL_TICK_FREQ_DEFAULT;
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
