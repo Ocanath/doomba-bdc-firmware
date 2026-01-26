@@ -203,9 +203,9 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t shift)
 {
-	gl_dp.ia = ((int16_t)ADC1->JDR1) - 1990;
-	gl_dp.ib = ((int16_t)ADC1->JDR2) - 1990;
-	gl_dp.ic = ((int16_t)ADC1->JDR3) - 1990;
+	gl_dp.ia = ((int16_t)ADC1->JDR1) - fds_mp->phase_a_mid;
+	gl_dp.ib = ((int16_t)ADC1->JDR2) - fds_mp->phase_b_mid;
+	gl_dp.ic = ((int16_t)ADC1->JDR3) - fds_mp->phase_c_mid;
 
 	int32_t ialpha,ibeta;
 

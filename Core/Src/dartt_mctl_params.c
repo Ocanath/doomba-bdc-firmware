@@ -105,11 +105,17 @@ dartt_mctl_params_t gl_dp =
 					.x_integral_div = 10,
 					.x_sat = 1000,
 					.out_rshift = 0
-				}
+				},
+				.phase_a_mid = 0,
+				.phase_b_mid = 0,
+				.phase_c_mid = 0,
+				.phase_a_5Aval = 0,
+				.phase_b_mid = 0,
+				.phase_c_mid = 0
 		},
 		.autocalibration_voltage = 500,
 		.load_dartt_flags = 0,	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
 		.do_open_loop_test = 0,	//commute motor
-		.auto_calibrate_align_offset = 0,
+		.auto_calibrate_command = 0,
 		.update_fs = 0
 };

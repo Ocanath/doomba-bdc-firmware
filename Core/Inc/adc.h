@@ -25,7 +25,7 @@
 
 extern uint16_t dma_adc_raw[NUM_ADC];
 
-
-float adc_to_V(int adc);
+void get_currensensor_zeropoint(void);
+void check_currentsensor_calibration(void);
 
 #endif /* ADC_H_ */

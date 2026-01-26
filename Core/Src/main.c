@@ -11,6 +11,7 @@
 #include "PPP.h"
 #include "dartt.h"
 #include "dartt_mctl_params.h"
+#include "adc.h"
 
 static volatile int16_fmt_t uart_encoder_data = {0};
 
@@ -80,13 +81,23 @@ void dartt_openloop_test(void)
 
 void dartt_autocalibrate(void)
 {
-	if(gl_dp.auto_calibrate_align_offset)
+	if(gl_dp.auto_calibrate_command != NO_ACTION)
 	{
-		auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
-		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-		gl_dp.auto_calibrate_align_offset = 0;
+		if(gl_dp.auto_calibrate_command == AUTO_CALIBRATE)
+		{
+			auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
+			m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		}
+		else if(gl_dp.auto_calibrate_command == GET_CURRENSENSOR_ZEROPOINT)
+		{
+			get_currensensor_zeropoint();
+			m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		}
+
+		gl_dp.auto_calibrate_command = NO_ACTION;
 	}
 }
+
 payload_layer_msg_t gl_can_rx_pld_msg = {};
 
 //rx alias buffer
@@ -148,6 +159,9 @@ int main(void)
 
 	TIMER_UPDATE_DUTY(1773,1773,1773);
 	TIM1->CCR4 = TIM1->ARR-1;	//for 7_5, you have about 8uS of sampling.you want to catch the current waveform right at the middle
+
+	check_currentsensor_calibration();	//automatically load current sensor values if uninitialized. Should be called after pwm initialization. Runs only once - then save to flash
+
 	/*
 	 *	Rembember!!!!!
 	 *	1. OPTION BYTES disable boot0 pin or everything will appear fucked up even though it's fine
@@ -157,10 +171,9 @@ int main(void)
 	 *	3.2 Plug best guess FOC control gains into relevant entries
 	 *	4. use autocal to cal IFF 3 is good. Live expressions are your friend for this
 	 *	5. check the settings in STM32CubeProgrammer
-	 *	6. profit?
+	 *	6. Verify the current sensor calibration went well. Ideally, calibrate it to an electronic load!
+	 *	7. profit???
 	 */
-
-
 	while(1)
 	{
 

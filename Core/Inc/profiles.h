@@ -67,6 +67,14 @@ typedef struct fds_motor_params_t
 	fixed_PI_params_t iq_pi;
 	fixed_PI_params_t id_pi;
 
+	int32_t phase_a_mid;	//current sensor mid, phase A (0A adc value)
+	int32_t phase_b_mid;	//current sensor mid, phase B
+	int32_t phase_c_mid;	//current sensor mid, phase C
+
+	int32_t phase_a_5Aval;	//raw adc value at 5A, phase A
+	int32_t phase_b_5Aval;	//raw adc value at 5A, phase B
+	int32_t phase_c_5Aval;	//raw adc value at 5A, phase C
+
 }fds_motor_params_t;
 
 

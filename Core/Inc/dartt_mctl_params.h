@@ -12,6 +12,8 @@
 
 typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} control_mode_t;	//foc with velocity?
 
+enum {NO_ACTION = 0, AUTO_CALIBRATE = 1, GET_CURRENSENSOR_ZEROPOINT = 2};	//for auto_calibrate_command
+
 typedef struct dartt_mctl_params_t
 {
 
@@ -41,10 +43,13 @@ typedef struct dartt_mctl_params_t
 
 	fds_motor_params_t fds_mp;
 	int32_t autocalibration_voltage;
+
+	//flag section. consider using only one 32bit word and bit positions for this - current setup is quite wasteful
 	uint32_t load_dartt_flags;	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
 	uint32_t do_open_loop_test;	//commute motor
-	uint32_t auto_calibrate_align_offset;
-	uint32_t update_fs;	//use uint32_t because it'll get padded anyway
+	uint32_t auto_calibrate_command;	//command word. See enum above
+	uint32_t update_fs;	//
+
 	uint32_t tick;	//millisecond tick
 }dartt_mctl_params_t;
 
