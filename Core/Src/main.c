@@ -219,8 +219,11 @@ int main(void)
 				if(m_huart2.tx_buf_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
 				{
 					m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
-					cobs_encode_single_buffer(&m_huart2.tx_mem);
-					m_uart_dma_transmit(&m_huart2);
+					rc = cobs_encode_single_buffer(&m_huart2.tx_mem);
+					if(rc == COBS_SUCCESS)
+					{
+						m_uart_dma_transmit(&m_huart2);
+					}
 				}
 			}
 			m_huart2.rx_decoded.length = 0;
