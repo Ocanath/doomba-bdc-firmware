@@ -39,7 +39,7 @@ uint32_t				can_tx_mailbox;
 /*
  * Generic can buffer send function
  * */
-int send_fdcan_frame(uint16_t id, buffer_t * buffer)
+int send_fdcan_frame(uint16_t id, dartt_buffer_t * buffer)
 {
 	can_tx_header.Identifier = id;
 	if(buffer->len > 0 && buffer->len <= 8)

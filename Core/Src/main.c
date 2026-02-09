@@ -101,7 +101,7 @@ void dartt_autocalibrate(void)
 payload_layer_msg_t gl_can_rx_pld_msg = {};
 
 //rx alias buffer
-buffer_t can_rx_alias =
+dartt_buffer_t can_rx_alias =
 {
 		.buf = &can_rx_data.u8[0],
 		.size = sizeof(can_rx_data),
@@ -109,7 +109,7 @@ buffer_t can_rx_alias =
 };
 
 //tx alias buffer
-buffer_t can_tx_alias =
+dartt_buffer_t can_tx_alias =
 {
 		.buf = &can_tx_data.u8[0],
 		.size = sizeof(can_rx_data),
@@ -117,7 +117,7 @@ buffer_t can_tx_alias =
 };
 
 //dartt params buffer alias
-buffer_t gl_dp_alias =
+dartt_buffer_t gl_dp_alias =
 {
 		.buf = (unsigned char *)(&gl_dp),
 		.size = sizeof(gl_dp),

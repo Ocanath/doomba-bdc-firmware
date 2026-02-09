@@ -29,12 +29,12 @@ typedef struct uart_it_t
 	cobs_buf_t rx_mem;	//raw data buffer, encoded
 	cobs_buf_t rx_decoded;	//cobs unstuffed - decoded buffer
 
-	buffer_t rx_decode_alias;	//dartt buffer alias for decoded buffer
+	dartt_buffer_t rx_decode_alias;	//dartt buffer alias for decoded buffer
 	payload_layer_msg_t rx_pld_msg;	//dartt helper structure
 
 
 	cobs_buf_t tx_mem;	//raw data buffer - encoded
-	buffer_t tx_buf_alias;	//dartt data buffer - unencoded. encoding invalidates this buffer due to referring to the same memory, so be sure to invalidate by setting this len=0 after an encode.
+	dartt_buffer_t tx_buf_alias;	//dartt data buffer - unencoded. encoding invalidates this buffer due to referring to the same memory, so be sure to invalidate by setting this len=0 after an encode.
 }uart_it_t;
 
 
