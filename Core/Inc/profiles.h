@@ -53,7 +53,10 @@ typedef struct fds_motor_params_t
 	/*Properties of the motor which have to be measured and differ for each instance*/
 	int32_t align_offset_fixed;
 	int32_t is_flipped;	//misc 1-5 are encoder related, and obsolete. they do not apply when AMS encoder is used
-	u32_fmt_t misc2;
+	uint8_t startup_control_mode;
+	uint8_t unused1;
+	uint8_t unused2;
+	uint8_t unused3;
 	u32_fmt_t misc3;
 	u32_fmt_t misc4;
 	u32_fmt_t misc5;

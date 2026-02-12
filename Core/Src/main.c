@@ -142,6 +142,7 @@ int main(void)
 
 	load_flash_params();
 	check_idpi_xdiv_param();
+	gl_dp.control_mode = gl_dp.fds_mp.startup_control_mode;
 
 	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
 	set_encoder_read_type(READ_ANGLECOM);

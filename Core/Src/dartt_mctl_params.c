@@ -71,7 +71,10 @@ dartt_mctl_params_t gl_dp =
 
 				/*These are not hand obtained ever, so no commands for them*/
 				.is_flipped = 1,
-				.misc2 = {{0}},
+				.startup_control_mode = PCTL_VQ,
+				.unused1 = 0,
+				.unused2 = 0,
+				.unused3 = 0,
 				.misc3 = {{0}},
 				.misc4 = {{0}},
 				.misc5 = {{0}},
