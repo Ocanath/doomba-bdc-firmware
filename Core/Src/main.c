@@ -117,11 +117,10 @@ dartt_buffer_t can_tx_alias =
 };
 
 //dartt params buffer alias
-dartt_buffer_t gl_dp_alias =
+dartt_mem_t gl_dp_alias =
 {
 		.buf = (unsigned char *)(&gl_dp),
 		.size = sizeof(gl_dp),
-		.len = 0
 };
 
 int main(void)

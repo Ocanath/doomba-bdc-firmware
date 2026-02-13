@@ -79,7 +79,7 @@ int send_fdcan_frame(uint16_t id, dartt_buffer_t * buffer)
 	}
 	else
 	{
-		return ERROR_INVALID_ARGUMENT;
+		return DARTT_ERROR_INVALID_ARGUMENT;
 	}
 
 	HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, buffer->buf);
