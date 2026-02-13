@@ -57,7 +57,7 @@ dartt_mctl_params_t gl_dp =
 		.open_loop_vq = 0,
 		.open_loop_vd = 100,
 
-		.en_blink_led = 0,
+		.restart = 0,
 		.use_uart_encoder = 0,
 		.control_mode = PCTL_VQ,
 		.led_state = 0,

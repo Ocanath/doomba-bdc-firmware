@@ -54,6 +54,15 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 }
 
+void dartt_handle_restart_request(void)
+{
+	if(gl_dp.restart != 0)
+	{
+		NVIC_SystemReset();
+		gl_dp.restart = 0;	//this does not execute - unless restart fails somehow.
+	}
+}
+
 void dartt_handle_fs_update_request(void)
 {
 	if(gl_dp.update_fs != 0)
@@ -292,6 +301,7 @@ int main(void)
 			dartt_handle_fs_update_request();
 			dartt_openloop_test();
 			dartt_autocalibrate();
+			dartt_handle_restart_request();
 			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, gl_dp.led_state);
 		}
 

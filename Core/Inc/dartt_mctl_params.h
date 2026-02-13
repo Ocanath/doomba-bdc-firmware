@@ -36,7 +36,7 @@ typedef struct dartt_mctl_params_t
 	int32_t open_loop_vq;
 	int32_t open_loop_vd;
 
-	uint8_t en_blink_led;
+	uint8_t restart;
 	uint8_t use_uart_encoder;
 	uint8_t control_mode;
 	uint8_t led_state;
