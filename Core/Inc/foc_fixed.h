@@ -27,13 +27,7 @@ extern const int32_t overflow_val;
 		TIM1->CCR3 = duty3; \
 		TIM1->CR1 &= ~TIM_CR1_UDIS;
 
-typedef struct unwrap_state_t
-{
-	int32_t two_pi_representation;
-	int32_t unwrapped_angle;
-	int32_t prev_theta_wrapped;
-	int32_t ovfl_cnt;
-}unwrap_state_t;
+
 
 /*clarke, park, inverse park, inverse clarke (svm)*/
 void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta);
@@ -45,7 +39,6 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in);
 void foc_fixed(int32_t iq_targ, int32_t id_targ);
 void get_current_cal_offsets(void);
 int32_t saturate(int32_t v, int32_t sat);
-int32_t unwrap_angle_32b_overflow(int32_t theta, unwrap_state_t * st);
 void get_dtheta(void);
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p);
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd);

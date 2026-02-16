@@ -5,8 +5,6 @@
 #include "m_dma_uart.h"
 #include "PPP.h"
 
-#define MAX_INT32 	0x7FFFFFFF
-#define MIN_INT32	-0x80000000
 
 
 /*Some constants for FOC math*/
@@ -547,50 +545,6 @@ int32_t saturate(int32_t v, int32_t sat)
 	if(v < -sat)
 		return -sat;
 	return v;
-}
-
-/*
- *
- * */
-int32_t check_overflow32(int32_t a, int32_t b)
-{
-
-	if(a > 0)
-	{
-		int32_t upperbound = (MAX_INT32 - a);
-		if(b > upperbound)
-		{
-			return 1;
-		}
-		else
-			return 0;
-	}
-	else if (a < 0)
-	{
-		int32_t lowerbound = (MIN_INT32 - a);
-		if(b < lowerbound)
-		{
-			return -1;
-		}
-		else
-			return 0;
-	}
-	else
-		return 0;
-}
-
-/*
- *
- * */
-int32_t unwrap_angle_32b_overflow(int32_t theta, unwrap_state_t * st)
-{
-	int32_t dif_wrapped = wrap_2pi_fixed(theta - st->prev_theta_wrapped, st->two_pi_representation);
-	st->prev_theta_wrapped = theta;
-	int32_t ovfl = check_overflow32(st->unwrapped_angle, dif_wrapped);
-	st->unwrapped_angle += dif_wrapped;
-	st->ovfl_cnt += ovfl;
-
-	return st->unwrapped_angle;
 }
 
 
