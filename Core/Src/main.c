@@ -21,7 +21,11 @@ static volatile int32_t iq_pctl = 0;
 
 uint8_t gl_save_flag = 0;		//static volatile?
 
-
+/*
+ * TODO:
+ * 1. Offset command (flag based?) - should set theta_rem_m to zero and also clear the prev_theta_m variable
+ * 2. uart baudrate as a fds setting
+ */
 
 void start_pwm(void)
 {
@@ -142,15 +146,17 @@ int main(void)
 	MX_ADC1_Init();
 	MX_FDCAN1_Init();
 	MX_TIM1_Init();
+
+	load_flash_params();
+	check_idpi_xdiv_param();
+	gl_dp.control_mode = gl_dp.fds_mp.startup_control_mode;
+
 	MX_USART2_UART_Init();
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
 	FDCAN_Config();
 
-	load_flash_params();
-	check_idpi_xdiv_param();
-	gl_dp.control_mode = gl_dp.fds_mp.startup_control_mode;
 
 	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
 	set_encoder_read_type(READ_ANGLECOM);

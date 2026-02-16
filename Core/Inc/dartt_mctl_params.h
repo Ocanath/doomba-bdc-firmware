@@ -51,6 +51,7 @@ typedef struct dartt_mctl_params_t
 	uint32_t update_fs;	//
 
 	uint32_t tick;	//millisecond tick
+	int32_t prev_theta_m;	//used for both unwrapping and angle offset correction/zeroing
 }dartt_mctl_params_t;
 
 extern dartt_mctl_params_t gl_dp;

@@ -71,13 +71,26 @@ const float gl_prop_delay_const = 900.f;
  * */
 void load_flash_params(void)
 {
+	//loading
 	if(is_page_empty(sizeof(fds_mp)/sizeof(uint32_t)) == 0)
+	{
 		m_read_flash((uint32_t*)fds_mp,sizeof(fds_motor_params_t)/sizeof(uint32_t));
+	}
 	else
+	{
 		m_write_flash((uint64_t*)fds_mp,sizeof(fds_motor_params_t)/sizeof(uint64_t));
+	}
+
+	//sanitize variables and flags
 	gl_ext_cmd_id = (0x7FF - fds_mp->module_number);	//load this ONCE on startup
 	if(fds_mp->is_flipped != 0)
+	{
 		fds_mp->is_flipped = 1;	//sanitize flag
+	}
+	if(gl_dp.fds_mp.baudrate == 0xFFFFFFFF || gl_dp.fds_mp.baudrate == 0)	//sanitize baudrate
+	{
+		gl_dp.fds_mp.baudrate = 921600;	//proper default - handle for uninitialized
+	}
 }
 
 

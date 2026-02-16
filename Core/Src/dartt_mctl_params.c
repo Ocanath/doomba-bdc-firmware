@@ -75,7 +75,7 @@ dartt_mctl_params_t gl_dp =
 				.unused1 = 0,
 				.unused2 = 0,
 				.unused3 = 0,
-				.misc3 = {{0}},
+				.baudrate = 921600,
 				.misc4 = {{0}},
 				.misc5 = {{0}},
 

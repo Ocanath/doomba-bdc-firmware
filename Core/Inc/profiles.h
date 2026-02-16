@@ -57,7 +57,7 @@ typedef struct fds_motor_params_t
 	uint8_t unused1;
 	uint8_t unused2;
 	uint8_t unused3;
-	u32_fmt_t misc3;
+	uint32_t baudrate;
 	u32_fmt_t misc4;
 	u32_fmt_t misc5;
 
