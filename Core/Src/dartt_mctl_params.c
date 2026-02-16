@@ -14,7 +14,6 @@ dartt_mctl_params_t gl_dp =
 		.theta_rem_m = 0,	//position 32bit in 14bit ticks
 		.iq = 0,	//q axis current
 		.dtheta_fixedpoint_rad_p_sec = 0,	//velocity in fixedpoint rad/sec
-		.ovfl_cnt = 0,
 		.id = 0,	//d axis current
 		.ia = 0,	//phase current a
 		.ib = 0,	//phase current b
@@ -118,5 +117,7 @@ dartt_mctl_params_t gl_dp =
 		},
 		.autocalibration_voltage = 500,
 		.load_action = 0,
-		.action_flag = 0
+		.action_flag = 0,
+		.unwrap_state = {0},
+		.tick = 0
 };

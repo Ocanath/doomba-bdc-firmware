@@ -97,10 +97,10 @@ int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist)
 {
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
 		sinusoidal_fixed(v,0);	//todo: replace this with a voltage control mode call
-	int64_t run_start = (int64_t)gl_dp.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
+	int64_t run_start = (int64_t)gl_dp.unwrap_state.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
 		sinusoidal_fixed(v,0);
-	int64_t run_end = (int64_t)gl_dp.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
+	int64_t run_end = (int64_t)gl_dp.unwrap_state.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
 	*dist = run_end-run_start;

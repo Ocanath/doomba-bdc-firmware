@@ -110,4 +110,25 @@ void test_unwrap(void)
 	TEST_ASSERT_NOT_EQUAL(theta, st.unwrapped_angle);
 	TEST_ASSERT_EQUAL(i+1000, st.unwrapped_angle);
 
+
+}
+
+void test_unwrap_recovery(void)
+{
+	unwrap_state_t st = {
+		.ovfl_cnt = 0,
+		.prev_theta_wrapped = 0,
+		.unwrapped_angle = 0
+	};
+	int32_t angle_start = 0x7FFFFFFF;
+	st.unwrapped_angle = angle_start;
+	st.prev_theta_wrapped = 10;
+	int32_t offset = -20;
+	int32_t angle_offsetted = unwrap_angle_32b_overflow(20, TWO_PI_14B, &st) - offset;
+
+	int64_t angle_recovered = ((int64_t)st.ovfl_cnt)*(0x100000000LL) + (int64_t)angle_offsetted;
+	int64_t angle_recovered_2 = ((int64_t)st.ovfl_cnt)*(0x100000000LL) + (int64_t)st.unwrapped_angle - (int64_t)offset;
+
+	TEST_ASSERT_EQUAL_INT64(2147483677, angle_recovered);
+	TEST_ASSERT_EQUAL_INT64(2147483677, angle_recovered_2);
 }

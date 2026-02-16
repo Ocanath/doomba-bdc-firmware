@@ -18,8 +18,8 @@
 typedef struct unwrap_state_t
 {
 	int32_t unwrapped_angle;
-	int32_t prev_theta_wrapped;
 	int32_t ovfl_cnt;
+	int32_t prev_theta_wrapped;
 }unwrap_state_t;
 
 int32_t atan2_12b(int32_t y, int32_t x);
