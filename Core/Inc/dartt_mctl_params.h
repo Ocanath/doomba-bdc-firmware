@@ -19,15 +19,16 @@ typedef struct dartt_mctl_params_t
 
 	int32_t command_word;
 
-	//new - feedback terms
+	//new - feedback terms, in order of likely importance to the control
 	int32_t theta_rem_m;	//position 32bit in 14bit ticks
 	int32_t iq;	//q axis current
 	int32_t dtheta_fixedpoint_rad_p_sec;	//velocity in fixedpoint rad/sec
+	int32_t ovfl_cnt;	//overflow counter
 	int32_t id;	//d axis current
-	int32_t theta_rotations;	//overflow counter? idr
 	int32_t ia;	//phase current a
 	int32_t ib;	//phase current b
 	int32_t ic; //phase current c
+	int32_t theta_offset;	//global offset applied to the rotor position
 
 	pctl_params_t mctl_iq;
 	pctl_params_t mctl_vq;
@@ -51,7 +52,6 @@ typedef struct dartt_mctl_params_t
 	uint32_t update_fs;	//
 
 	uint32_t tick;	//millisecond tick
-	int32_t prev_theta_m;	//used for both unwrapping and angle offset correction/zeroing
 }dartt_mctl_params_t;
 
 extern dartt_mctl_params_t gl_dp;

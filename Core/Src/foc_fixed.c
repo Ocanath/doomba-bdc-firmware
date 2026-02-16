@@ -37,6 +37,14 @@ int32_t gl_x_iqpi = 0;	//x for iq pi controller
 int32_t gl_x_idpi = 0;	//x for id pi controller
 
 
+/*Previous Theta for position estimator.*/
+static unwrap_state_t unwrap_state = {
+		.two_pi_representation = TWO_PI_14B,
+		.unwrapped_angle = 0,
+		.prev_theta_wrapped = 0,
+		.ovfl_cnt = 0
+};
+
 /*This function estimates velocity. It executes
  * synchronously with the estimation of rotor angles,
  * periodically with counter logic. The periodicity
@@ -98,7 +106,8 @@ int32_t ctl_PI_fixed_3(int32_t error, fixed_PI_params_t * p, int32_t * x)
 int32_t get_theta_m(void)
 {
 	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &gl_dp.prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &unwrap_state) - gl_dp.theta_offset;
+	gl_dp.ovfl_cnt = unwrap_state.ovfl_cnt;
 	return gl_dp.theta_rem_m;
 }
 
@@ -111,7 +120,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &gl_dp.prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &unwrap_state) - gl_dp.theta_offset;
+	gl_dp.ovfl_cnt = unwrap_state.ovfl_cnt;
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
@@ -165,7 +175,8 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &gl_dp.prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &unwrap_state) - gl_dp.theta_offset;
+	gl_dp.ovfl_cnt = unwrap_state.ovfl_cnt;
 
 
 	int32_t iq_meas, id_meas;
@@ -279,7 +290,8 @@ void voltage_3rd_harmonic(int32_t mag)
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &gl_dp.prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &unwrap_state) - gl_dp.theta_offset;
+	gl_dp.ovfl_cnt = unwrap_state.ovfl_cnt;
 
 	int32_t tA,tB,tC;
 	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
@@ -302,7 +314,8 @@ void volage_pure_sinusoidal(int32_t m)
 	int32_t theta_m = theta_rel_12b();	//atan2, apply align offset
 	int32_t theta_elec = wrap_2pi_12b(theta_m * fds_mp->elec_conv_ratio_fixed + phase_adv_12b);
 
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &gl_dp.prev_theta_m, TWO_PI_14B, &gl_dp.theta_rotations);
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &unwrap_state) - gl_dp.theta_offset;
+	gl_dp.ovfl_cnt = unwrap_state.ovfl_cnt;
 
 	int32_t theta2 = wrap_2pi_12b(theta_elec+pi_by_3);
 	int32_t theta3 = wrap_2pi_12b(theta_elec+two_pi_by_3);
@@ -569,22 +582,15 @@ int32_t check_overflow32(int32_t a, int32_t b)
 /*
  *
  * */
-int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t * ovfl_cnt)
+int32_t unwrap_angle_32b_overflow(int32_t theta, unwrap_state_t * st)
 {
-	int ovfl = check_overflow32(theta, -*prev_theta);
-	if(ovfl < 0)
-	{
-		*prev_theta = *prev_theta - ovfl*two_pi_fixed/2;
-	}
-	else
-	{
-		*prev_theta = *prev_theta - ovfl*two_pi_fixed;
-	}
-	*ovfl_cnt -= ovfl;
-	int32_t dif_wrapped = wrap_2pi_fixed(theta - *prev_theta, two_pi_fixed);
-	int32_t unwrapped = *prev_theta + dif_wrapped;
-	*prev_theta = unwrapped;
-	return unwrapped;
+	int32_t dif_wrapped = wrap_2pi_fixed(theta - st->prev_theta_wrapped, st->two_pi_representation);
+	st->prev_theta_wrapped = theta;
+	int32_t ovfl = check_overflow32(st->unwrapped_angle, dif_wrapped);
+	st->unwrapped_angle += dif_wrapped;
+	st->ovfl_cnt += ovfl;
+
+	return st->unwrapped_angle;
 }
 
 

@@ -97,10 +97,10 @@ int32_t run_v_fixed(int32_t v, uint32_t run_time, int64_t * dist)
 {
 	for(uint32_t stop_ts = HAL_GetTick() + 100; HAL_GetTick()<stop_ts;)	//initial run for SS
 		sinusoidal_fixed(v,0);	//todo: replace this with a voltage control mode call
-	int64_t run_start = gl_dp.theta_rotations*PI_12B + gl_dp.theta_rem_m;
+	int64_t run_start = (int64_t)gl_dp.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
 	for(uint32_t stop_ts = HAL_GetTick() + run_time; HAL_GetTick()<stop_ts;)	//the run
 		sinusoidal_fixed(v,0);
-	int64_t run_end = gl_dp.theta_rotations*TWO_PI_12B + gl_dp.theta_rem_m;
+	int64_t run_end = (int64_t)gl_dp.ovfl_cnt*(0x100000000LL) + (int64_t)gl_dp.theta_rem_m;
 	TIMER_UPDATE_DUTY(0,0,0);
 	HAL_Delay(50);
 	*dist = run_end-run_start;
@@ -119,16 +119,21 @@ int32_t get_elec_conversion_ratio(void)
 	int32_t sth = sin_12b(theta_elec);
 	int32_t cth = cos_12b(theta_elec);
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
+	inverse_park_fixed(0,300,sth,cth,&alpha,&beta, 12);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	HAL_Delay(100);
 
 	int32_t theta_m_start = theta_rel_12b();
 	uint8_t one_m_rev = 0;
-	int32_t prev_theta_m = 0;
 
 	uint32_t start_tick = HAL_GetTick();
+	unwrap_state_t state = {
+			.two_pi_representation = TWO_PI_12B,
+			.unwrapped_angle = 0,
+			.prev_theta_wrapped = 0,
+			.ovfl_cnt = 0
+	};
 	while(one_m_rev == 0)
 	{
 		theta = (HAL_GetTick() - start_tick) * 50;
@@ -136,14 +141,14 @@ int32_t get_elec_conversion_ratio(void)
 		theta_elec = wrap_2pi_12b(theta);
 		sth = sin_12b(theta_elec);
 		cth = cos_12b(theta_elec);
-		inverse_park_fixed(300,0,sth,cth,&alpha,&beta, 12);
+		inverse_park_fixed(0,300,sth,cth,&alpha,&beta, 12);
 		svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
-		gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, &prev_theta_m, TWO_PI_12B, &gl_dp.theta_rotations);
+		unwrap_angle_32b_overflow(theta_m, &state);
 
-		if(gl_dp.theta_rem_m >= TWO_PI_12B+10)
+		if(state.unwrapped_angle >= TWO_PI_12B+10)
 		{
 			one_m_rev = 1;
 		}
