@@ -57,7 +57,7 @@ dartt_mctl_params_t gl_dp =
 		.open_loop_vq = 0,
 		.open_loop_vd = 100,
 
-		.restart = 0,
+		.unused_1 = 0,
 		.use_uart_encoder = 0,
 		.control_mode = PCTL_VQ,
 		.led_state = 0,
@@ -117,8 +117,6 @@ dartt_mctl_params_t gl_dp =
 				.phase_c_mid = 0
 		},
 		.autocalibration_voltage = 500,
-		.load_dartt_flags = 0,	//when in main loop, set to trigger a scan of all dartt flags. Wrapper to save compute in commutation for excess flag handling
-		.do_open_loop_test = 0,	//commute motor
-		.auto_calibrate_command = 0,
-		.update_fs = 0
+		.load_action = 0,
+		.action_flag = 0
 };

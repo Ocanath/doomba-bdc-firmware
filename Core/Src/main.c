@@ -51,6 +51,8 @@ void stop_pwm(void)
 }
 
 
+enum {NO_ACTION = 0, UPDATE_FS = 1, RESTART = 2, OPENLOOP_INVERTER_TEST = 3, AUTOCALIBRATE_ALIGN_OFFSET = 4, GET_CURRENTSENSOR_ZEROPOINT = 5};
+
 /**
  */
 void m_uart_rx_cplt_callback(uart_it_t * h)
@@ -60,26 +62,26 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 void dartt_handle_restart_request(void)
 {
-	if(gl_dp.restart != 0)
+	if(gl_dp.action_flag == RESTART)
 	{
 		NVIC_SystemReset();
-		gl_dp.restart = 0;	//this does not execute - unless restart fails somehow.
+		gl_dp.action_flag = NO_ACTION;	//this does not execute - unless restart fails somehow.
 	}
 }
 
 void dartt_handle_fs_update_request(void)
 {
-	if(gl_dp.update_fs != 0)
+	if(gl_dp.action_flag == UPDATE_FS)
 	{
 		TIMER_UPDATE_DUTY(500,500,500);
 		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-		gl_dp.update_fs = 0;
+		gl_dp.action_flag = NO_ACTION;
 	}
 }
 
 void dartt_openloop_test(void)
 {
-	if(gl_dp.do_open_loop_test)
+	if(gl_dp.action_flag == OPENLOOP_INVERTER_TEST)
 	{
 		uint32_t angle = 0;
 		uint32_t exp_ts = HAL_GetTick();
@@ -88,27 +90,25 @@ void dartt_openloop_test(void)
 			angle++;
 			openloop_fixed(angle, 0, gl_dp.open_loop_vd);	//NOTE: use vd. lock to vd gives approximate align offset.
 		}
-		gl_dp.do_open_loop_test = 0;
+		gl_dp.action_flag = NO_ACTION;
 	}
 }
 
 void dartt_autocalibrate(void)
 {
-	if(gl_dp.auto_calibrate_command != NO_ACTION)
+	if(gl_dp.action_flag == AUTOCALIBRATE_ALIGN_OFFSET)
 	{
-		if(gl_dp.auto_calibrate_command == AUTO_CALIBRATE)
-		{
-			auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
-			m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-		}
-		else if(gl_dp.auto_calibrate_command == GET_CURRENSENSOR_ZEROPOINT)
-		{
-			get_currensensor_zeropoint();
-			m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
-		}
-
-		gl_dp.auto_calibrate_command = NO_ACTION;
+		auto_calibrate_motor(gl_dp.autocalibration_voltage, 700, 7.f,.001);
+		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		gl_dp.action_flag = NO_ACTION;
 	}
+	else if(gl_dp.action_flag == GET_CURRENTSENSOR_ZEROPOINT)
+	{
+		get_currensensor_zeropoint();
+		m_write_flash((uint64_t*)fds_mp, sizeof(fds_motor_params_t)/sizeof(uint64_t));
+		gl_dp.action_flag = NO_ACTION;
+	}
+
 }
 
 payload_layer_msg_t gl_can_rx_pld_msg = {};
@@ -300,24 +300,28 @@ int main(void)
 				}
 			}
 		}
-		if(gl_dp.load_dartt_flags)	//wrapper to all flag handlers for slow or blocking ops. also a double guard for filesystem - you can write
+		if(gl_dp.load_action != NO_ACTION)	//wrapper to all flag handlers for slow or blocking ops. also a double guard for filesystem - you can write
 		{
-			gl_dp.load_dartt_flags = 0;
-
-			dartt_handle_fs_update_request();
-			dartt_openloop_test();
-			dartt_autocalibrate();
-			dartt_handle_restart_request();
+			/*DARTT accidental destruction prevention:
+			 * To do an action that is potentially destructive,
+			 * such as restarting the device or saving the filesystem,
+			 * you have to write these two consectutive addresses in REVERSE ORDER
+			 * First, write action flag with the action
+			 * Then, write the load action with the same.
+			 * Only then will the action execute.
+			 * */
+			if(gl_dp.action_flag == gl_dp.load_action)	//double-ratchet - must set two ident flags, in reverse order
+			{
+				dartt_handle_fs_update_request();
+				dartt_openloop_test();
+				dartt_autocalibrate();
+				dartt_handle_restart_request();
+			}
 			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, gl_dp.led_state);
+			gl_dp.load_action = NO_ACTION;
 		}
 
-
 		get_dtheta();
-		//		if(tick-led_ts > 500)
-		//		{
-		//			HAL_GPIO_TogglePin(LED_GPIO_Port,LED_Pin);
-		//			led_ts = tick;
-		//		}
 	}
 }
 

@@ -100,9 +100,9 @@
     - +:test/**
     - -:test/support
   :source:
-    - src/**
+    - Core/Src/**
   :include:
-    - src/** # In simple projects, this entry often duplicates :source
+    - Core/Inc/** # In simple projects, this entry often duplicates :source
   :support:
     - test/support
   :libraries: []
@@ -200,7 +200,9 @@
 # Configuration options specific to Unity. 
 :unity:
   :defines:
-    - UNITY_EXCLUDE_FLOAT
+    # - UNITY_EXCLUDE_FLOAT
+
+    
 
 # You can optionally have ceedling create environment variables for you before
 # performing the rest of its tasks.
