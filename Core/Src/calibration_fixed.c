@@ -129,7 +129,6 @@ int32_t get_elec_conversion_ratio(void)
 
 	uint32_t start_tick = HAL_GetTick();
 	unwrap_state_t state = {
-			.two_pi_representation = TWO_PI_12B,
 			.unwrapped_angle = 0,
 			.prev_theta_wrapped = 0,
 			.ovfl_cnt = 0
@@ -146,7 +145,7 @@ int32_t get_elec_conversion_ratio(void)
 		TIMER_UPDATE_DUTY(tA,tB,tC);
 
 		int32_t theta_m = theta_rel_12b() - theta_m_start;	//atan2, apply align offset
-		unwrap_angle_32b_overflow(theta_m, &state);
+		unwrap_angle_32b_overflow(theta_m, TWO_PI_12B, &state);
 
 		if(state.unwrapped_angle >= TWO_PI_12B+10)
 		{

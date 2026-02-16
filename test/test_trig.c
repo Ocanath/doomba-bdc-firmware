@@ -12,8 +12,10 @@ void test_wrap(void)
 	int32_t b = wrap_2pi_fixed(a + tv, TWO_PI_14B);
 	TEST_ASSERT_EQUAL(-PI_14B + tv, b);
 
-	tv = 12355566;
-	TEST_ASSERT_EQUAL(wrap_2pi_fixed(12355566, TWO_PI_14B), wrap_2pi_12b(tv));
+	tv = TWO_PI_14B+10;
+	TEST_ASSERT_EQUAL(wrap_2pi_fixed(tv, TWO_PI_14B), wrap_2pi_14b(tv));
+
+	TEST_ASSERT_EQUAL(wrap_2pi_fixed(tv, TWO_PI_12B), wrap_2pi_12b(tv));
 }
 
 void test_sin14b(void)
@@ -68,32 +70,44 @@ void test_unwrap(void)
 	unwrap_state_t st = {
 		.ovfl_cnt = 0,
 		.prev_theta_wrapped = 0,
-		.two_pi_representation = TWO_PI_14B,
 		.unwrapped_angle = 0
 	};
 	st.unwrapped_angle = 0x7FFFFFFF;
 	int32_t theta = 1;
-	unwrap_angle_32b_overflow(theta, &st);
+	unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);
 	TEST_ASSERT_EQUAL(1, st.ovfl_cnt);
 
 	theta = 0;
-	unwrap_angle_32b_overflow(theta, &st);
+	unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);
 	TEST_ASSERT_EQUAL(0, st.ovfl_cnt);
 
 	st.unwrapped_angle = -0x7FFFFFFF;	//because it is signed, 0x80000000 is max negative, and 0x7FFFFFFF is max positive. 
 	theta = -1;
-	unwrap_angle_32b_overflow(theta, &st);	//first decrement gets us to max negative
+	unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);	//first decrement gets us to max negative
 	TEST_ASSERT_EQUAL(0, st.ovfl_cnt);
 	theta = -2;								//we have to decrease theta further to decrement to the overflow case
-	unwrap_angle_32b_overflow(theta, &st);	
+	unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);	
 	TEST_ASSERT_EQUAL(-1, st.ovfl_cnt);
 	
 
-
 	st.prev_theta_wrapped = 0;
 	st.unwrapped_angle = 0;
-	for(int i = 0; i < TWO_PI_14B; i++)
+	st.ovfl_cnt = 0;
+	int32_t i;
+	for(i = 20; i < TWO_PI_14B*6; i++)
 	{
-		
+		theta = wrap_2pi_14b(i);
+		unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);
 	}
+	TEST_ASSERT_NOT_EQUAL(theta, st.unwrapped_angle);
+	TEST_ASSERT_EQUAL(i-1, st.unwrapped_angle);
+
+	for(; i > -TWO_PI_14B*6; i-= 1000)
+	{
+		theta = wrap_2pi_14b(i);
+		unwrap_angle_32b_overflow(theta, TWO_PI_14B, &st);
+	}
+	TEST_ASSERT_NOT_EQUAL(theta, st.unwrapped_angle);
+	TEST_ASSERT_EQUAL(i+1000, st.unwrapped_angle);
+
 }

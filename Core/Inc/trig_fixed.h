@@ -17,7 +17,6 @@
 
 typedef struct unwrap_state_t
 {
-	int32_t two_pi_representation;
 	int32_t unwrapped_angle;
 	int32_t prev_theta_wrapped;
 	int32_t ovfl_cnt;
@@ -32,7 +31,7 @@ int32_t cos_14b(int32_t theta);
 int32_t wrap_2pi_12b(int32_t in);
 int32_t wrap_2pi_14b(int32_t in);
 int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed);
-int32_t unwrap_angle_32b_overflow(int32_t theta, unwrap_state_t * st);
+int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t two_pi_fixed, unwrap_state_t * st);
 int32_t sqrt_i32(int32_t v);
 int64_t sqrt_i64(int64_t v);
 

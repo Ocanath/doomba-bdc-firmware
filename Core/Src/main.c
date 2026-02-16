@@ -309,6 +309,8 @@ int main(void)
 			 * First, write action flag with the action
 			 * Then, write the load action with the same.
 			 * Only then will the action execute.
+			 *
+			 * This cleans up the growing flag list in the dp section, while retaining the zero comparison logic, making new actions easier to add, and 'are you sure you want to do this' validation checks.
 			 * */
 			if(gl_dp.action_flag == gl_dp.load_action)	//double-ratchet - must set two ident flags, in reverse order
 			{
