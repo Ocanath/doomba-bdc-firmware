@@ -26,7 +26,6 @@ typedef struct dartt_mctl_params_t
 	int32_t ia;	//phase current a
 	int32_t ib;	//phase current b
 	int32_t ic; //phase current c
-	int32_t theta_offset;	//global offset applied to the rotor position
 
 	pctl_params_t mctl_iq;
 	pctl_params_t mctl_vq;
@@ -48,6 +47,7 @@ typedef struct dartt_mctl_params_t
 	uint32_t action_flag;	//commute motor
 
 	unwrap_state_t unwrap_state;
+	int32_t theta_offset;	//global offset applied to the rotor position
 
 	uint32_t tick;	//millisecond tick
 }dartt_mctl_params_t;
