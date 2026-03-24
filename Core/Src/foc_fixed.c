@@ -1,5 +1,6 @@
 #include <FDCAN.h>
 #include "foc_fixed.h"
+#include "foc_velocity.h"
 #include "mag-encoder.h"
 #include "init.h"
 #include "m_dma_uart.h"
@@ -26,40 +27,13 @@ int32_t curr_scf[3] = {31900, 61860, 151265}; //conversion constants. take true 
 static int32_t phase_adv_12b = 0;
 static int32_t v_12b = 0;
 static int32_t prev_mtheta_12b = 0;
-static uint32_t prev_us_dtheta = 0;	//previous microsecond value - overflow-proof comparison for timer that overflows every 1 hour/11minutes or so
 uint32_t count = 0;
 
 
 /*Shared variables (current, unwrapped theta)*/
-int32_t gl_dtheta_prev_theta = 0;//helper variable for the previous theta used for dtheta calculation
 int32_t gl_x_iqpi = 0;	//x for iq pi controller
 int32_t gl_x_idpi = 0;	//x for id pi controller
 
-
-/*This function estimates velocity. It executes
- * synchronously with the estimation of rotor angles,
- * periodically with counter logic. The periodicity
- * is not guaranteed; i.e. it is pre-empted by
- * the execution of the main loop. This means the
- * period is *at minimum* the period specified.
- *
- * The rationale here is that it's more important
- * to be accurate about time elapsed than to enforce
- * 0 jitter in the estimation period. So we have
- * a jittery estimator period, that is synchronous
- * with rotor position calculation, and a precise
- * value for elapsed time in ms.*/
-void get_dtheta(uint32_t t_us)
-{
-	uint32_t dif = t_us - prev_us_dtheta;	//elapsed time since last calculation
-	if(dif >= VELOCITY_ESTIMATOR_MINIMUM_PERIOD_US)
-	{
-		int32_t dtheta = gl_dp.theta_rem_m - gl_dtheta_prev_theta;
-		gl_dtheta_prev_theta = gl_dp.theta_rem_m;
-		prev_us_dtheta = dif;
-		gl_dp.dtheta_fixedpoint_rad_p_sec = ((dtheta * gl_v_uS_conv) / t_us);
-	}
-}
 
 
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p)

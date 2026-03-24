@@ -1,0 +1,65 @@
+#include "foc_velocity.h"
+#include "dartt_mctl_params.h"
+#include "trig_fixed.h"
+#include "unity.h"
+
+/*
+ * gl_v_uS_conv is normally defined in FDCAN.c (not compiled in this test build).
+ * Value: 1000000 >> (14 - DEFAULT_V_REPORT_RADIX) = 1000000 >> 10 = 976
+ */
+int32_t gl_v_uS_conv = 1000000 >> (14 - 4);
+
+void setUp(void)
+{
+	gl_dp.theta_rem_m = 0;
+	gl_dp.dtheta_fixedpoint_rad_p_sec = 0;
+	gl_dtheta_prev_theta = 0;
+}
+
+void tearDown(void) {}
+
+/*
+ * Test 1 (cold start): one full revolution in 1 second.
+ * prev_us_dtheta = 0 at program start, dif = 1,000,000 >= 1000 -> executes.
+ * Expected: (TWO_PI_14B * 976) / 1,000,000 = (102944 * 976) / 1000000 = 100
+ * True velocity: 2pi rad/s * 2^4 = 100.53 -> truncated to 100.
+ * After this test: prev_us_dtheta = 1,000,000.
+ */
+void test_dtheta_cold_start_formula(void)
+{
+	get_dtheta(0);
+	gl_dp.theta_rem_m = TWO_PI_14B;
+	get_dtheta(1000000);
+	TEST_ASSERT_EQUAL(100, gl_dp.dtheta_fixedpoint_rad_p_sec);
+}
+
+/*
+ * Test 2: elapsed time below minimum period -> output must not update.
+ * prev_us_dtheta = 1,000,000 (from test 1).
+ * t_us = 1,000,500 -> dif = 500 < 1000 -> guard fires, no update.
+ * After this test: prev_us_dtheta still 1,000,000.
+ */
+void test_dtheta_minimum_period_guard(void)
+{
+	get_dtheta(1000000);
+	gl_dp.theta_rem_m = TWO_PI_14B;
+	get_dtheta(1000500);
+	TEST_ASSERT_EQUAL(0, gl_dp.dtheta_fixedpoint_rad_p_sec);
+}
+
+/*
+ * Test 3: backward rotation (negative dtheta).
+ * prev_us_dtheta = 1,000,000 (test 2 did not update it).
+ * t_us = 2,000,000 -> dif = 1,000,000 >= 1000 -> executes.
+ * dtheta = 0 - TWO_PI_14B = -102944
+ * Expected: (-102944 * 976) / 2,000,000 = -50
+ * True velocity: -2pi rad/s * 2^4 / 2 = -50.26 -> truncated to -50.
+ */
+void test_dtheta_negative_velocity(void)
+{
+	get_dtheta(0);
+	gl_dtheta_prev_theta = TWO_PI_14B;
+	gl_dp.theta_rem_m = 0;
+	get_dtheta(2000000);
+	TEST_ASSERT_EQUAL(-50, gl_dp.dtheta_fixedpoint_rad_p_sec);
+}
