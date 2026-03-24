@@ -5,7 +5,7 @@
 #include "init.h"
 #include "m_dma_uart.h"
 #include "PPP.h"
-
+#include "audio.h"
 
 
 /*Some constants for FOC math*/
@@ -85,6 +85,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 	gl_dp.theta_rem_m = (int32_t)((uint32_t)unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - (uint32_t)gl_dp.theta_offset);
 
+	int32_t vq_audio = audio_stream(&gl_dp.audio, TIM2->CNT);
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
@@ -92,7 +93,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_in, vd, sin_val,cos_val,&alpha,&beta, 14);
+	inverse_park_fixed(vq_in + vq_audio, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
@@ -148,7 +149,9 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t vq = ctl_PI_fixed_3(iq_targ -iq_meas, &(fds_mp->iq_pi), &gl_x_iqpi);
 	int32_t vd = ctl_PI_fixed_3(id_targ -id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
-	vq = saturate(vq,MAX_VQ);
+	int32_t vq_audio = audio_stream(&gl_dp.audio, TIM2->CNT);
+
+	vq = saturate(vq + vq_audio, MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
 
 

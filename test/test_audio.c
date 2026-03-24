@@ -1,6 +1,7 @@
 #include "audio.h"
 #include "unity.h"
 #include <math.h>
+#include <stdbool.h>
 
 void test_audio_stream_nulptr(void)
 {
@@ -8,7 +9,7 @@ void test_audio_stream_nulptr(void)
 	TEST_ASSERT_EQUAL(0, v);
 }
 
-void test_audio_stream_overrun_overflow(void)
+void test_audio_stream_overrun(void)
 {
 	audio_renderer_t a = {};
 	a.retransmission_us = 25;	//40khz, standard 
@@ -23,6 +24,16 @@ void test_audio_stream_overrun_overflow(void)
 	int32_t v = audio_stream(&a, 0);
 	TEST_ASSERT_EQUAL(0, v);
 
+	a.buffer_pos = 0;
+	for(int us = 0; us < a.retransmission_us * (sizeof(a.recv_buffer)/sizeof(int16_t) + 10); us += 5)
+	{
+		v = audio_stream(&a, us);
+		if(a.buffer_pos >= 64)
+		{
+			TEST_ASSERT_EQUAL(0, v);
+		}
+	}
+	TEST_ASSERT_EQUAL(sizeof(a.recv_buffer)/sizeof(int16_t)-1, a.buffer_pos);
 	
 }
 
@@ -35,10 +46,11 @@ void test_audio_sampling(void)
 		a.recv_buffer[i] = i+1;	
 		TEST_ASSERT_NOT_EQUAL(0, a.recv_buffer[i]);	//must be nonzero or test is confused
 	}
+	audio_stream(&a, 0);
 
 	//sampling - confirm that a new value occurs DIRECTLY on the microsecond edge transition 
 	a.buffer_pos = 0;
-	int32_t v = audio_stream(&a, 0);
+	int32_t v = audio_stream(&a, 10);
 	TEST_ASSERT_EQUAL(1, v);
 	v = audio_stream(&a, 1000);
 	TEST_ASSERT_EQUAL(2, v);
@@ -48,6 +60,15 @@ void test_audio_sampling(void)
 	TEST_ASSERT_EQUAL(2, v);
 	v = audio_stream(&a, 1025);
 	TEST_ASSERT_EQUAL(3, v);
+
+
+	//restart buffer
+	a.buffer_pos = 0;
+	v = audio_stream(&a, 1035);
+	TEST_ASSERT_EQUAL(1, v);
+	v = audio_stream(&a, 1075);
+	TEST_ASSERT_EQUAL(2, v);
+
 
 }
 
