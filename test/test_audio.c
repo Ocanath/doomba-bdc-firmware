@@ -38,13 +38,13 @@ void test_audio_stream_overrun_overflow(void)
 
 
 	//integer overflow test
-	int32_t v1 = audio_stream(&a, 0x80000000-10);
-	int32_t v2 = audio_stream(&a, 0x80000000-10);
+	int32_t v1 = audio_stream(&a, 0xFFFFFFFF-10);
+	int32_t v2 = audio_stream(&a, 0xFFFFFFFF-10);
 	TEST_ASSERT_EQUAL(4, v1);
 	TEST_ASSERT_EQUAL(4, v2);
 	v2 = audio_stream(&a, 10);
 	TEST_ASSERT_EQUAL(4, v2);
-	v2 = audio_stream(&a, 15);
+	v2 = audio_stream(&a, 14);
 	TEST_ASSERT_EQUAL(5, v2);
 	v2 = audio_stream(&a, 16);
 	TEST_ASSERT_EQUAL(5, v2);
