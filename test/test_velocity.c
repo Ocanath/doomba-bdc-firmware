@@ -1,3 +1,4 @@
+#include <math.h>
 #include "foc_velocity.h"
 #include "dartt_mctl_params.h"
 #include "trig_fixed.h"
@@ -28,8 +29,8 @@ void tearDown(void) {}
 void test_dtheta_cold_start_formula(void)
 {
 	get_dtheta(0);
-	gl_dp.theta_rem_m = TWO_PI_14B;
-	get_dtheta(1000000);
+	gl_dp.theta_rem_m = PI_14B/2;
+	get_dtheta(250000);
 	TEST_ASSERT_EQUAL(100, gl_dp.dtheta_fixedpoint_rad_p_sec);
 }
 
@@ -41,9 +42,9 @@ void test_dtheta_cold_start_formula(void)
  */
 void test_dtheta_minimum_period_guard(void)
 {
-	get_dtheta(1000000);
-	gl_dp.theta_rem_m = TWO_PI_14B;
-	get_dtheta(1000500);
+	get_dtheta(250000);
+	gl_dp.theta_rem_m = PI_14B/2;
+	get_dtheta(250125);
 	TEST_ASSERT_EQUAL(0, gl_dp.dtheta_fixedpoint_rad_p_sec);
 }
 
@@ -58,8 +59,35 @@ void test_dtheta_minimum_period_guard(void)
 void test_dtheta_negative_velocity(void)
 {
 	get_dtheta(0);
-	gl_dtheta_prev_theta = TWO_PI_14B;
+	gl_dtheta_prev_theta = PI_14B/2;
 	gl_dp.theta_rem_m = 0;
-	get_dtheta(2000000);
+	get_dtheta(500000);
 	TEST_ASSERT_EQUAL(-50, gl_dp.dtheta_fixedpoint_rad_p_sec);
+}
+#define F_PI (3.14159265359f*16384.f)
+
+void test_continuous_velocity(void)
+{
+	gl_dtheta_prev_theta = 0;
+	gl_dp.theta_rem_m = 0;
+	//true velocity: 6.25 rad/sec
+	//represented velocity: 6.25*16 = 100
+	//encoder tick per microsecond velocity: 6.25 * (1sec/1e6us) * (2^14enc/rad)
+	double virtual_encoder_pos = 0;
+	for(int us = 1000; us < 20000000; us+= 10)
+	{
+		virtual_encoder_pos+=1.024f;
+		gl_dp.theta_rem_m = (int32_t)(virtual_encoder_pos);
+		get_dtheta(us);
+		if(us > 2000)
+		{
+			TEST_ASSERT_INT_WITHIN(1, 100, gl_dp.dtheta_fixedpoint_rad_p_sec);
+		}
+		
+		// if(gl_dp.dtheta_fixedpoint_rad_p_sec == 98)
+		// {
+		// 	printf("v = %f, %d, %d\n", virtual_encoder_pos*(180.f/F_PI), gl_dp.theta_rem_m, gl_dp.dtheta_fixedpoint_rad_p_sec);
+		// }
+		
+	}
 }

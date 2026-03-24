@@ -1,7 +1,7 @@
 #include "foc_velocity.h"
 
 static uint32_t prev_us_dtheta = 0;
-static int32_t v_uS_conv = 1000000 >> (14 - DEFAULT_V_REPORT_RADIX);
+static int32_t v_uS_conv = 1000000 / (1 << (14 - DEFAULT_V_REPORT_RADIX));
 
 int32_t gl_dtheta_prev_theta = 0;
 
