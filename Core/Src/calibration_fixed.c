@@ -39,7 +39,7 @@ void dowse_for_align_offset(void)
 		fds_mp->align_offset_fixed = wrap_2pi_12b(tbasis);
 
 		sinusoidal_fixed(500,0);
-		get_dtheta();
+		get_dtheta(TIM2->CNT);
 
 		int32_t avq = abs_i32(gl_dp.dtheta_fixedpoint_rad_p_sec);
 		if(avq > max_abs_dq)

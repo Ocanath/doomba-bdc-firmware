@@ -10,7 +10,7 @@ typedef struct audio_renderer_t
 	int16_t recv_buffer[64];	//look-ahead, samples. Make this an even number.
 }audio_renderer_t;
 
-int32_t audio_stream(audio_renderer_t * a);
+int32_t audio_stream(audio_renderer_t * a, uint32_t t_us);
 
 
 #endif

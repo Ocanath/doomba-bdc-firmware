@@ -39,7 +39,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in);
 void foc_fixed(int32_t iq_targ, int32_t id_targ);
 void get_current_cal_offsets(void);
 int32_t saturate(int32_t v, int32_t sat);
-void get_dtheta(void);
+void get_dtheta(uint32_t t_us);
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p);
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd);
 int32_t get_theta_m(void);

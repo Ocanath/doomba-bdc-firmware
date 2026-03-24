@@ -1,7 +1,12 @@
 #include "audio.h"
 
-/**/
-int32_t audio_stream(audio_renderer_t * a)
+static uint32_t prev_us = 0;
+/*
+ * Inputs:
+ * a: pointer to audio streamer control structure. Contains playback sampling rate
+ * t_us: time in microseconds. This overflows - program relies on unsigned subtraction for proper delta
+ * */
+int32_t audio_stream(audio_renderer_t * a, uint32_t t_us)
 {
 	if(a == NULL)
 	{
@@ -11,7 +16,15 @@ int32_t audio_stream(audio_renderer_t * a)
 	{
 		return 0;
 	}
-	//TODO: wrap in a microsecond timer comparison
-	//TODO: implement generic microsecond timer wrapper for mocking
-	return a->recv_buffer[a->buffer_pos++];
+
+	if(t_us - prev_us >= a->retransmission_us)
+	{
+		prev_us = t_us;
+		a->buffer_pos++;
+		return a->recv_buffer[a->buffer_pos];
+	}
+	else
+	{
+		return a->recv_buffer[a->buffer_pos];
+	}
 }

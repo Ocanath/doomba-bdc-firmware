@@ -119,5 +119,11 @@ dartt_mctl_params_t gl_dp =
 		.load_action = 0,
 		.action_flag = 0,
 		.unwrap_state = {0},
-		.tick = 0
+		.tick = 0,
+		.audio =
+		{
+				.retransmission_us = 25,
+				.buffer_pos = 0,
+				.recv_buffer = {}
+		}
 };

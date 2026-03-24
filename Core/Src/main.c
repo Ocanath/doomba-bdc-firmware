@@ -323,7 +323,7 @@ int main(void)
 			gl_dp.load_action = NO_ACTION;
 		}
 
-		get_dtheta();
+		get_dtheta(TIM2->CNT);
 	}
 }
 
