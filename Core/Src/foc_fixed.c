@@ -90,10 +90,12 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
+	int32_t vq = saturate(vq_in + vq_audio, MAX_VQ);
 	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
+
 	int32_t alpha,beta,tA,tB,tC;
-	inverse_park_fixed(vq_in + vq_audio, vd, sin_val,cos_val,&alpha,&beta, 14);
+	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
 	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 
