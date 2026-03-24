@@ -417,7 +417,9 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t two_pi_fixed, unwrap_st
 	int32_t dif_wrapped = wrap_2pi_fixed(theta - st->prev_theta_wrapped, two_pi_fixed);
 	st->prev_theta_wrapped = theta;
 	int32_t ovfl = check_overflow32(st->unwrapped_angle, dif_wrapped);
-	st->unwrapped_angle += dif_wrapped;
+	st->unwrapped_angle = (int32_t)((uint32_t)st->unwrapped_angle + (uint32_t)dif_wrapped);	//cast to uint32_t for well-defined overflow, then cast back to int32_t for slightly less iffy but fast overflow handling.
+	//this line generally works the same without the casting to unsigned then back to signed, except the problem is that it's undefined behavior according to the standard without the casting.
+	//with the casting, it's defined for C23 and implementation-defined for C99/11, and correct for GCC/ARM.
 	st->ovfl_cnt += ovfl;
 
 	return st->unwrapped_angle;

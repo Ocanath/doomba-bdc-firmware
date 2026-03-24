@@ -83,7 +83,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t sin_val = sin_14b(theta_elec);
 	int32_t cos_val = cos_14b(theta_elec);
 
-	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - gl_dp.theta_offset;
+	gl_dp.theta_rem_m = unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - gl_dp.theta_offset;	//ub issue with overflowing signed subtraction
 
 
 	int32_t iq_meas, id_meas;

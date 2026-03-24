@@ -3,6 +3,8 @@
 #include "dartt_mctl_params.h"
 #include "trig_fixed.h"
 #include "unity.h"
+#include <stddef.h>
+#include <stdbool.h>
 
 /*
  * gl_v_uS_conv is normally defined in FDCAN.c (not compiled in this test build).
@@ -92,37 +94,31 @@ void test_continuous_velocity(void)
 	}
 }
 
-void test_continuous_velocity_overflow(void)
+/*
+Use unwrap/overflow function to test compatibility with dtheta
+confirms that when theta_rem_m overflows courtesy of unwrap, dtheta
+still returns the proper value.
+*/
+void test_velocity_overflow(void)
 {
 	get_dtheta(0);
-	gl_dp.theta_rem_m = 0x7FFFFFFF - 100000;
+	gl_dp.theta_rem_m = -256;
 	get_dtheta(1000);
+	gl_dp.theta_rem_m = 256;
+	get_dtheta(2000);
+	TEST_ASSERT_EQUAL(499, gl_dp.dtheta_fixedpoint_rad_p_sec);
 
-	gl_dtheta_prev_theta = 0;
-	gl_dp.theta_rem_m = 0;
-	//true velocity: 6.25 rad/sec
-	//represented velocity: 6.25*16 = 100
-	//encoder tick per microsecond velocity: 6.25 * (1sec/1e6us) * (2^14enc/rad)
-	gl_dp.theta_rem_m = 0x7FFFFFFF - 100000;
-	int bad_calcs = 0;
-	for(int us = 2000; us < 20000000; us+= 500)
-	{;
-		gl_dp.theta_rem_m += 128;
-		get_dtheta(us);
-		if(us > 3000)
-		{
-			TEST_ASSERT_INT_WITHIN(1, 250, gl_dp.dtheta_fixedpoint_rad_p_sec);
-		}
-		
-		if(gl_dp.dtheta_fixedpoint_rad_p_sec > 251 || gl_dp.dtheta_fixedpoint_rad_p_sec < 249)
-		{
-			bad_calcs++;
-			printf("theta = %d, velocity = %d, us = %d\n", gl_dp.theta_rem_m, gl_dp.dtheta_fixedpoint_rad_p_sec, us);
-		}
-		if(bad_calcs > 10)
-		{
-			break;
-		}
-		
-	}
+	get_dtheta(0);
+	gl_dp.theta_rem_m = 0x7FFFFFFF - 256;
+	get_dtheta(1000);
+	unwrap_state_t st = {
+		.ovfl_cnt = 0,
+		.prev_theta_wrapped = 0,
+		.unwrapped_angle = 0x7FFFFFFF - 256
+	};
+ 	gl_dp.theta_rem_m =	unwrap_angle_32b_overflow(512, TWO_PI_14B, &st);
+	get_dtheta(2000);
+	TEST_ASSERT_EQUAL(499, gl_dp.dtheta_fixedpoint_rad_p_sec);
+	TEST_ASSERT_EQUAL(1, st.ovfl_cnt);
+	
 }
