@@ -91,3 +91,38 @@ void test_continuous_velocity(void)
 		
 	}
 }
+
+void test_continuous_velocity_overflow(void)
+{
+	get_dtheta(0);
+	gl_dp.theta_rem_m = 0x7FFFFFFF - 100000;
+	get_dtheta(1000);
+
+	gl_dtheta_prev_theta = 0;
+	gl_dp.theta_rem_m = 0;
+	//true velocity: 6.25 rad/sec
+	//represented velocity: 6.25*16 = 100
+	//encoder tick per microsecond velocity: 6.25 * (1sec/1e6us) * (2^14enc/rad)
+	gl_dp.theta_rem_m = 0x7FFFFFFF - 100000;
+	int bad_calcs = 0;
+	for(int us = 2000; us < 20000000; us+= 500)
+	{;
+		gl_dp.theta_rem_m += 128;
+		get_dtheta(us);
+		if(us > 3000)
+		{
+			TEST_ASSERT_INT_WITHIN(1, 250, gl_dp.dtheta_fixedpoint_rad_p_sec);
+		}
+		
+		if(gl_dp.dtheta_fixedpoint_rad_p_sec > 251 || gl_dp.dtheta_fixedpoint_rad_p_sec < 249)
+		{
+			bad_calcs++;
+			printf("theta = %d, velocity = %d, us = %d\n", gl_dp.theta_rem_m, gl_dp.dtheta_fixedpoint_rad_p_sec, us);
+		}
+		if(bad_calcs > 10)
+		{
+			break;
+		}
+		
+	}
+}
