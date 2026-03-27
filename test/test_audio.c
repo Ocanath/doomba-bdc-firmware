@@ -9,6 +9,13 @@ void test_audio_stream_nulptr(void)
 	TEST_ASSERT_EQUAL(0, v);
 }
 
+void test_stop(void)
+{
+	audio_renderer_t a = {};
+	int32_t v = audio_stream(&a, 13411);
+	TEST_ASSERT_EQUAL(0, v);
+}
+
 void test_audio_stream_overrun(void)
 {
 	audio_renderer_t a = {};
@@ -33,7 +40,7 @@ void test_audio_stream_overrun(void)
 			TEST_ASSERT_EQUAL(0, v);
 		}
 	}
-	TEST_ASSERT_EQUAL(sizeof(a.recv_buffer)/sizeof(int16_t)-1, a.buffer_pos);
+	TEST_ASSERT_EQUAL(10 -1, a.buffer_pos);
 	
 }
 

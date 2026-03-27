@@ -12,19 +12,17 @@ int32_t audio_stream(audio_renderer_t * a, uint32_t t_us)
 	{
 		return 0;
 	}
+	if(a->retransmission_us == 0)
+	{
+		return 0;
+	}
 
 	if(t_us - prev_us >= a->retransmission_us)
 	{
 		prev_us = t_us;
-		if(a->buffer_pos + 1 < (sizeof(a->recv_buffer)/sizeof(int16_t)))
-		{
-			a->buffer_pos++;
-			return a->recv_buffer[a->buffer_pos];
-		}
-		else
-		{
-			return 0;
-		}
+		uint32_t bufsize = (sizeof(a->recv_buffer)/sizeof(int16_t));
+		a->buffer_pos = (a->buffer_pos + 1) % bufsize;
+		return a->recv_buffer[a->buffer_pos];
 	}
 	else
 	{
