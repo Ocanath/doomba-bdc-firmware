@@ -14,6 +14,7 @@ int32_t audio_stream(audio_renderer_t * a, uint32_t t_us)
 	}
 	if(a->retransmission_us == 0)
 	{
+		prev_us = t_us;
 		return 0;
 	}
 

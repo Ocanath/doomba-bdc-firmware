@@ -19,6 +19,7 @@ void test_stop(void)
 void test_audio_stream_overrun(void)
 {
 	audio_renderer_t a = {};
+	audio_stream(&a, 0);	//loads up prev_us
 	a.retransmission_us = 25;	//40khz, standard 
 	for(int i = 0; i < sizeof(a.recv_buffer)/sizeof(int16_t); i++)
 	{
