@@ -47,6 +47,7 @@
 									<listOptionValue builtIn="false" value="../external/byte-stuffing/HDLC"/>
 									<listOptionValue builtIn="false" value="../external/byte-stuffing/C-COBS"/>
 									<listOptionValue builtIn="false" value="../external/dartt-protocol/src"/>
+									<listOptionValue builtIn="false" value="../external/dartt_audio/embedded"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G4xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32G4xx/Include"/>
@@ -126,6 +127,7 @@
 									<listOptionValue builtIn="false" value="../external/byte-stuffing/HDLC"/>
 									<listOptionValue builtIn="false" value="../external/byte-stuffing/C-COBS"/>
 									<listOptionValue builtIn="false" value="../external/dartt-protocol/src"/>
+									<listOptionValue builtIn="false" value="../external/dartt_audio/embedded"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G4xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32G4xx/Include"/>

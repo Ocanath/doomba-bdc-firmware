@@ -10,3 +10,6 @@
 [submodule "byte-stuffing"]
 	path = external/byte-stuffing
 	url = https://github.com/ocanath/byte-stuffing
+[submodule "external/dartt_audio"]
+	path = external/dartt_audio
+	url = https://github.com/ocanath/dartt_audio

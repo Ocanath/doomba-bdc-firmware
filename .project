@@ -36,6 +36,11 @@
 			<locationURI>PROJECT_LOC/external/byte-stuffing/C-COBS</locationURI>
 		</link>
 		<link>
+			<name>Core/Src/dartt_audio</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/external/dartt_audio/embedded</locationURI>
+		</link>
+		<link>
 			<name>Core/Src/HDLC</name>
 			<type>2</type>
 			<locationURI>PROJECT_LOC/external/byte-stuffing/HDLC</locationURI>
