@@ -122,7 +122,7 @@ dartt_mctl_params_t gl_dp =
 		.tick = 0,
 		.audio =
 		{
-				.retransmission_us = 25,
+				.retransmission_us = 0,
 				.buffer_pos = 0,
 				.recv_buffer = {}
 		}
