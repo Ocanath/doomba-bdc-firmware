@@ -7,3 +7,5 @@ FixedpointTrigTest/*.exe
 FixedpointTrigTest/*.csv
 Datalogging/__pycache__/
 build/
+ReleaseBootloader/
+DebugBootloader/
