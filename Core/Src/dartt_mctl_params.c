@@ -120,6 +120,7 @@ dartt_mctl_params_t gl_dp =
 		.action_flag = 0,
 		.unwrap_state = {0},
 		.tick = 0,
+		.t_us = 0,
 		.audio =
 		{
 				.retransmission_us = 0,

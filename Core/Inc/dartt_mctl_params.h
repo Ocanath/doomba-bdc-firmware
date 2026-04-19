@@ -51,7 +51,7 @@ typedef struct dartt_mctl_params_t
 	int32_t theta_offset;	//global offset applied to the rotor position
 
 	uint32_t tick;	//millisecond tick
-
+	uint32_t t_us;	//microsecond tick. wraps
 	audio_renderer_t audio;
 }dartt_mctl_params_t;
 

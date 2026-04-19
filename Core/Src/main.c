@@ -322,8 +322,8 @@ int main(void)
 			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, gl_dp.led_state);
 			gl_dp.load_action = NO_ACTION;
 		}
-
-		get_dtheta(TIM2->CNT);
+		gl_dp.t_us = TIM2->CNT;	//load for event loop exposure. If we implement audio stream mode, we'll need this load to move so it's as close as possible to the audio write-out.
+		get_dtheta(gl_dp.t_us);	//use cached for velocity calc, whatever
 	}
 }
 
