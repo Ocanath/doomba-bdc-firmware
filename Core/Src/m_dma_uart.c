@@ -144,11 +144,7 @@ void m_uart_it_handler(uart_it_t * h)
 //read dma interface for how many bytes to send remain
 uint32_t m_uart_bytes_to_send(uart_it_t * h)
 {
-	if(h->txdma->CNDTR < h->tx_mem.length)
-	{
-		return 0;	//overflow guard
-	}
-	return (h->txdma->CNDTR - h->tx_mem.length);
+	return h->txdma->CNDTR;
 }
 
 /**
