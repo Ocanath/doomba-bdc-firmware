@@ -13,6 +13,8 @@
 #include "dartt_mctl_params.h"
 #include "adc.h"
 
+extern unsigned char ram_blockstart_keyword_addr__[];
+
 static volatile int16_fmt_t uart_encoder_data = {0};
 
 int32_t input_val = 0;
@@ -64,6 +66,13 @@ void dartt_handle_restart_request(void)
 {
 	if(gl_dp.action_flag == RESTART)
 	{
+		unsigned char * pmagic = (unsigned char *)(ram_blockstart_keyword_addr__);
+		const uint32_t bootloader_unblock = 0xFE47BA32;
+		for(int i = 0; i < sizeof(bootloader_unblock); i++)
+		{
+			int shift = i*8;
+			pmagic[i] = (unsigned char)((bootloader_unblock & (0x000000FF << shift)) >> shift);
+		}
 		NVIC_SystemReset();
 		gl_dp.action_flag = NO_ACTION;	//this does not execute - unless restart fails somehow.
 	}

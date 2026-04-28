@@ -47,9 +47,11 @@ PAGE_SIZE = 0x800;
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 32K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = (128K - PAGE_SIZE)
+	RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = (32K-4)
+	MAGIC_WORD (xrw) : ORIGIN = ORIGIN(RAM)+LENGTH(RAM),	LENGTH = 4
+	FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = (128K - PAGE_SIZE)
 }
+ram_blockstart_keyword_addr__ = ORIGIN(MAGIC_WORD);
 
 /* Sections */
 SECTIONS
