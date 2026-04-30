@@ -53,7 +53,7 @@ void stop_pwm(void)
 }
 
 
-enum {NO_ACTION = 0, UPDATE_FS = 1, RESTART = 2, OPENLOOP_INVERTER_TEST = 3, AUTOCALIBRATE_ALIGN_OFFSET = 4, GET_CURRENTSENSOR_ZEROPOINT = 5};
+enum {NO_ACTION = 0, UPDATE_FS = 1, RESTART = 2, OPENLOOP_INVERTER_TEST = 3, AUTOCALIBRATE_ALIGN_OFFSET = 4, GET_CURRENTSENSOR_ZEROPOINT = 5, ENTER_BOOTLOADER = 6};
 
 /**
  */
@@ -62,9 +62,9 @@ void m_uart_rx_cplt_callback(uart_it_t * h)
 
 }
 
-void dartt_handle_restart_request(void)
+void dartt_handle_bootload_request(void)
 {
-	if(gl_dp.action_flag == RESTART)
+	if(gl_dp.action_flag == ENTER_BOOTLOADER)
 	{
 		unsigned char * pmagic = (unsigned char *)(ram_blockstart_keyword_addr__);
 		const uint32_t bootloader_unblock = 0xFE47BA32;
@@ -73,6 +73,16 @@ void dartt_handle_restart_request(void)
 			int shift = i*8;
 			pmagic[i] = (unsigned char)((bootloader_unblock & (0x000000FF << shift)) >> shift);
 		}
+		NVIC_SystemReset();
+		gl_dp.action_flag = NO_ACTION;	//this does not execute - unless restart fails somehow.
+	}
+}
+
+
+void dartt_handle_restart_request(void)
+{
+	if(gl_dp.action_flag == RESTART)
+	{
 		NVIC_SystemReset();
 		gl_dp.action_flag = NO_ACTION;	//this does not execute - unless restart fails somehow.
 	}
@@ -327,6 +337,7 @@ int main(void)
 				dartt_openloop_test();
 				dartt_autocalibrate();
 				dartt_handle_restart_request();
+				dartt_handle_bootload_request();
 			}
 			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, gl_dp.led_state);
 			gl_dp.load_action = NO_ACTION;
