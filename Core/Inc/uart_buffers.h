@@ -9,7 +9,7 @@
 #define INC_UART_BUFFERS_H_
 #include <stdint.h>
 
-#define UART_BUF_SIZE 64
+#define UART_BUF_SIZE 128
 
 extern uint8_t gl_uart_tx_buf[UART_BUF_SIZE];
 extern uint8_t gl_uart_rx_buf[UART_BUF_SIZE];
