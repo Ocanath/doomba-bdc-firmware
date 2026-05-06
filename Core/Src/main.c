@@ -344,52 +344,25 @@ int main(void)
 		}
 		gl_dp.t_us = TIM2->CNT;	//load for event loop exposure. If we implement audio stream mode, we'll need this load to move so it's as close as possible to the audio write-out.
 		get_dtheta(gl_dp.t_us);	//use cached for velocity calc, whatever
+		
+//		if(m_uart_bytes_to_send(&m_huart2) == 0)
+//		{
+//			int bidx = 0;
+//			m_huart2.tx_buf_alias.buf[bidx++] = MASTER_MISC_ADDRESS;
+//			uint16_t fidx = (uint16_t)(index_of_field(&gl_dp.iq, gl_dp_alias.buf, gl_dp_alias.size));
+//			m_huart2.tx_buf_alias.buf[bidx++] = (unsigned char)(fidx & 0x00FF);
+//			m_huart2.tx_buf_alias.buf[bidx++] = (unsigned char)((fidx & 0xFF00) >> 8);
+//			unsigned char * pfield = (unsigned char *)(&gl_dp.iq);
+//			for(int i = 0; i < sizeof(int32_t); i++)
+//			{
+//				m_huart2.tx_buf_alias.buf[bidx++] = pfield[i];
+//			}
+//			m_huart2.tx_buf_alias.len = bidx;
+//			append_crc(&m_huart2.tx_buf_alias);
+//			m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
+//			cobs_encode_single_buffer(&m_huart2.tx_mem);
+//			m_uart_dma_transmit(&m_huart2);
+//		}
+		
 	}
 }
-
-
-
-
-
-
-
-
-
-//					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
-//					{
-//						uart_tx_ts = tick;
-//
-//						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-//						int i32widx = 0;
-//						pwb32[i32widx++] = qd;
-//						pwb32[i32widx++] = gl_dp.theta_rem_m;
-//						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
-//						pwb32[i32widx++] = vq;
-//						pwb32[i32widx++] = gl_dp.dtheta_fixedpoint_rad_p_sec;
-//
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-//
-//						//			pwb32[i32widx++] = theta_elec;
-//						//			pwb32[i32widx++] = vq;
-//						//			pwb32[i32widx++] = gl_dp.iq;
-//
-//						//			pwb32[i32widx++] = 0;
-//						//			pwb32[i32widx++] = id_req;
-//						//			pwb32[i32widx++] = gl_dp.id;
-//						//			pwb32[i32widx++] = 300;
-//						//			pwb32[i32widx++] = gl_dp.iq;
-//
-//						//			int32_t s,c;
-//						//			get_sc_no_ortho_comp(&s,&c);
-//						//			pwb32[i32widx++] = s;
-//						//			pwb32[i32widx++] = c;
-//
-//						pwb32[i32widx++] = HAL_GetTick();
-//
-//						int pld_size = i32widx*sizeof(uint32_t);
-//						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-//						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-//					}
-
