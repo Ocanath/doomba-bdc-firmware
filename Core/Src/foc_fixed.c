@@ -34,6 +34,8 @@ uint32_t count = 0;
 int32_t gl_x_iqpi = 0;	//x for iq pi controller
 int32_t gl_x_idpi = 0;	//x for id pi controller
 
+/*helper required for audio streaming (input)*/
+int gl_audio_blkidx = 0;
 
 
 int32_t ctl_PI_fixed_2(int32_t error, fixed_PI_2_params_t * p)
@@ -85,7 +87,7 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 	gl_dp.theta_rem_m = (int32_t)((uint32_t)unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - (uint32_t)gl_dp.theta_offset);
 
-	int32_t vq_audio = audio_stream(&gl_dp.audio, TIM2->CNT);
+	int32_t vq_audio = audio_stream_nosync(&gl_dp.audio, gl_audio_blkidx, TIM2->CNT);
 
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
@@ -151,7 +153,7 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	int32_t vq = ctl_PI_fixed_3(iq_targ -iq_meas, &(fds_mp->iq_pi), &gl_x_iqpi);
 	int32_t vd = ctl_PI_fixed_3(id_targ -id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
-	int32_t vq_audio = audio_stream(&gl_dp.audio, TIM2->CNT);
+	int32_t vq_audio = audio_stream_nosync(&gl_dp.audio, gl_audio_blkidx, TIM2->CNT);
 
 	vq = saturate(vq + vq_audio, MAX_VQ);
 	vd = saturate(vd,MAX_VQ);
