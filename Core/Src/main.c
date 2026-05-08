@@ -157,6 +157,7 @@ dartt_mem_t gl_dp_alias =
 
 void audio_recv_callback(payload_layer_msg_t * pld)
 {
+	if(pld->rw_bit != 0) return;
 	const size_t buffer_size = sizeof(gl_dp.audio.recv_buffer)/sizeof(int16_t);
 	const uint16_t first_block_idx_head = index_of_field(gl_dp.audio.recv_buffer, gl_dp_alias.buf, gl_dp_alias.size);
 	const uint16_t second_block_idx_head = index_of_field(&gl_dp.audio.recv_buffer[buffer_size/2], gl_dp_alias.buf, gl_dp_alias.size);
@@ -248,10 +249,13 @@ int main(void)
 			    {
 			    	rc = dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
 			    }
-			    if(can_tx_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
+			    if(rc == DARTT_PROTOCOL_SUCCESS)
 			    {
-			    	send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
 			    	audio_recv_callback(&gl_can_rx_pld_msg);
+			    	if(can_tx_alias.len != 0)
+			    	{
+			    		send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
+			    	}
 			    }
 			}
 		}
@@ -266,14 +270,17 @@ int main(void)
 				{
 					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_SERIAL_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
 				}
-				if(m_huart2.tx_buf_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
+				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{
-					m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
-					rc = cobs_encode_single_buffer(&m_huart2.tx_mem);
-					if(rc == COBS_SUCCESS)
+					audio_recv_callback(&m_huart2.rx_pld_msg);
+					if(m_huart2.tx_buf_alias.len != 0)
 					{
-						m_uart_dma_transmit(&m_huart2);
-				    	audio_recv_callback(&m_huart2.rx_pld_msg);
+						m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
+						rc = cobs_encode_single_buffer(&m_huart2.tx_mem);
+						if(rc == COBS_SUCCESS)
+						{
+							m_uart_dma_transmit(&m_huart2);
+						}
 					}
 				}
 			}
