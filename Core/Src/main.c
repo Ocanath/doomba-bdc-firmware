@@ -155,6 +155,22 @@ dartt_mem_t gl_dp_alias =
 		.size = sizeof(gl_dp),
 };
 
+void audio_recv_callback(payload_layer_msg_t * pld)
+{
+	if(pld->rw_bit != 0) return;
+	const size_t buffer_size = sizeof(gl_dp.audio.recv_buffer)/sizeof(int16_t);
+	const uint16_t first_block_idx_head = index_of_field(gl_dp.audio.recv_buffer, gl_dp_alias.buf, gl_dp_alias.size);
+	const uint16_t second_block_idx_head = index_of_field(&gl_dp.audio.recv_buffer[buffer_size/2], gl_dp_alias.buf, gl_dp_alias.size);
+	if(pld->index_arg == first_block_idx_head)
+	{
+		gl_audio_blkidx = 0;
+	}
+	else if (pld->index_arg == second_block_idx_head)
+	{
+		gl_audio_blkidx = 1;
+	}
+}
+
 int main(void)
 {
 
@@ -231,11 +247,15 @@ int main(void)
 			    int rc = dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
 			    if(rc == DARTT_PROTOCOL_SUCCESS)
 			    {
-			    	dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
+			    	rc = dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
 			    }
-			    if(can_tx_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
+			    if(rc == DARTT_PROTOCOL_SUCCESS)
 			    {
-			    	send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
+			    	audio_recv_callback(&gl_can_rx_pld_msg);
+			    	if(can_tx_alias.len != 0)
+			    	{
+			    		send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
+			    	}
 			    }
 			}
 		}
@@ -250,13 +270,17 @@ int main(void)
 				{
 					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_SERIAL_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
 				}
-				if(m_huart2.tx_buf_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
+				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{
-					m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
-					rc = cobs_encode_single_buffer(&m_huart2.tx_mem);
-					if(rc == COBS_SUCCESS)
+					audio_recv_callback(&m_huart2.rx_pld_msg);
+					if(m_huart2.tx_buf_alias.len != 0)
 					{
-						m_uart_dma_transmit(&m_huart2);
+						m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
+						rc = cobs_encode_single_buffer(&m_huart2.tx_mem);
+						if(rc == COBS_SUCCESS)
+						{
+							m_uart_dma_transmit(&m_huart2);
+						}
 					}
 				}
 			}
@@ -344,52 +368,19 @@ int main(void)
 		}
 		gl_dp.t_us = TIM2->CNT;	//load for event loop exposure. If we implement audio stream mode, we'll need this load to move so it's as close as possible to the audio write-out.
 		get_dtheta(gl_dp.t_us);	//use cached for velocity calc, whatever
+		
+//		if(m_uart_bytes_to_send(&m_huart2) == 0)
+//		{
+//			misc_write_message_t wmsg = {};
+//			wmsg.address = MASTER_MISC_ADDRESS;
+//			wmsg.index = (uint16_t)(index_of_field(&gl_dp.iq, gl_dp_alias.buf, gl_dp_alias.size));
+//			wmsg.payload = (dartt_buffer_t){.buf = (unsigned char *)(&gl_dp.iq), .size = sizeof(gl_dp.iq), .len = sizeof(gl_dp.iq)};
+//			dartt_create_write_frame(&wmsg, TYPE_SERIAL_MESSAGE, &m_huart2.tx_buf_alias);
+//
+//			m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
+//			cobs_encode_single_buffer(&m_huart2.tx_mem);
+//			m_uart_dma_transmit(&m_huart2);
+//		}
+		
 	}
 }
-
-
-
-
-
-
-
-
-
-//					if(m_huart2.bytes_to_send == 0 && (tick - uart_tx_ts) > 3 )
-//					{
-//						uart_tx_ts = tick;
-//
-//						uint32_t * pwb32 = (uint32_t*)(&gl_working_buf[0]);
-//						int i32widx = 0;
-//						pwb32[i32widx++] = qd;
-//						pwb32[i32widx++] = gl_dp.theta_rem_m;
-//						pwb32[i32widx++] = mctl_vq.kpki.x >> mctl_vq.kpki.ki.radix;
-//						pwb32[i32widx++] = vq;
-//						pwb32[i32widx++] = gl_dp.dtheta_fixedpoint_rad_p_sec;
-//
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR1) - 1990;
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR2) - 1990;
-//						//			pwb32[i32widx++] =  ((int16_t)ADC1->JDR3) - 1990;
-//
-//						//			pwb32[i32widx++] = theta_elec;
-//						//			pwb32[i32widx++] = vq;
-//						//			pwb32[i32widx++] = gl_dp.iq;
-//
-//						//			pwb32[i32widx++] = 0;
-//						//			pwb32[i32widx++] = id_req;
-//						//			pwb32[i32widx++] = gl_dp.id;
-//						//			pwb32[i32widx++] = 300;
-//						//			pwb32[i32widx++] = gl_dp.iq;
-//
-//						//			int32_t s,c;
-//						//			get_sc_no_ortho_comp(&s,&c);
-//						//			pwb32[i32widx++] = s;
-//						//			pwb32[i32widx++] = c;
-//
-//						pwb32[i32widx++] = HAL_GetTick();
-//
-//						int pld_size = i32widx*sizeof(uint32_t);
-//						int stuffed_length = PPP_stuff( (uint8_t*)(&gl_working_buf[0]), pld_size, gl_ppp_stuffed_buf, STUFF_BUF_SIZE );
-//						m_uart_tx_start((uart_it_t*)(&m_huart2), gl_ppp_stuffed_buf, stuffed_length);
-//					}
-

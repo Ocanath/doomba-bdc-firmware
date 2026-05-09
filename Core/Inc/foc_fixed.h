@@ -21,7 +21,7 @@ extern const int32_t overflow_val;
 		TIM1->CCR3 = duty3; \
 		TIM1->CR1 &= ~TIM_CR1_UDIS;
 
-
+extern int gl_audio_blkidx;
 
 /*clarke, park, inverse park, inverse clarke (svm)*/
 void clarke_fixed(int32_t ia, int32_t ib, int32_t ic, int32_t * alpha, int32_t * beta);
