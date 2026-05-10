@@ -263,12 +263,12 @@ int main(void)
 		/*Handle DARTT over UART*/
 		if(m_huart2.rx_decoded.length != 0)
 		{
-			if(m_huart2.rx_decoded.buf[0] == dartt_misc_address)
+//			if(m_huart2.rx_decoded.buf[0] == dartt_misc_address)
 			{
-				int rc = dartt_frame_to_payload(&m_huart2.rx_decode_alias, TYPE_SERIAL_MESSAGE, PAYLOAD_ALIAS, &m_huart2.rx_pld_msg);
+				int rc = dartt_frame_to_payload(&m_huart2.rx_decode_alias, TYPE_ADDR_MESSAGE, PAYLOAD_ALIAS, &m_huart2.rx_pld_msg);
 				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{
-					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_SERIAL_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
+					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_ADDR_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
 				}
 				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{
@@ -368,19 +368,6 @@ int main(void)
 		}
 		gl_dp.t_us = TIM2->CNT;	//load for event loop exposure. If we implement audio stream mode, we'll need this load to move so it's as close as possible to the audio write-out.
 		get_dtheta(gl_dp.t_us);	//use cached for velocity calc, whatever
-		
-//		if(m_uart_bytes_to_send(&m_huart2) == 0)
-//		{
-//			misc_write_message_t wmsg = {};
-//			wmsg.address = MASTER_MISC_ADDRESS;
-//			wmsg.index = (uint16_t)(index_of_field(&gl_dp.iq, gl_dp_alias.buf, gl_dp_alias.size));
-//			wmsg.payload = (dartt_buffer_t){.buf = (unsigned char *)(&gl_dp.iq), .size = sizeof(gl_dp.iq), .len = sizeof(gl_dp.iq)};
-//			dartt_create_write_frame(&wmsg, TYPE_SERIAL_MESSAGE, &m_huart2.tx_buf_alias);
-//
-//			m_huart2.tx_mem.length = m_huart2.tx_buf_alias.len;
-//			cobs_encode_single_buffer(&m_huart2.tx_mem);
-//			m_uart_dma_transmit(&m_huart2);
-//		}
 		
 	}
 }
