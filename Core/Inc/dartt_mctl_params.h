@@ -27,6 +27,8 @@ typedef struct dartt_mctl_params_t
 	int32_t ia;	//phase current a
 	int32_t ib;	//phase current b
 	int32_t ic; //phase current c
+	int32_t vq;	//synchronous q-axis voltage
+	int32_t vd;	//synchronous d-axis voltage
 
 	pctl_params_t mctl_iq;
 	pctl_params_t mctl_vq;

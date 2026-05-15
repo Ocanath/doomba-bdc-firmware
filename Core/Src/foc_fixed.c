@@ -114,6 +114,8 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 
 	gl_dp.iq = iq_meas;
 	gl_dp.id = id_meas;
+	gl_dp.vq = vq;
+	gl_dp.vd = vd;
 }
 
 void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
@@ -132,6 +134,9 @@ void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 	TIMER_UPDATE_DUTY(tA,tB,tC);
 	gl_dp.iq = iq_meas;
 	gl_dp.id = id_meas;
+	gl_dp.vq = vq;
+	gl_dp.vd = vd;
+
 }
 
 /*
@@ -177,6 +182,9 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 
 	gl_dp.iq = iq_meas;
 	gl_dp.id = id_meas;
+	gl_dp.vq = vq;
+	gl_dp.vd = vd;
+
 }
 
 void get_current(int32_t sth, int32_t cth, int32_t * iq, int32_t * id, uint8_t shift)
