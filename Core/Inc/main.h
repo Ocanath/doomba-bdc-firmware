@@ -63,8 +63,9 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOB
 #define ENABLE_Pin GPIO_PIN_12
 #define ENABLE_GPIO_Port GPIOB
-#define SS_AMS_Pin GPIO_PIN_9
-#define SS_AMS_GPIO_Port GPIOB
+#define SS_AMS_Pin GPIO_PIN_15
+#define SS_AMS_GPIO_Port GPIOA
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
