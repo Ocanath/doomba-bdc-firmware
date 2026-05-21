@@ -179,7 +179,7 @@ int main(void)
 	MX_GPIO_Init();
 	MX_DMA_Init();
 	MX_ADC1_Init();
-	MX_FDCAN1_Init();
+//	MX_FDCAN1_Init();
 	MX_TIM1_Init();
 
 	load_flash_params();
@@ -187,6 +187,7 @@ int main(void)
 	gl_dp.control_mode = gl_dp.fds_mp.startup_control_mode;
 
 	MX_USART2_UART_Init();
+	MX_USART1_UART_Init();
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
