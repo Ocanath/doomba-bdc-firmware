@@ -22,7 +22,7 @@ enum {EXIT_CALIBRATION = 0xDE};
 void print_float(float v)
 {
 	uint8_t * ptr = (uint8_t * )(&v);
-	m_uart_tx_start((uart_it_t*)(&m_huart2), ptr, sizeof(float)); //note - broken due to transition to DMA
+//	m_uart_tx_start((uart_it_t*)(&m_huart2), ptr, sizeof(float)); //note - broken due to transition to DMA
 	while(m_uart_bytes_to_send(&m_huart2) != 0);
 }
 
@@ -75,7 +75,7 @@ void print_str(const char * str)
 {
 	int strlen;
 	for(strlen=0;str[strlen] != 0; strlen++);
-	m_uart_tx_start((uart_it_t*)(&m_huart2), (uint8_t*)str, strlen); //note - broken due to transition to DMA
+//	m_uart_tx_start((uart_it_t*)(&m_huart2), (uint8_t*)str, strlen); //note - broken due to transition to DMA
 	while(m_uart_bytes_to_send(&m_huart2) != 0);
 }
 

@@ -70,7 +70,7 @@ void dowse_for_align_offset(void)
 //			fmt.v = fds_mp->align_offset_fixed;
 //			buffer_data(fmt.d, sizeof(int16_t), buf, &bidx);
 
-			m_uart_tx_start((uart_it_t*)&m_huart2, buf, 2*sizeof(int32_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));	//note - broken due to transition to DMA
+//			m_uart_tx_start((uart_it_t*)&m_huart2, buf, 2*sizeof(int32_t));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float));	//note - broken due to transition to DMA
 		}
 	}
 	TIMER_UPDATE_DUTY(500,500,500);
@@ -335,7 +335,7 @@ void current_sensors_fitness_test(void)
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 			fmt.v = ia_f+ib_f+ic_f;
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
-			m_uart_tx_start((uart_it_t*)&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float)); //note - broken due to transition to DMA
+//			m_uart_tx_start((uart_it_t*)&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float)); //note - broken due to transition to DMA
 
 			/*Generate setpoints*/
 			int32_t ft = -tick*7;
@@ -393,7 +393,7 @@ void get_avg_cur(uint8_t phase, int32_t num_samples, int32_t voltage, double avg
 			fmt.v = (float)(ia+ib+ic);
 			buffer_data(fmt.d, sizeof(float), buf, &bidx);
 
-			m_uart_tx_start((uart_it_t*)&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float)); //note - broken due to transition to DMA
+//			m_uart_tx_start((uart_it_t*)&m_huart2, buf,4*sizeof(float));	//HAL_UART_Transmit_IT(&huart2,buf,4*sizeof(float)); //note - broken due to transition to DMA
 
 			i++;
 		}

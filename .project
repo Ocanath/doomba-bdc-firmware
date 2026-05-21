@@ -50,6 +50,11 @@
 			<type>2</type>
 			<locationURI>PROJECT_LOC/external/dartt-protocol/src</locationURI>
 		</link>
+		<link>
+			<name>Core/Src/stm32-dma-cobs-uart</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/external/stm32-dma-cobs-uart/dma-uart-src</locationURI>
+		</link>
 	</linkedResources>
 
 </projectDescription>

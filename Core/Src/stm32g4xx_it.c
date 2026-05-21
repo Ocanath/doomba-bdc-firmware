@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "init.h"
-#include "m_dma_uart.h"
+#include "uart_buffers.h"
 #include "foc_fixed.h"
 #include "dartt_mctl_params.h"
 /* USER CODE END Includes */
@@ -284,9 +284,9 @@ void DMA1_Channel4_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
 
   /* USER CODE END DMA1_Channel4_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_rx);
+//  HAL_DMA_IRQHandler(&hdma_usart1_rx);
   /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
-
+	m_uart_rxdma_handler(&hdma_usart1_rx);
   /* USER CODE END DMA1_Channel4_IRQn 1 */
 }
 
@@ -298,9 +298,9 @@ void DMA1_Channel5_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel5_IRQn 0 */
 
   /* USER CODE END DMA1_Channel5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+//  HAL_DMA_IRQHandler(&hdma_usart1_tx);
   /* USER CODE BEGIN DMA1_Channel5_IRQn 1 */
-
+	m_uart_txdma_handler(&hdma_usart1_tx);
   /* USER CODE END DMA1_Channel5_IRQn 1 */
 }
 
@@ -312,9 +312,9 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 0 */
 
   /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
+//  HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-
+	m_uart_it_handler(&m_huart1);
   /* USER CODE END USART1_IRQn 1 */
 }
 
@@ -328,7 +328,7 @@ void USART2_IRQHandler(void)
   /* USER CODE END USART2_IRQn 0 */
   //HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
-	m_uart_it_handler((uart_it_t * )(&m_huart2));
+	m_uart_it_handler(&m_huart2);
   /* USER CODE END USART2_IRQn 1 */
 }
 
