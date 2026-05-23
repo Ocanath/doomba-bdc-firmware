@@ -20,6 +20,10 @@ dartt_mctl_params_t gl_dp =
 		.ic = 0, //phase current c
 		.vq = 0,
 		.vd = 0,
+		.tA = 0,
+		.tB = 0,
+		.tC = 0,
+
 		.theta_offset = 0,
 
 		/*Initialize params for position control using FOC as 0*/

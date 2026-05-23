@@ -12,7 +12,14 @@
 #include "trig_fixed.h"
 #include "audio.h"
 
-typedef enum {FOC_MODE, SINUSOIDAL_MODE, PCTL_IQ, PCTL_VQ, OPEN_LOOP_MODE} control_mode_t;	//foc with velocity?
+typedef enum {
+	FOC_MODE = 0,
+	SINUSOIDAL_MODE = 1,
+	PCTL_IQ = 2,
+	PCTL_VQ = 3,
+	OPEN_LOOP_MODE = 4,
+	PHASE_MODE = 5	//phase voltage level inverter control
+} control_mode_t;	//foc with velocity?
 
 typedef struct dartt_mctl_params_t
 {
@@ -29,6 +36,10 @@ typedef struct dartt_mctl_params_t
 	int32_t ic; //phase current c
 	int32_t vq;	//synchronous q-axis voltage
 	int32_t vd;	//synchronous d-axis voltage
+
+	int32_t tA;
+	int32_t tB;
+	int32_t tC;
 
 	pctl_params_t mctl_iq;
 	pctl_params_t mctl_vq;

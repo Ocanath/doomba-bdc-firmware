@@ -300,6 +300,11 @@ int main(void)
 		{
 			openloop_fixed(gl_dp.command_word, gl_dp.open_loop_vq, gl_dp.open_loop_vd);
 		}
+		else if (gl_dp.control_mode == PHASE_MODE)
+		{
+			//no mutation of tA,tB,tC: simply pipe them out to the inverter
+			TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
+		}
 		else
 		{
 			if(gl_dp.use_uart_encoder != 0)
