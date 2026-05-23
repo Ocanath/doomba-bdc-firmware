@@ -301,8 +301,7 @@ int main(void)
 		}
 		else if (gl_dp.control_mode == PHASE_MODE)
 		{
-			//no mutation of tA,tB,tC: simply pipe them out to the inverter
-			TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
+			phase_mode();
 		}
 		else
 		{
