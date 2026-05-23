@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "init.h"
-#include "m_dma_uart.h"
+#include "uart_buffers.h"
 #include "foc_fixed.h"
 #include "dartt_mctl_params.h"
 /* USER CODE END Includes */
@@ -283,7 +283,7 @@ void USART2_IRQHandler(void)
   /* USER CODE END USART2_IRQn 0 */
   //HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
-	m_uart_it_handler((uart_it_t * )(&m_huart2));
+	m_uart_it_handler(&m_huart2);
   /* USER CODE END USART2_IRQn 1 */
 }
 

@@ -12,6 +12,7 @@
 #include "dartt.h"
 #include "dartt_mctl_params.h"
 #include "adc.h"
+#include "uart_buffers.h"
 
 extern unsigned char ram_blockstart_keyword_addr__[];
 
@@ -55,12 +56,6 @@ void stop_pwm(void)
 
 enum {NO_ACTION = 0, UPDATE_FS = 1, RESTART = 2, OPENLOOP_INVERTER_TEST = 3, AUTOCALIBRATE_ALIGN_OFFSET = 4, GET_CURRENTSENSOR_ZEROPOINT = 5, ENTER_BOOTLOADER = 6};
 
-/**
- */
-void m_uart_rx_cplt_callback(uart_it_t * h)
-{
-
-}
 
 void dartt_handle_bootload_request(void)
 {
@@ -179,7 +174,7 @@ int main(void)
 	MX_GPIO_Init();
 	MX_DMA_Init();
 	MX_ADC1_Init();
-	MX_FDCAN1_Init();
+//	MX_FDCAN1_Init();
 	MX_TIM1_Init();
 
 	load_flash_params();

@@ -1,5 +1,5 @@
 #include "init.h"
-#include "m_dma_uart.h"
+#include "uart_buffers.h"
 #include "dartt_mctl_params.h"
 
 ADC_HandleTypeDef hadc1;
@@ -422,7 +422,18 @@ void MX_USART2_UART_Init(void)
 		Error_Handler();
 	}
 	/* USER CODE BEGIN USART2_Init 2 */
-	m_uart_start_interrupts(&m_huart2);
+	init_dma_uart(
+			&m_huart2,
+			huart2.Instance,
+			hdma_usart2_rx.Instance,
+			hdma_usart2_tx.Instance,
+			gl_uart2_rx_buf,
+			sizeof(gl_uart2_rx_buf),
+			gl_uart2_rx_decoded_buf,
+			sizeof(gl_uart2_rx_decoded_buf),
+			gl_uart2_tx_buf,
+			sizeof(gl_uart2_tx_buf)
+	);
 	/* USER CODE END USART2_Init 2 */
 
 }

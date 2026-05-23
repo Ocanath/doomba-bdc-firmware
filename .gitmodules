@@ -13,3 +13,6 @@
 [submodule "external/dartt_audio"]
 	path = external/dartt_audio
 	url = https://github.com/ocanath/dartt_audio
+[submodule "external/stm32-dma-cobs-uart"]
+	path = external/stm32-dma-cobs-uart
+	url = https://github.com/ocanath/stm32-dma-cobs-uart
