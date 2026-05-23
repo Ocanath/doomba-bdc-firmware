@@ -96,10 +96,10 @@ void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 	int32_t vd = ctl_PI_fixed_3(vd_in - id_meas, &(fds_mp->id_pi), &gl_x_idpi);
 
 
-	int32_t alpha,beta,tA,tB,tC;
+	int32_t alpha,beta;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
-	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
+	svm_fixed(alpha,beta,TIM1->ARR,&gl_dp.tA,&gl_dp.tB,&gl_dp.tC);
+	TIMER_UPDATE_DUTY(gl_dp.tA, gl_dp.tB, gl_dp.tC);
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
@@ -128,10 +128,10 @@ void openloop_fixed(int32_t angle_targ_prewrapping, int32_t vq, int32_t vd)
 	int32_t iq_meas, id_meas;
 	get_current(sin_val, cos_val, &iq_meas, &id_meas, 14);
 
-	int32_t alpha,beta,tA,tB,tC;
+	int32_t alpha,beta;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
-	svm_fixed(alpha,beta,TIM1->ARR,&tA,&tB,&tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
+	svm_fixed(alpha,beta,TIM1->ARR,&gl_dp.tA,&gl_dp.tB,&gl_dp.tC);
+	TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
 	gl_dp.iq = iq_meas;
 	gl_dp.id = id_meas;
 	gl_dp.vq = vq;
@@ -164,10 +164,10 @@ void foc_fixed(int32_t iq_targ, int32_t id_targ)
 	vd = saturate(vd,MAX_VQ);
 
 
-	int32_t alpha,beta,tA,tB,tC;
+	int32_t alpha,beta;
 	inverse_park_fixed(vq, vd, sin_val,cos_val,&alpha,&beta, 14);
-	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&tA,&tB,&tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
+	svm_fixed(alpha,beta,COMM_PWM_PERIOD,&gl_dp.tA,&gl_dp.tB,&gl_dp.tC);
+	TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
@@ -270,9 +270,9 @@ void voltage_3rd_harmonic(int32_t mag)
 
 	gl_dp.theta_rem_m = (int32_t)((uint32_t)unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - (uint32_t)gl_dp.theta_offset);
 
-	int32_t tA,tB,tC;
-	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &tA, &tB, &tC);
-	TIMER_UPDATE_DUTY(tA,tB,tC);
+
+	generate_3rdharmonic_waveforms(theta_elec, mag, half_period_val, &gl_dp.tA, &gl_dp.tB, &gl_dp.tC);
+	TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
 	{
@@ -297,12 +297,12 @@ void volage_pure_sinusoidal(int32_t m)
 	int32_t theta2 = wrap_2pi_12b(theta_elec+pi_by_3);
 	int32_t theta3 = wrap_2pi_12b(theta_elec+two_pi_by_3);
 
-	int32_t tA,tB,tC;
-	tA = m*sin_12b(theta_elec)/(1<<13) + half_period_val;
-	tB = -m*sin_12b(theta2)/(1<<13) + half_period_val;
-	tC = m*sin_12b(theta3)/(1<<13) + half_period_val;
 
-	TIMER_UPDATE_DUTY(tA,tB,tC);
+	gl_dp.tA = m*sin_12b(theta_elec)/(1<<13) + half_period_val;
+	gl_dp.tB = -m*sin_12b(theta2)/(1<<13) + half_period_val;
+	gl_dp.tC = m*sin_12b(theta3)/(1<<13) + half_period_val;
+
+	TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
 
 
 	if(count >= fds_mp->gl_prop_delayloop_interval)
