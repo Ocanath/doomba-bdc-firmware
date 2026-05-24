@@ -174,7 +174,7 @@ int main(void)
 	MX_GPIO_Init();
 	MX_DMA_Init();
 	MX_ADC1_Init();
-	MX_FDCAN1_Init();
+//	MX_FDCAN1_Init();
 	MX_TIM1_Init();
 
 	load_flash_params();
@@ -186,7 +186,7 @@ int main(void)
 	MX_TIM2_Init();
 	MX_SPI1_Init();
 
-	FDCAN_Config();
+//	FDCAN_Config();
 
 
 	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
@@ -222,39 +222,6 @@ int main(void)
 	 */
 	while(1)
 	{
-
-		if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
-		{
-			HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
-			can_rx_alias.len = (can_rx_header.DataLength >> 16) & 0xF;
-			if(can_rx_header.Identifier == fds_mp->module_number)	//motor command - dartt specifies custom implementation
-			{
-				//load negation in ALL terms due to encoder-related sign flipping between V2 and V3 actuators
-				gl_dp.command_word = can_rx_data.i32[0];
-
-				can_tx_data.i32[0] = gl_dp.theta_rem_m;
-				can_tx_data.i16[2] = (int16_t)(gl_dp.iq >> gl_iq_rshift);
-				can_tx_data.i16[3] = (int16_t)gl_dp.dtheta_fixedpoint_rad_p_sec;
-				can_tx_header.Identifier = MASTER_MOTOR_ADDRESS;
-				HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &can_tx_header, can_tx_data.u8);
-			}
-			else if (can_rx_header.Identifier == dartt_misc_address)
-			{
-			    int rc = dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
-			    if(rc == DARTT_PROTOCOL_SUCCESS)
-			    {
-			    	rc = dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &gl_dp_alias, &can_tx_alias);
-			    }
-			    if(rc == DARTT_PROTOCOL_SUCCESS)
-			    {
-			    	audio_recv_callback(&gl_can_rx_pld_msg);
-			    	if(can_tx_alias.len != 0)
-			    	{
-			    		send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
-			    	}
-			    }
-			}
-		}
 
 		/*Handle DARTT over UART*/
 		if(m_huart2.rx_decoded.length != 0)
