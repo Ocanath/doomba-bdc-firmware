@@ -77,6 +77,24 @@ int32_t get_theta_m(void)
 }
 
 /*
+ * Load sensor data into backing store, play 3phase. Necessary for
+ * current sensor calibration procedure (i.e. set all phases to 0 and short to dc power source).
+ */
+void phase_mode(void)
+{
+	int32_t theta_m = theta_rel_14b()+TWO_PI_14B;	//atan2, apply align offset
+	int32_t theta_elec = wrap_2pi_14b(theta_m * (fds_mp->elec_conv_ratio_fixed) + phase_adv_12b);
+	int32_t sin_val = sin_14b(theta_elec);
+	int32_t cos_val = cos_14b(theta_elec);
+	gl_dp.theta_rem_m = (int32_t)((uint32_t)unwrap_angle_32b_overflow(theta_m, TWO_PI_14B, &gl_dp.unwrap_state) - (uint32_t)gl_dp.theta_offset);
+
+	get_current(sin_val, cos_val, &gl_dp.iq, &gl_dp.id, 14);
+
+	//no mutation of tA,tB,tC: simply pipe them out to the inverter
+	TIMER_UPDATE_DUTY(gl_dp.tA,gl_dp.tB,gl_dp.tC);
+}
+
+/*
  * */
 void sinusoidal_fixed(int32_t vq_in, int32_t vd_in)
 {

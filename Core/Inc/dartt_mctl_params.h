@@ -18,7 +18,8 @@ typedef enum {
 	PCTL_IQ = 2,
 	PCTL_VQ = 3,
 	OPEN_LOOP_MODE = 4,
-	PHASE_MODE = 5	//phase voltage level inverter control
+	PHASE_MODE = 5,	//phase voltage level inverter control
+	NO_CONTROL_MODE	= 6	//special mode - do nothing! This is useful for dashboard writing of tA/tB/tC without cooking things.
 } control_mode_t;	//foc with velocity?
 
 typedef struct dartt_mctl_params_t
