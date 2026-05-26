@@ -5,8 +5,8 @@
  *      Author: Ocanath Robotman
  */
 
-#ifndef INC_PROFILES_H_
-#define INC_PROFILES_H_
+#ifndef INC_MCTL_TYPES_H_
+#define INC_MCTL_TYPES_H_
 #include "stdint.h"
 #include "pctl.h"
 
