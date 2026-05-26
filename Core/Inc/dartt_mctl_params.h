@@ -7,7 +7,7 @@
 
 #ifndef INC_DARTT_MCTL_PARAMS_H_
 #define INC_DARTT_MCTL_PARAMS_H_
-#include "profiles.h"
+#include "mctl-types.h"
 #include "pctl.h"
 #include "trig_fixed.h"
 #include "audio.h"
