@@ -17,6 +17,12 @@ static const int32_t sc3_14b = 307;
 static const int32_t sc4_14b = 16327;
 static const int32_t sc5_14b = 2;
 
+/*Poly Coefficients for cos calculation, 14b*/
+static const int32_t c1_14b = 462; 
+static const int32_t c2_14b = 407; 
+static const int32_t c3_14b = -8454; 
+static const int32_t c4_14b = 57; 
+static const int32_t c5_14b = 16382;
 
 /*Poly coefficients, scaled up by 2^12*/
 static const int32_t tc1_12b = 580;    //2^12 scale
@@ -184,51 +190,29 @@ int32_t sin_12b(int32_t theta)
 */
 int32_t sin_14b(int32_t theta)
 {
-    //Preprocess theta to force it in the range 0-pi/2 for poly calculation
     uint8_t is_neg = 0;
-    if(theta == 0)
-    	return 0;	//sin of 0 is 0
-    if(theta == PI_14B || theta == -PI_14B)
-    	return 0;
+    if (theta == 0 || theta == PI_14B || theta == -PI_14B)
+        return 0;
 
-    if (theta > HALF_PI_14B && theta <= PI_14B) // if positiveand in quadrant II, put in quadrant I(same)
-    {
+    if (theta > HALF_PI_14B)                // Q2 (pi/2, pi): reflect, positive
         theta = PI_14B - theta;
-    }
-    else if (theta >= PI_14B && theta < THREE_BY_TWO_PI_14B)
-    {
-        is_neg = 1;
-        theta = theta - PI_14B;
-    }
-    else if (theta > THREE_BY_TWO_PI_14B && theta < TWO_PI_14B)
-    {
-        theta = theta - TWO_PI_14B;
-    }
-    else if (theta < -HALF_PI_14B && theta >= -PI_14B) // if negativeand in quadrant III,
+    else if (theta < -HALF_PI_14B)          // Q3- (-pi, -pi/2): shift, negative
     {
         is_neg = 1;
         theta = theta + PI_14B;
     }
-    else if (theta < 0 && theta >= -HALF_PI_14B) // necessary addition for 4th order asymmetry
+    else if (theta < 0)                     // Q4- (-pi/2, 0): negate, negative
     {
         is_neg = 1;
         theta = -theta;
     }
 
-    // 7 fixed point multiplies. compute polynomial output 0-1 for input 0-pi/2
     int32_t theta2 = (theta * theta) >> 14;
     int32_t theta3 = (theta2 * theta) >> 14;
     int32_t theta4 = (theta3 * theta) >> 14;
-    int32_t res = sc1_14b * theta4 + sc2_14b * theta3 + sc3_14b * theta2 + sc4_14b * theta + (sc5_14b << 14);
-    res = res >> 14;
-
-    int32_t y;
-    if (is_neg == 1)
-        y = -res;
-    else
-        y = res;
-
-    return y;
+    int32_t res = sc1_14b*theta4 + sc2_14b*theta3 + sc3_14b*theta2 + sc4_14b*theta + (sc5_14b << 14);
+    res >>= 14;
+    return is_neg ? -res : res;
 }
 
 
@@ -239,7 +223,42 @@ int32_t cos_12b(int32_t theta)
 
 int32_t cos_14b(int32_t theta)
 {
-    return sin_14b(theta + HALF_PI_14B);
+    uint8_t is_neg = 0;
+    // No early returns: cos(0)=1 and cos(+-pi)=-1 are handled by the branches below
+
+    if (theta > HALF_PI_14B && theta <= PI_14B)         // Q2 (pi/2, pi]: cos < 0
+    {
+        is_neg = 1;
+        theta = PI_14B - theta;                          // reflect to [0, pi/2)
+    }
+    else if (theta >= PI_14B && theta < THREE_BY_TWO_PI_14B)  // Q3 [pi, 3pi/2): cos < 0
+    {
+        is_neg = 1;
+        theta = theta - PI_14B;
+    }
+    else if (theta > THREE_BY_TWO_PI_14B && theta < TWO_PI_14B)  // Q4 (3pi/2, 2pi): cos > 0
+    {
+        theta = TWO_PI_14B - theta;                      // reflect directly to (0, pi/2)
+    }
+    else if (theta < -HALF_PI_14B && theta >= -PI_14B)  // Q3- [-pi, -pi/2): cos < 0
+    {
+        is_neg = 1;
+        theta = theta + PI_14B;
+    }
+    else if (theta < 0)                                  // Q4- (-pi/2, 0): cos > 0 (even function)
+    {
+        theta = -theta;
+    }
+
+    int32_t theta2 = (theta * theta) >> 14;
+    int32_t theta3 = (theta2 * theta) >> 14;
+    int32_t theta4 = (theta3 * theta) >> 14;
+    int32_t res = c1_14b * theta4 + c2_14b * theta3 + c3_14b * theta2 + c4_14b * theta + (c5_14b << 14);
+    res = res >> 14;
+
+    if (is_neg == 1)
+        return -res;
+    return res;
 }
 
 
