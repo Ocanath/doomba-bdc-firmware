@@ -339,7 +339,7 @@ def plot_errors(q, degree, sin_coeffs, cos_coeffs):
         ax.set_ylabel('error (LSB)')
         ax.axhline(0, color='k', linewidth=0.5)
         ax.grid(True, alpha=0.4)
-        ax.set_ylim([-2, 2])
+        # ax.set_ylim([-2, 2])
 
     plt.tight_layout()
     plt.show()
