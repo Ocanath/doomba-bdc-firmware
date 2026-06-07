@@ -47,22 +47,77 @@ void sin_cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs, int32_t * 
 */
 int32_t sin_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
 {
+    //Preprocess theta to force it in the range 0-pi/2 for poly calculation
+    uint8_t is_neg = 0;
+    if(theta == 0)
+		return 0;	//sin of 0 is 0
+    if(theta == coefs->pi_q || theta == -coefs->pi_q)
+		return 0;
 
+    if (theta > coefs->half_pi_q && theta <= coefs->pi_q) // if positiveand in quadrant II, put in quadrant I(same)
+    {
+        theta = coefs->pi_q - theta;
+    }
+    else if (theta >= coefs->pi_q && theta < coefs->three_by_two_pi_q)
+    {
+        is_neg = 1;
+        theta = theta - coefs->pi_q;
+    }
+    else if (theta > coefs->three_by_two_pi_q && theta < coefs->two_pi_q)
+    {
+        theta = theta - coefs->two_pi_q;
+    }
+    else if (theta < -coefs->half_pi_q && theta >= -coefs->pi_q) // if negativeand in quadrant III,
+    {
+        is_neg = 1;
+        theta = theta + coefs->pi_q;
+    }
+    else if (theta < 0 && theta >= -coefs->half_pi_q) // necessary addition for 4th order asymmetry
+    {
+        is_neg = 1;
+        theta = -theta;
+    }
+
+    // 7 fixed point multiplies. compute polynomial output 0-1 for input 0-pi/2
+    int32_t theta2 = (theta * theta) >> 12;
+    int32_t theta3 = (theta2 * theta) >> 12;
+    int32_t theta4 = (theta3 * theta) >> 12;
+    int32_t res = sc1_12b * theta4 + sc2_12b * theta3 + sc3_12b * theta2 + sc4_12b * theta + (sc5_12b << 12);
+    res = res >> 12;
+
+    int32_t y;
+    if (is_neg == 1)
+        y = -res;
+    else
+        y = res;
+
+    return y;
 }
 
 /*
 */
 int32_t cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
 {
-
+	return 0;
 }
 
 /*
 */
 int32_t atan2_q(int32_t y, int32_t x, const trig_fixed_coeffs_t * coefs)
 {
-
+	return 0;
 }
+
+int32_t wrap_2pi_q(int32_t in, int32_t two_pi_q)
+{
+	int32_t pi_fixed = two_pi_q / 2;
+    int32_t result = ((in + pi_fixed) % two_pi_q) - pi_fixed;
+    if (in < -pi_fixed) //if( (in + pi_fixed) < 0 )
+        return two_pi_q + result;
+    else
+        return result;
+}
+
 
 /*
 *   Input:
@@ -327,16 +382,6 @@ int32_t wrap_2pi_12b(int32_t in)
         return result;
 }
 
-int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed)
-{
-	int32_t pi_fixed = two_pi_fixed / 2;
-    int32_t result = ((in + pi_fixed) % two_pi_fixed) - pi_fixed;
-    if (in < -pi_fixed) //if( (in + pi_fixed) < 0 )
-        return two_pi_fixed + result;
-    else
-        return result;
-}
-
 /*This function performs 'wrapping' operations on input angles. Can have arbitrary scale.
 The conditionals are there to capture the fact that mod() in matlab has different behavior than % operator
 on negative numbers. We are capturing the cases where (in + PI_14B) is less than 0
@@ -443,7 +488,7 @@ int32_t check_overflow32(int32_t a, int32_t b)
  * */
 int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t two_pi_fixed, unwrap_state_t * st)
 {
-	int32_t dif_wrapped = wrap_2pi_fixed(theta - st->prev_theta_wrapped, two_pi_fixed);
+	int32_t dif_wrapped = wrap_2pi_q(theta - st->prev_theta_wrapped, two_pi_fixed);
 	st->prev_theta_wrapped = theta;
 	int32_t ovfl = check_overflow32(st->unwrapped_angle, dif_wrapped);
 	st->unwrapped_angle = (int32_t)((uint32_t)st->unwrapped_angle + (uint32_t)dif_wrapped);	//cast to uint32_t for well-defined overflow, then cast back to int32_t for slightly less iffy but fast overflow handling.

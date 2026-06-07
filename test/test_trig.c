@@ -9,20 +9,20 @@ void test_wrap(void)
 {
 	int32_t a = PI_14B;
 	int32_t tv = 2;
-	int32_t b = wrap_2pi_fixed(a + tv, TWO_PI_14B);
+	int32_t b = wrap_2pi_q(a + tv, TWO_PI_14B);
 	TEST_ASSERT_EQUAL(-PI_14B + tv, b);
 
 	tv = TWO_PI_14B+10;
-	TEST_ASSERT_EQUAL(wrap_2pi_fixed(tv, TWO_PI_14B), wrap_2pi_14b(tv));
+	TEST_ASSERT_EQUAL(wrap_2pi_q(tv, TWO_PI_14B), wrap_2pi_14b(tv));
 
-	TEST_ASSERT_EQUAL(wrap_2pi_fixed(tv, TWO_PI_12B), wrap_2pi_12b(tv));
+	TEST_ASSERT_EQUAL(wrap_2pi_q(tv, TWO_PI_12B), wrap_2pi_12b(tv));
 }
 
 void test_sin14b(void)
 {
 	float val = 1.24515616f;
 	int32_t val_14b = (int32_t)(val*(float)(1 << 14));
-	int32_t res = sin_14b(wrap_2pi_fixed(val_14b, TWO_PI_14B));
+	int32_t res = sin_14b(wrap_2pi_q(val_14b, TWO_PI_14B));
 	float res_sc = ((float)res)/((float)(1 << 14));
 	TEST_ASSERT_FLOAT_WITHIN(0.0001f, sin(val), res_sc);
 }
@@ -31,7 +31,7 @@ void test_sin12b(void)
 {
 	float val = 1.24515616f;
 	int32_t val_12b = (int32_t)(val*(float)(1 << 12));
-	int32_t res = sin_12b(wrap_2pi_fixed(val_12b, TWO_PI_12B));
+	int32_t res = sin_12b(wrap_2pi_q(val_12b, TWO_PI_12B));
 	float res_sc = ((float)res)/((float)(1 << 12));
 	TEST_ASSERT_FLOAT_WITHIN(0.0001f, sin(val), res_sc);
 }
@@ -132,3 +132,5 @@ void test_unwrap_recovery(void)
 	TEST_ASSERT_EQUAL_INT64(2147483677, angle_recovered);
 	TEST_ASSERT_EQUAL_INT64(2147483677, angle_recovered_2);
 }
+
+

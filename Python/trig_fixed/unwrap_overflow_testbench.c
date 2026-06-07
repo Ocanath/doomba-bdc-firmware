@@ -10,7 +10,7 @@
 #define PI_14B 					51472
 #define TWO_PI_14B 				102944
 
-int32_t wrap_2pi_fixed(int32_t in, int32_t two_pi_fixed)
+int32_t wrap_2pi_q(int32_t in, int32_t two_pi_fixed)
 {
 	int32_t pi_fixed = two_pi_fixed / 2;
     int32_t result = ((in + pi_fixed) % two_pi_fixed) - pi_fixed;
@@ -66,7 +66,7 @@ int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t * prev_theta, int32_t t
 		*prev_theta = *prev_theta - ovfl*two_pi_fixed;
 	}
 	*ovfl_cnt -= ovfl;
-	int32_t dif_wrapped = wrap_2pi_fixed(theta - *prev_theta, two_pi_fixed);
+	int32_t dif_wrapped = wrap_2pi_q(theta - *prev_theta, two_pi_fixed);
 	int32_t unwrapped = *prev_theta + dif_wrapped;
 	*prev_theta = unwrapped;
 	return unwrapped;
@@ -77,8 +77,8 @@ Take an angle and unwrap it in rotations, but rewrap it in some larger multiple 
  */
 int32_t rewrap_angle_32b(int32_t theta, int32_t * prev_theta, int32_t two_pi_fixed, int32_t multiple, int32_t * ovfl_cnt)
 {
-	int32_t dif_wrapped = wrap_2pi_fixed(theta - *prev_theta, two_pi_fixed);
-	int32_t unwrapped = wrap_2pi_fixed(*prev_theta + dif_wrapped, two_pi_fixed*multiple);
+	int32_t dif_wrapped = wrap_2pi_q(theta - *prev_theta, two_pi_fixed);
+	int32_t unwrapped = wrap_2pi_q(*prev_theta + dif_wrapped, two_pi_fixed*multiple);
 	*prev_theta = unwrapped;
 	return unwrapped;
 }
@@ -99,7 +99,7 @@ int main(void)
 	const int32_t lowerbound = MIN_INT32 + (MIN_INT32 % PI_14B);//MIN_INT32 - (MIN_INT32 % PI_14B);//(-4294967296 - );
 	for(int64_t i = 0; i < 8*TWO_PI_14B; i+= 1)
 	{
-		int32_t theta = wrap_2pi_fixed((int32_t)i, TWO_PI_14B);
+		int32_t theta = wrap_2pi_q((int32_t)i, TWO_PI_14B);
 		int32_t unwrapped_theta = unwrap_angle_32b_overflow(theta, &prev_theta, TWO_PI_14B, &ovfl_cnt);
 		printf("%ld, %ld, %ld, %ld, %ld, %lld\n", theta, unwrapped_theta, upperbound, lowerbound, ovfl_cnt, i);
 	}
