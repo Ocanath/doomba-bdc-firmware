@@ -48,6 +48,27 @@ void test_sin14b(void)
 	printf("Max LSB for sin_14b: %f\n", max_error);
 }
 
+void test_cos14b(void)
+{
+	//strict worst-case LSB error bounded from python script (see ../Python/trig_fixed/sin_cos_coefficients_fixed.py)
+	//we check every value within the valid range (-pi to pi) to guarantee
+	const double q_factor = (double)(1 << 14);	//2^14 fixed for this function
+	double max_error = 0;
+	for(int32_t theta = -PI_14B; theta < PI_14B; theta++)
+	{
+		double theta_dbl = (double)theta / q_factor;
+		double s_std = cos(theta_dbl)*q_factor;
+		double s14 = (double)cos_14b(theta);
+		double error = m_abs(s_std - s14);
+		if(error > max_error)
+		{
+			max_error = error;
+		}
+		TEST_ASSERT_LESS_THAN_DOUBLE(2.95001, error);
+	}
+	printf("Max LSB for cos_14b: %f\n", max_error);
+}
+
 void test_sin12b(void)
 {
 	float val = 1.24515616f;
