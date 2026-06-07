@@ -2,6 +2,18 @@
 #define TRIG_FIXED_H
 #include <stdint.h>
 
+/*Used for multiple q coeffs*/
+typedef struct trig_fixed_coeffs_t
+{
+	int32_t half_pi_q;
+	int32_t THREE_BY_TWO_PI_q;
+	int32_t PI_q;		
+	int32_t TWO_PI_q;
+	int q;
+	int32_t * coeffs;		
+}trig_fixed_coeffs_t;
+
+
 // _12B indicates that the constant is mutiplied by 2^12 and rounded to the nearest integer
 #define HALF_PI_12B             6434	
 #define THREE_BY_TWO_PI_12B     19302

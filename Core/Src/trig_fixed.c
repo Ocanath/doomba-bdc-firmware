@@ -36,6 +36,16 @@ static const int32_t tc5_14b = -3*16384;    //2^14, with extra scaling factor ap
 
 
 /*
+Proposed function signature
+*/
+void sin_cos_poly_q(int32_t theta, const int32_t * coeffs, int q, int32_t * sin, int32_t * cos)
+{
+
+}
+
+
+
+/*
 *   Input:
         theta. MUST BE EXTERNALLY CONSTRAINED TO BE BETWEEN -PI_12B and PI_2B
     OUTPUT:
