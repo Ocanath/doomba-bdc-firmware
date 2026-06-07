@@ -38,12 +38,31 @@ static const int32_t tc5_14b = -3*16384;    //2^14, with extra scaling factor ap
 /*
 Proposed function signature
 */
-void sin_cos_poly_q(int32_t theta, const int32_t * coeffs, int q, int32_t * sin, int32_t * cos)
+void sin_cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs, int32_t * sin, int32_t * cos)
 {
 
 }
 
+/*
+*/
+int32_t sin_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
+{
 
+}
+
+/*
+*/
+int32_t cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
+{
+
+}
+
+/*
+*/
+int32_t atan2_q(int32_t y, int32_t x, const trig_fixed_coeffs_t * coefs)
+{
+
+}
 
 /*
 *   Input:
