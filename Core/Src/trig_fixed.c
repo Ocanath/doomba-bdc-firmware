@@ -195,7 +195,9 @@ int32_t sin_14b(int32_t theta)
         return 0;
 
     if (theta > HALF_PI_14B)                // Q2 (pi/2, pi): reflect, positive
+	{
         theta = PI_14B - theta;
+	}
     else if (theta < -HALF_PI_14B)          // Q3- (-pi, -pi/2): shift, negative
     {
         is_neg = 1;
@@ -224,41 +226,28 @@ int32_t cos_12b(int32_t theta)
 int32_t cos_14b(int32_t theta)
 {
     uint8_t is_neg = 0;
-    // No early returns: cos(0)=1 and cos(+-pi)=-1 are handled by the branches below
 
-    if (theta > HALF_PI_14B && theta <= PI_14B)         // Q2 (pi/2, pi]: cos < 0
+    if (theta > HALF_PI_14B)           // Q2 (pi/2, pi]: reflect, negative
     {
         is_neg = 1;
-        theta = PI_14B - theta;                          // reflect to [0, pi/2)
+        theta = PI_14B - theta;
     }
-    else if (theta >= PI_14B && theta < THREE_BY_TWO_PI_14B)  // Q3 [pi, 3pi/2): cos < 0
-    {
-        is_neg = 1;
-        theta = theta - PI_14B;
-    }
-    else if (theta > THREE_BY_TWO_PI_14B && theta < TWO_PI_14B)  // Q4 (3pi/2, 2pi): cos > 0
-    {
-        theta = TWO_PI_14B - theta;                      // reflect directly to (0, pi/2)
-    }
-    else if (theta < -HALF_PI_14B && theta >= -PI_14B)  // Q3- [-pi, -pi/2): cos < 0
+    else if (theta < -HALF_PI_14B)     // Q3- [-pi, -pi/2): shift, negative
     {
         is_neg = 1;
         theta = theta + PI_14B;
     }
-    else if (theta < 0)                                  // Q4- (-pi/2, 0): cos > 0 (even function)
-    {
-        theta = -theta;
-    }
+    else if (theta < 0)                // Q4- (-pi/2, 0): negate, positive (even)
+	{
+		theta = -theta;
+	}
 
     int32_t theta2 = (theta * theta) >> 14;
     int32_t theta3 = (theta2 * theta) >> 14;
     int32_t theta4 = (theta3 * theta) >> 14;
-    int32_t res = c1_14b * theta4 + c2_14b * theta3 + c3_14b * theta2 + c4_14b * theta + (c5_14b << 14);
-    res = res >> 14;
-
-    if (is_neg == 1)
-        return -res;
-    return res;
+    int32_t res = c1_14b*theta4 + c2_14b*theta3 + c3_14b*theta2 + c4_14b*theta + (c5_14b << 14);
+    res >>= 14;
+    return is_neg ? -res : res;
 }
 
 
