@@ -109,11 +109,58 @@ int32_t cos_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs)
 
 
 /*
-Optimized/compiler inlined sin + cos
-*/
-void sin_cos_14b(int32_t theta, int32_t * sin, int32_t * cos)
+ * Combined sin+cos: computes both from one shared power chain (3 muls),
+ * then two independent polynomial evaluations (4 muls each) = 11 muls total.
+ * vs 7+7=14 muls calling sin_14b and cos_14b independently.
+ *
+ * Input must be in [-PI_14B, PI_14B]. Caller is responsible for wrap_2pi.
+ */
+void sin_cos_14b(int32_t theta, int32_t * sin_out, int32_t * cos_out)
 {
+    uint8_t sin_neg = 0, cos_neg = 0;
 
+    // sin is exactly 0 at these points; polynomial at u=0 gives sc5 != 0
+    if (theta == 0 )
+    {
+        *sin_out = 0;
+        *cos_out = (1 << 14);	//1
+        return;
+    }
+	else if(theta == PI_14B || theta == -PI_14B)
+	{
+		*sin_out = 0;
+		*cos_out = -(1<<14);	//-1
+		return;
+	}
+
+    if (theta > HALF_PI_14B)               // Q2 (pi/2, pi]: sin+, cos-
+    {
+        cos_neg = 1;
+        theta = PI_14B - theta;
+    }
+    else if (theta < -HALF_PI_14B)         // Q3- [-pi, -pi/2): sin-, cos-
+    {
+        sin_neg = 1;
+        cos_neg = 1;
+        theta = theta + PI_14B;
+    }
+    else if (theta < 0)                    // Q4- (-pi/2, 0): sin-, cos+
+    {
+        sin_neg = 1;
+        theta = -theta;
+    }
+
+    int32_t theta2 = (theta * theta) >> 14;
+    int32_t theta3 = (theta2 * theta) >> 14;
+    int32_t theta4 = (theta3 * theta) >> 14;
+
+    int32_t s = sc1_14b*theta4 + sc2_14b*theta3 + sc3_14b*theta2 + sc4_14b*theta + (sc5_14b << 14);
+    s >>= 14;
+    int32_t c = c1_14b*theta4 + c2_14b*theta3 + c3_14b*theta2 + c4_14b*theta + (c5_14b << 14);
+    c >>= 14;
+
+    *sin_out = sin_neg ? -s : s;
+    *cos_out = cos_neg ? -c : c;
 }
 
 int32_t wrap_2pi_q(int32_t in, int32_t two_pi_q)

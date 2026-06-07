@@ -69,6 +69,26 @@ void test_cos14b(void)
 	printf("Max LSB for cos_14b: %f\n", max_error);
 }
 
+void test_sin_cos_14b(void)
+{
+    const double q_factor = (double)(1 << 14);
+    double max_sin_err = 0, max_cos_err = 0;
+    for (int32_t theta = -PI_14B; theta < PI_14B; theta++)
+    {
+        double theta_dbl = (double)theta / q_factor;
+        int32_t s, c;
+        sin_cos_14b(theta, &s, &c);
+
+        double sin_err = m_abs(sin(theta_dbl)*q_factor - (double)s);
+        double cos_err = m_abs(cos(theta_dbl)*q_factor - (double)c);
+        if (sin_err > max_sin_err) max_sin_err = sin_err;
+        if (cos_err > max_cos_err) max_cos_err = cos_err;
+        TEST_ASSERT_LESS_THAN_DOUBLE(2.95001, sin_err);
+        TEST_ASSERT_LESS_THAN_DOUBLE(3.09001, cos_err);
+    }
+    printf("Max LSB sin_cos_14b: sin=%f  cos=%f\n", max_sin_err, max_cos_err);
+}
+
 void test_sin12b(void)
 {
 	float val = 1.24515616f;
