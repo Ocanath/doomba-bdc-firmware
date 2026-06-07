@@ -29,6 +29,7 @@ Usage:
     python trig_coefficients_fixed.py --q 14 --compare   # compare against existing coefficients
 """
 
+import itertools
 import numpy as np
 import argparse
 from scipy.optimize import linprog
@@ -91,13 +92,57 @@ def _minimax_lp(A, y):
                      [-A, -ones_col]])
     b_ub = np.concatenate([y, -y])
 
-    result = linprog(c_obj, A_ub=A_ub, b_ub=b_ub, method='highs')
+    # All variables (coefficients and t) must be unconstrained — linprog defaults
+    # to non-negative bounds which would silently clamp negative coefficients.
+    bounds = [(None, None)] * (n_coeffs + 1)
+    result = linprog(c_obj, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method='highs')
     if not result.success:
         raise RuntimeError(f"Minimax LP failed: {result.message}")
     return result.x[:n_coeffs]
 
 
-def get_trig_coefficients(q, degree=4, n_samples=5000, method='minimax_fp'):
+def _refine_coefficients(coeffs, q, is_cos=False, n_eval=50000):
+    """
+    Brute-force +-1 search over all integer perturbations of each coefficient.
+    Evaluates all 3^n combinations against the actual fixed-point evaluator and
+    returns the set with minimum max error (integer minimax).
+
+    For degree 4 (5 coeffs): 3^5 = 243 combinations.
+    For degree 5 (6 coeffs): 3^6 = 729 combinations.
+    """
+    n = len(coeffs)
+    degree = n - 1
+
+    u = np.linspace(0, np.pi / 2, n_eval)
+    exact = (np.cos(u) if is_cos else np.sin(u)) * float(2**q)
+    theta = np.round(u * float(2**q)).astype(np.int64)
+
+    # Integer power arrays matching eval_poly_fixed exactly:
+    #   pow_arr[0] = (1 << q)  (constant term scaling)
+    #   pow_arr[k] = theta^k in Qq format for k >= 1
+    pow_arr = [None] * n
+    pow_arr[0] = np.full(n_eval, 1 << q, dtype=np.int64)
+    pow_arr[1] = theta
+    for k in range(2, n):
+        pow_arr[k] = (pow_arr[k - 1] * theta) >> q
+
+    # powers_mat[i] = the power array that coeffs[i] multiplies (descending order)
+    powers_mat = np.array([pow_arr[degree - i] for i in range(n)], dtype=np.int64)
+
+    # All 3^n combinations of {-1, 0, +1} perturbations
+    perturbs = np.array(list(itertools.product([-1, 0, 1], repeat=n)), dtype=np.int64)
+    c_matrix = np.array(coeffs, dtype=np.int64)[np.newaxis, :] + perturbs  # (3^n, n)
+
+    # Evaluate all combinations simultaneously: (3^n, n) @ (n, n_eval) -> (3^n, n_eval)
+    results = (c_matrix @ powers_mat) >> q
+
+    max_errs = np.max(np.abs(results.astype(np.float64) - exact[np.newaxis, :]), axis=1)
+
+    best = int(np.argmin(max_errs))
+    return list(c_matrix[best].astype(int))
+
+
+def get_trig_coefficients(q, degree=4, n_samples=5000, method='minimax_fp', refine=True):
     """
     Fit polynomial approximations for sin(u)*2^q and cos(u)*2^q over u in [0, pi/2].
 
@@ -106,10 +151,11 @@ def get_trig_coefficients(q, degree=4, n_samples=5000, method='minimax_fp'):
     Args:
         q:         Q factor — output is scaled by 2^q
         degree:    polynomial degree (default 4)
-        n_samples: sample points for fit (default 5000; minimax needs far fewer than polyfit)
-        method:    'minimax_fp' — minimax LP fit using actual fixed-point basis (default);
-                   'polyfit'   — least-squares float polynomial fit (original approach,
-                                 kept for comparison)
+        n_samples: sample points for fit (default 5000)
+        method:    'minimax_fp' — minimax LP over fixed-point basis (default);
+                   'polyfit'   — least-squares float fit (kept for comparison)
+        refine:    if True (default), apply +-1 brute-force integer refinement after
+                   rounding, to find the optimal integer coefficient set
 
     Returns:
         sin_coeffs: list of int, descending power order [a_d, ..., a_1, a_0]
@@ -122,17 +168,21 @@ def get_trig_coefficients(q, degree=4, n_samples=5000, method='minimax_fp'):
     if method == 'polyfit':
         sin_f = np.polyfit(u, sin_target, degree)
         cos_f = np.polyfit(u, cos_target, degree)
-        return list(np.round(sin_f).astype(int)), list(np.round(cos_f).astype(int))
+    else:
+        A, u = _fp_design_matrix(q, degree, n_samples)
+        sin_target = np.sin(u) * float(2**q)
+        cos_target = np.cos(u) * float(2**q)
+        sin_f = _minimax_lp(A, sin_target)
+        cos_f = _minimax_lp(A, cos_target)
 
-    # minimax_fp: minimax LP over fixed-point basis vectors
-    A, u = _fp_design_matrix(q, degree, n_samples)
-    sin_target = np.sin(u) * float(2**q)
-    cos_target = np.cos(u) * float(2**q)
+    sin_coeffs = list(np.round(sin_f).astype(int))
+    cos_coeffs = list(np.round(cos_f).astype(int))
 
-    sin_f = _minimax_lp(A, sin_target)
-    cos_f = _minimax_lp(A, cos_target)
+    if refine:
+        sin_coeffs = _refine_coefficients(sin_coeffs, q, is_cos=False)
+        cos_coeffs = _refine_coefficients(cos_coeffs, q, is_cos=True)
 
-    return list(np.round(sin_f).astype(int)), list(np.round(cos_f).astype(int))
+    return sin_coeffs, cos_coeffs
 
 
 def eval_poly_fixed(coeffs, q, u_float):
@@ -309,13 +359,15 @@ def main():
                         help='Sample count for fit (default: 5000)')
     parser.add_argument('--method', choices=['minimax_fp', 'polyfit'], default='minimax_fp',
                         help='Fit method: minimax_fp (default) or polyfit')
+    parser.add_argument('--no-refine', dest='refine', action='store_false',
+                        help='Skip +-1 integer refinement pass')
     parser.add_argument('--plot',    action='store_true',
                         help='Show magnitude and error plots')
     parser.add_argument('--compare', action='store_true',
                         help='Compare output against existing hardcoded coefficients')
     args = parser.parse_args()
 
-    sin_coeffs, cos_coeffs = get_trig_coefficients(args.q, args.degree, args.samples, args.method)
+    sin_coeffs, cos_coeffs = get_trig_coefficients(args.q, args.degree, args.samples, args.method, args.refine)
     print_c_output(args.q, args.degree, sin_coeffs, cos_coeffs)
 
     if args.compare:
