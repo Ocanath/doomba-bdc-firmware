@@ -31,6 +31,7 @@ Usage:
 
 import numpy as np
 import argparse
+from scipy.optimize import linprog
 
 
 def get_angle_constants(q):
@@ -43,35 +44,95 @@ def get_angle_constants(q):
     }
 
 
-def get_trig_coefficients(q, degree=4, n_samples=50000):
+def _fp_design_matrix(q, degree, n_samples):
+    """
+    Build design matrix using actual fixed-point power basis.
+
+    Each column corresponds to a polynomial term as evaluated by the C fixed-point
+    evaluator: theta^k computed via cascaded (>>q) integer shifts, then divided by
+    2^q to give the float equivalent seen by the coefficient multiplier.
+
+    Columns are in descending power order: [theta^d/2^q, ..., theta/2^q, 1].
+    The constant column is 1 (not 2^q) because in the C evaluator the constant
+    coefficient is applied as (sc_const << q) before the final >> q, which cancels.
+    """
+    u = np.linspace(0, np.pi / 2, n_samples)
+    theta = np.round(u * float(2**q)).astype(np.int64)
+    q_scale = float(2**q)
+
+    # Compute integer powers via cascaded >>q shifts — identical to C evaluator
+    pow_int = [None] * (degree + 1)
+    pow_int[1] = theta.copy()
+    for k in range(2, degree + 1):
+        pow_int[k] = (pow_int[k - 1] * theta) >> q
+
+    # Assemble columns descending: degree, degree-1, ..., 1, constant
+    cols = [pow_int[k].astype(np.float64) / q_scale for k in range(degree, 0, -1)]
+    cols.append(np.ones(n_samples, dtype=np.float64))
+
+    return np.column_stack(cols), u
+
+
+def _minimax_lp(A, y):
+    """
+    Solve the minimax (L-inf) polynomial fit as a linear program.
+
+    Finds coefficients c minimizing max|A @ c - y|.
+    Variables: x = [c_0, ..., c_{n-1}, t].  Minimize t subject to:
+        A @ c - y  <=  t * ones
+       -A @ c + y  <=  t * ones
+    """
+    n_samples, n_coeffs = A.shape
+    c_obj = np.zeros(n_coeffs + 1)
+    c_obj[-1] = 1.0  # minimize t
+
+    ones_col = np.ones((n_samples, 1))
+    A_ub = np.block([[ A, -ones_col],
+                     [-A, -ones_col]])
+    b_ub = np.concatenate([y, -y])
+
+    result = linprog(c_obj, A_ub=A_ub, b_ub=b_ub, method='highs')
+    if not result.success:
+        raise RuntimeError(f"Minimax LP failed: {result.message}")
+    return result.x[:n_coeffs]
+
+
+def get_trig_coefficients(q, degree=4, n_samples=5000, method='minimax_fp'):
     """
     Fit polynomial approximations for sin(u)*2^q and cos(u)*2^q over u in [0, pi/2].
 
-    Uses least-squares (numpy polyfit) with uniform sampling. Both functions require
-    separate coefficient sets since they have different shapes over this interval.
+    Both functions require separate coefficient sets (different shapes over this interval).
 
     Args:
         q:         Q factor — output is scaled by 2^q
-        degree:    polynomial degree (default 4; higher gives lower error at cost of
-                   more multiplies in C)
-        n_samples: number of sample points for the fit (default 50000)
+        degree:    polynomial degree (default 4)
+        n_samples: sample points for fit (default 5000; minimax needs far fewer than polyfit)
+        method:    'minimax_fp' — minimax LP fit using actual fixed-point basis (default);
+                   'polyfit'   — least-squares float polynomial fit (original approach,
+                                 kept for comparison)
 
     Returns:
         sin_coeffs: list of int, descending power order [a_d, ..., a_1, a_0]
         cos_coeffs: list of int, descending power order [b_d, ..., b_1, b_0]
     """
     u = np.linspace(0, np.pi / 2, n_samples)
-
     sin_target = np.sin(u) * float(2**q)
     cos_target = np.cos(u) * float(2**q)
 
-    sin_coeffs_f = np.polyfit(u, sin_target, degree)
-    cos_coeffs_f = np.polyfit(u, cos_target, degree)
+    if method == 'polyfit':
+        sin_f = np.polyfit(u, sin_target, degree)
+        cos_f = np.polyfit(u, cos_target, degree)
+        return list(np.round(sin_f).astype(int)), list(np.round(cos_f).astype(int))
 
-    sin_coeffs = list(np.round(sin_coeffs_f).astype(int))
-    cos_coeffs = list(np.round(cos_coeffs_f).astype(int))
+    # minimax_fp: minimax LP over fixed-point basis vectors
+    A, u = _fp_design_matrix(q, degree, n_samples)
+    sin_target = np.sin(u) * float(2**q)
+    cos_target = np.cos(u) * float(2**q)
 
-    return sin_coeffs, cos_coeffs
+    sin_f = _minimax_lp(A, sin_target)
+    cos_f = _minimax_lp(A, cos_target)
+
+    return list(np.round(sin_f).astype(int)), list(np.round(cos_f).astype(int))
 
 
 def eval_poly_fixed(coeffs, q, u_float):
@@ -244,15 +305,17 @@ def main():
                         help='Q factor: output is scaled by 2^q (default: 14)')
     parser.add_argument('--degree',  type=int, default=4,
                         help='Polynomial degree (default: 4)')
-    parser.add_argument('--samples', type=int, default=50000,
-                        help='Sample count for least-squares fit (default: 50000)')
+    parser.add_argument('--samples', type=int, default=5000,
+                        help='Sample count for fit (default: 5000)')
+    parser.add_argument('--method', choices=['minimax_fp', 'polyfit'], default='minimax_fp',
+                        help='Fit method: minimax_fp (default) or polyfit')
     parser.add_argument('--plot',    action='store_true',
                         help='Show magnitude and error plots')
     parser.add_argument('--compare', action='store_true',
                         help='Compare output against existing hardcoded coefficients')
     args = parser.parse_args()
 
-    sin_coeffs, cos_coeffs = get_trig_coefficients(args.q, args.degree, args.samples)
+    sin_coeffs, cos_coeffs = get_trig_coefficients(args.q, args.degree, args.samples, args.method)
     print_c_output(args.q, args.degree, sin_coeffs, cos_coeffs)
 
     if args.compare:
