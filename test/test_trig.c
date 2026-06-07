@@ -18,13 +18,34 @@ void test_wrap(void)
 	TEST_ASSERT_EQUAL(wrap_2pi_q(tv, TWO_PI_12B), wrap_2pi_12b(tv));
 }
 
+double m_abs(double in)
+{
+	if(in < 0)
+	{
+		return -in;
+	}
+	return in;
+}
+
 void test_sin14b(void)
 {
-	float val = 1.24515616f;
-	int32_t val_14b = (int32_t)(val*(float)(1 << 14));
-	int32_t res = sin_14b(wrap_2pi_q(val_14b, TWO_PI_14B));
-	float res_sc = ((float)res)/((float)(1 << 14));
-	TEST_ASSERT_FLOAT_WITHIN(0.0001f, sin(val), res_sc);
+	//strict worst-case LSB error bounded from python script (see ../Python/trig_fixed/sin_cos_coefficients_fixed.py)
+	//we check every value within the valid range (-pi to pi) to guarantee
+	const double q_factor = (double)(1 << 14);	//2^14 fixed for this function
+	double max_error = 0;
+	for(int32_t theta = -PI_14B; theta < PI_14B; theta++)
+	{
+		double theta_dbl = (double)theta / q_factor;
+		double s_std = sin(theta_dbl)*q_factor;
+		double s14 = (double)sin_14b(theta);
+		double error = m_abs(s_std - s14);
+		if(error > max_error)
+		{
+			max_error = error;
+		}
+		TEST_ASSERT_LESS_THAN_DOUBLE(2.95001, error);
+	}
+	printf("Max LSB for sin_14b: %f\n", max_error);
 }
 
 void test_sin12b(void)
