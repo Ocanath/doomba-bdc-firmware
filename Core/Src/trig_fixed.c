@@ -79,11 +79,11 @@ int32_t sin_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs)
     }
 
     // 7 fixed point multiplies. compute polynomial output 0-1 for input 0-pi/2
-    int32_t theta2 = (theta * theta) >> 12;
-    int32_t theta3 = (theta2 * theta) >> 12;
-    int32_t theta4 = (theta3 * theta) >> 12;
-    int32_t res = sc1_12b * theta4 + sc2_12b * theta3 + sc3_12b * theta2 + sc4_12b * theta + (sc5_12b << 12);
-    res = res >> 12;
+    int32_t theta2 = (theta * theta) >> coefs->q;
+    int32_t theta3 = (theta2 * theta) >> coefs->q;
+    int32_t theta4 = (theta3 * theta) >> coefs->q;
+    int32_t res = coefs->s[0] * theta4 + coefs->s[1] * theta3 + coefs->s[2] * theta2 + coefs->s[3] * theta + (coefs->s[4] << coefs->q);
+    res = res >> coefs->q;
 
     int32_t y;
     if (is_neg == 1)

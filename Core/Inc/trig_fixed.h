@@ -46,11 +46,12 @@ int32_t wrap_2pi_14b(int32_t in);
 int32_t unwrap_angle_32b_overflow(int32_t theta, int32_t two_pi_fixed, unwrap_state_t * st);
 int32_t sqrt_i32(int32_t v);
 int64_t sqrt_i64(int64_t v);
+void sin_cos_14b(int32_t theta, int32_t * sin, int32_t * cos);
 
 int32_t wrap_2pi_q(int32_t in, int32_t two_pi_q);
-int32_t cos_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
-int32_t sin_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
-void sin_cos_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs, int32_t * sin, int32_t * cos);
+int32_t cos_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
+int32_t sin_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
+void sin_cos_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs, int32_t * sin, int32_t * cos);
 
 
 #endif // ! TRIG_FIXED_H
