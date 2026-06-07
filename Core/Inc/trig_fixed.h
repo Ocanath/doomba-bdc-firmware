@@ -3,15 +3,16 @@
 #include <stdint.h>
 
 /*Used for multiple q coeffs*/
-typedef struct trig_fixed_coeffs_t
+typedef struct sincos_d5_coeffs_t
 {
 	int32_t half_pi_q;
 	int32_t three_by_two_pi_q;
 	int32_t pi_q;
 	int32_t two_pi_q;
 	int q;
-	int32_t * coeffs;		
-}trig_fixed_coeffs_t;
+	int32_t s[5];
+	int32_t c[5];
+}sincos_d5_coeffs_t;
 
 
 // _12B indicates that the constant is mutiplied by 2^12 and rounded to the nearest integer
@@ -47,10 +48,9 @@ int32_t sqrt_i32(int32_t v);
 int64_t sqrt_i64(int64_t v);
 
 int32_t wrap_2pi_q(int32_t in, int32_t two_pi_q);
-int32_t atan2_q(int32_t y, int32_t x, const trig_fixed_coeffs_t * coefs);
-int32_t cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs);
-int32_t sin_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs);
-void sin_cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs, int32_t * sin, int32_t * cos);
+int32_t cos_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
+int32_t sin_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs);
+void sin_cos_poly_q(int32_t theta, const sincos_d5_coeffs_t * coefs, int32_t * sin, int32_t * cos);
 
 
 #endif // ! TRIG_FIXED_H

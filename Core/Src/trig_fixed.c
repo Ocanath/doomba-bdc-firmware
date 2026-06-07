@@ -38,14 +38,14 @@ static const int32_t tc5_14b = -3*16384;    //2^14, with extra scaling factor ap
 /*
 Proposed function signature
 */
-void sin_cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs, int32_t * sin, int32_t * cos)
+void sin_cos_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs, int32_t * sin, int32_t * cos)
 {
 
 }
 
 /*
 */
-int32_t sin_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
+int32_t sin_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs)
 {
     //Preprocess theta to force it in the range 0-pi/2 for poly calculation
     uint8_t is_neg = 0;
@@ -96,16 +96,18 @@ int32_t sin_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
 
 /*
 */
-int32_t cos_poly_q(int32_t theta, const trig_fixed_coeffs_t * coefs)
+int32_t cos_d5_q(int32_t theta, const sincos_d5_coeffs_t * coefs)
 {
 	return 0;
 }
 
+
 /*
+Optimized/compiler inlined sin + cos
 */
-int32_t atan2_q(int32_t y, int32_t x, const trig_fixed_coeffs_t * coefs)
+void sin_cos_14b(int32_t theta, int32_t * sin, int32_t * cos)
 {
-	return 0;
+
 }
 
 int32_t wrap_2pi_q(int32_t in, int32_t two_pi_q)
