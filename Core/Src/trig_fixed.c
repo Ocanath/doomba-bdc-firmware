@@ -11,11 +11,11 @@ static const int32_t sc4_12b = 4078;
 static const int32_t sc5_12b = 1;
 
 /*Poly Coefficients for sin calculation, 14b*/
-static const int32_t sc1_14b = 469;
-static const int32_t sc2_14b = -3339;
-static const int32_t sc3_14b = 342;
-static const int32_t sc4_14b = 16310;
-static const int32_t sc5_14b = 4;
+static const int32_t sc1_14b = 462;
+static const int32_t sc2_14b = -3312;
+static const int32_t sc3_14b = 307;
+static const int32_t sc4_14b = 16327;
+static const int32_t sc5_14b = 2;
 
 
 /*Poly coefficients, scaled up by 2^12*/
