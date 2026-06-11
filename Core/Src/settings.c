@@ -57,7 +57,6 @@ fds_motor_params_t * fds_mp = &gl_dp.fds_mp;
 
 
 /*Delete these stragglers...*/
-float align_offset;
 const float iq_gain = 0.03f;
 const float id_gain = 0.01f;
 const float gl_prop_delay_const = 900.f;

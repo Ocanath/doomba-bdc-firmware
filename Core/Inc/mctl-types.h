@@ -84,7 +84,6 @@ extern fds_motor_params_t * fds_mp;
 extern const float elec_conv_ratio;
 extern const float iq_gain;
 extern const float id_gain;
-extern float align_offset;				//offset angle IN RADIANS
 extern const float gl_prop_delay_const;
 
 #endif /* INC_PROFILES_H_ */
