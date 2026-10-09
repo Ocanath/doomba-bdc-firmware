@@ -130,22 +130,24 @@ float theta_rel_rad()
 
 int32_t get_ams_angle(void)
 {
-	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
+//	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 0);
+//
+//	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
+//	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
+//	uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
+//	p_fb[0] = nv_spi_buf[1];	//bits 7-0
+//	p_fb[1] = nv_spi_buf[0];	//bits 15-8
+//	nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
+//	nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
+//	tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
+//	if(tmp_flipbuf & (1<<13))
+//		tmp_flipbuf |= (0b11 << 14);
+//	int16_t spi_angle = tmp_flipbuf;
+//
+//	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
 
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)(&word_tx), (uint8_t*)nv_spi_buf, 2, 10);
-	int16_t tmp_flipbuf = 0;	//temporary word for atomic assignment
-	uint8_t * p_fb = (uint8_t*)(&tmp_flipbuf);
-	p_fb[0] = nv_spi_buf[1];	//bits 7-0
-	p_fb[1] = nv_spi_buf[0];	//bits 15-8
-	nv_parity = (tmp_flipbuf & (1 << 15)) >> 15;
-	nv_error = (tmp_flipbuf & (1 << 14)) >> 14;
-	tmp_flipbuf = (tmp_flipbuf & 0x3FFF);	//shifting hack doesn't work. need if/else branching it would seem.
-	if(tmp_flipbuf & (1<<13))
-		tmp_flipbuf |= (0b11 << 14);
-	int16_t spi_angle = tmp_flipbuf;
-
-	HAL_GPIO_WritePin(SS_AMS_GPIO_Port, SS_AMS_Pin, 1);
-	return spi_angle;
+	//TODO: Update with tim3 count?
+	return 0;
 }
 
 int32_t theta_rel_14b(void)

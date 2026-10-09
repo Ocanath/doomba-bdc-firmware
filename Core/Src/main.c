@@ -184,13 +184,12 @@ int main(void)
 	MX_USART2_UART_Init();
 	MX_USART1_UART_Init();
 	MX_TIM2_Init();
-	MX_SPI1_Init();
-
+	MX_TIM3_Init();	//may require additional configuration for starting count
 //	FDCAN_Config();
 
 
 	unsigned char dartt_misc_address = dartt_get_complementary_address(gl_dp.fds_mp.module_number);
-	set_encoder_read_type(READ_ANGLECOM);
+
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)dma_adc_raw, NUM_ADC);
 	hadc1.Instance->CR |= (1 << 3);	//enable injected conversions (jadstart)
@@ -226,12 +225,12 @@ int main(void)
 		/*Handle DARTT over UART*/
 		if(m_huart2.rx_decoded.length != 0)
 		{
-//			if(m_huart2.rx_decoded.buf[0] == dartt_misc_address)
+			if(m_huart2.rx_decoded.buf[0] == dartt_misc_address)
 			{
-				int rc = dartt_frame_to_payload(&m_huart2.rx_decode_alias, TYPE_ADDR_MESSAGE, PAYLOAD_ALIAS, &m_huart2.rx_pld_msg);
+				int rc = dartt_frame_to_payload(&m_huart2.rx_decode_alias, TYPE_SERIAL_MESSAGE, PAYLOAD_ALIAS, &m_huart2.rx_pld_msg);
 				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{
-					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_ADDR_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
+					rc = dartt_parse_general_message(&m_huart2.rx_pld_msg, TYPE_SERIAL_MESSAGE, &gl_dp_alias, &m_huart2.tx_buf_alias);
 				}
 				if(rc == DARTT_PROTOCOL_SUCCESS)
 				{

@@ -23,10 +23,10 @@ extern DMA_HandleTypeDef hdma_adc1;
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
-extern SPI_HandleTypeDef hspi1;
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -44,7 +44,7 @@ void MX_TIM1_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_USART2_UART_Init(void);
 void MX_TIM2_Init(void);
-void MX_SPI1_Init(void);
+void MX_TIM3_Init(void);
 
 
 #endif /* INIT_H_ */
