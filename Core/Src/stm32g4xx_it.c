@@ -258,7 +258,7 @@ void DMA1_Channel2_IRQHandler(void)
   /* USER CODE END DMA1_Channel2_IRQn 0 */
  // HAL_DMA_IRQHandler(&hdma_usart2_rx);
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
-	m_uart_rxdma_handler(&hdma_usart2_rx);
+	m_uart_rxdma_handler(DMA1, hdma_usart2_rx.ChannelIndex);
   /* USER CODE END DMA1_Channel2_IRQn 1 */
 }
 
@@ -272,7 +272,7 @@ void DMA1_Channel3_IRQHandler(void)
   /* USER CODE END DMA1_Channel3_IRQn 0 */
   //HAL_DMA_IRQHandler(&hdma_usart2_tx);
   /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
-	m_uart_txdma_handler(&hdma_usart2_tx);
+	m_uart_txdma_handler(DMA1, hdma_usart2_tx.ChannelIndex);
   /* USER CODE END DMA1_Channel3_IRQn 1 */
 }
 
@@ -286,7 +286,7 @@ void DMA1_Channel4_IRQHandler(void)
   /* USER CODE END DMA1_Channel4_IRQn 0 */
 //  HAL_DMA_IRQHandler(&hdma_usart1_rx);
   /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
-	m_uart_rxdma_handler(&hdma_usart1_rx);
+	m_uart_rxdma_handler(DMA1, hdma_usart1_rx.ChannelIndex);
   /* USER CODE END DMA1_Channel4_IRQn 1 */
 }
 
@@ -300,7 +300,7 @@ void DMA1_Channel5_IRQHandler(void)
   /* USER CODE END DMA1_Channel5_IRQn 0 */
 //  HAL_DMA_IRQHandler(&hdma_usart1_tx);
   /* USER CODE BEGIN DMA1_Channel5_IRQn 1 */
-	m_uart_txdma_handler(&hdma_usart1_tx);
+	m_uart_txdma_handler(DMA1, hdma_usart1_tx.ChannelIndex);
   /* USER CODE END DMA1_Channel5_IRQn 1 */
 }
 
